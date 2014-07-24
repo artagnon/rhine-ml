@@ -6,6 +6,7 @@ type atom =
   | Nil
 
 type sexpr =
+    Atom of atom
   | DottedPair of sexpr * sexpr
 
 type prog =
