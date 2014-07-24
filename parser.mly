@@ -2,19 +2,23 @@
 
 %token LPAREN RPAREN NIL TRUE FALSE EOF
 %token <int> INTEGER
+%token <string> SYMBOL
 
 %start prog
 %type <Ast.prog> prog
 
 %%
 prog:
-  sexpr EOF { Prog(List.rev $1) }
+  sexprs EOF { Prog(List.rev $1) }
 
-sexp:
-  atom { Atom($1) }
-| LPAREN RPAREN { Atom(Nil) }
+sexpr:
+| NIL { Nil }
+| TRUE { Bool(true) }
+| FALSE { Bool(false) }
+| INTEGER { Int($1) }
+| SYMBOL { Symbol($1) }
 | LPAREN sexprs RPAREN { $2 }
 
 sexprs:
-  sexprs sexpr { $2::$1 }
-| sexpr { [$1] }
+  sexpr { [$1] }
+| sexpr sexprs { $2::$1 }

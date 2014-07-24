@@ -10,5 +10,5 @@
 | "true" { TRUE }
 | "false" { FALSE }
 | ['0'-'9']+ as s { INTEGER(int_of_string s) }
-| ['a'-'z' 'A'-'Z' '-' '?']+ as s { ID(s) }
+| ['a'-'z' 'A'-'Z' '-' '?']+ as s { SYMBOL(s) }
 | eof { EOF }
