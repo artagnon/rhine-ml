@@ -11,12 +11,15 @@
 prog:
   sexprs EOF { Prog(List.rev $1) }
 
-sexpr:
-| NIL { Nil }
+atom:
+  NIL { Nil }
 | TRUE { Bool(true) }
 | FALSE { Bool(false) }
 | INTEGER { Int($1) }
 | SYMBOL { Symbol($1) }
+
+sexpr:
+  atom { Atom($1) }
 | LPAREN sexprs RPAREN { $2 }
 
 sexprs:
