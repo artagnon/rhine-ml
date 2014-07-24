@@ -1,13 +1,12 @@
 type atom =
     Symbol of string
   | Int of int
-  | Double of float
-  | Str of string
+  | Bool of boolean
   | Nil
 
-type sexp =
+type sexpr =
     Atom of atom
-  | DottedPair of sexp * sexp
+  | DottedPair of sexpr * sexpr
 
 type prog =
     Prog of sexpr list
