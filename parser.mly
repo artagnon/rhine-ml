@@ -20,8 +20,13 @@ atom:
 
 sexpr:
   atom { Atom($1) }
-| LPAREN sexprs RPAREN { $2 }
+| LPAREN sexprs RPAREN { let rec buildDP = function
+                           [] -> Atom(Nil)
+			   |h::t -> DottedPair(h, buildDP t)
+			 in buildDP($2)
+		       }
 
 sexprs:
-  sexpr { [$1] }
-| sexpr sexprs { $2::$1 }
+  sexpr sexprs { $1::$2 }
+| sexpr { [$1] }
+
