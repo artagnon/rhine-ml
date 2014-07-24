@@ -46,5 +46,5 @@ let _ =
     else
       Normal in
   let lexbuf = Lexing.from_channel stdin in
-  let prog = Parser.prog Scanner.token lexbuf in
+  let prog = Parser.prog Lexer.token lexbuf in
   pprint prog action

@@ -11,7 +11,7 @@ parser.ml parser.mli : parser.mly
 %.cmi : %.mli
 	ocamlc -c $<
 clean :
-	rm -f rhine parser.ml parser.mli scanner.ml *.cmo *.cmi
+	rm -f rhine parser.ml parser.mli lexer.ml *.cmo *.cmi
 
 lexer.cmo :
 lexer.cmx :
