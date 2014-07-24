@@ -1,2 +1,6 @@
 lexer.ml
+parser.ml
 *~
+*.cmi
+*.cmo
+*.swp
