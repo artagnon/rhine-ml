@@ -15,8 +15,8 @@ clean :
 
 lexer.cmo :
 lexer.cmx :
-main.cmo : parser.cmi ast.cmi
-main.cmx : parser.cmx ast.cmi
+main.cmo : parser.cmi lexer.cmo ast.cmi
+main.cmx : parser.cmx lexer.cmx ast.cmi
 parser.cmo : ast.cmi parser.cmi
 parser.cmx : ast.cmi parser.cmi
 ast.cmi :
