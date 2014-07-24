@@ -1,5 +1,4 @@
 {
-  exception Eof
   exception SyntaxError of string
 }
 
@@ -11,6 +10,5 @@
 | "true" { TRUE }
 | "false" { FALSE }
 | ['0'-'9']+ as s { INTEGER(int_of_string s) }
-| \"['*']+\" as s { STRING(s) }
-| ['a'-'z' 'A'-'Z' '*']+ as s { ID(s)}
-| eof { raise Eof }
+| ['a'-'z' 'A'-'Z' '-' '?']+ as s { ID(s) }
+| eof { EOF }
