@@ -12,3 +12,12 @@ parser.ml parser.mli : parser.mly
 	ocamlc -c $<
 clean :
 	rm -f rhine parser.ml parser.mli scanner.ml *.cmo *.cmi
+
+lexer.cmo :
+lexer.cmx :
+main.cmo : parser.cmi ast.cmi
+main.cmx : parser.cmx ast.cmi
+parser.cmo : ast.cmi parser.cmi
+parser.cmx : ast.cmi parser.cmi
+ast.cmi :
+parser.cmi : ast.cmi
