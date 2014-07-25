@@ -13,8 +13,8 @@ parser.ml parser.mli : parser.mly
 clean :
 	rm -f rhine parser.ml parser.mli lexer.ml *.cmo *.cmi
 
-lexer.cmo :
-lexer.cmx :
+lexer.cmo : parser.cmi
+lexer.cmx : parser.cmx
 main.cmo : parser.cmi lexer.cmo ast.cmi
 main.cmx : parser.cmx lexer.cmx ast.cmi
 parser.cmo : ast.cmi parser.cmi
