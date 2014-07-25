@@ -20,7 +20,7 @@ atom:
 
 sexpr:
    atom { Atom($1) }
- | PLUS sexprs { }
+ | PLUS sexpr sexpr { Plus($2, $3) }
  | LPAREN sexprs RPAREN {
        let rec buildDP = function
             [] -> Atom(Nil)

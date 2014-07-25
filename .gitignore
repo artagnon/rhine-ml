@@ -6,3 +6,4 @@ parser.ml
 *.cmo
 *.cmx
 *.swp
+*.swo
