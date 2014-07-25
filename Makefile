@@ -7,7 +7,9 @@ lexer.ml : lexer.mll
 parser.ml parser.mli : parser.mly
 	ocamlyacc parser.mly
 codegen.cmo: codegen.ml
-	ocamlfind ocamlc -c -package llvm -linkpkg codegen.ml
+	ocamlfind ocamlc -c -package llvm -linkpkg $<
+main.cmo: main.ml
+	ocamlfind ocamlc -c -package llvm -linkpkg $<
 %.cmo : %.ml
 	ocamlc -c $<
 %.cmi : %.mli

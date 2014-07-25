@@ -14,7 +14,7 @@ let void_type = void_type context
 let int_of_bool = function true -> 1 | false -> 0
 
 let rec codegen_expr = function
-  | Ast.Atom n -> begin function
+  | Ast.Atom n -> begin match n with
                     | Ast.Int n -> const_int i64_type n
                     | Ast.Bool n -> const_int i1_type (int_of_bool n)
                     | Ast.Double n -> const_float double_type n
