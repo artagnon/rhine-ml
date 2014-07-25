@@ -1,5 +1,9 @@
 open Ast
 type action = Debug | Normal
+
+let print_bool = function true -> print_string "true"
+                        | false -> print_string "false"
+
 (* pretty print atoms *)
 let ppatom p a = match p with
     Symbol(s) -> (match a with
@@ -8,6 +12,9 @@ let ppatom p a = match p with
    |Int(i) -> (match a with
                  Debug -> print_string "int:"; print_int i
                 |Normal -> print_int i)
+   |Bool(i) -> (match a with
+                 Debug -> print_string "bool:"; print_bool i
+                |Normal -> print_bool i)
    |Double(d) -> (match a with
                     Debug -> print_string "dbl:"; print_float d
                    |Normal -> print_float d)
