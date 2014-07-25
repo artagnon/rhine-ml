@@ -4,4 +4,5 @@ parser.ml
 *~
 *.cmi
 *.cmo
+*.cmx
 *.swp
