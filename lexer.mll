@@ -8,6 +8,10 @@ rule token = parse
  | ";;" { comment lexbuf }
  | '(' { LPAREN }
  | ')' { RPAREN }
+ | '+' { PLUS }
+ | '-' { MINUS }
+ | '/' { DIVIDE }
+ | '*' { TIMES }
  | "nil" { NIL }
  | "true" { TRUE }
  | "false" { FALSE }

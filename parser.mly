@@ -1,6 +1,6 @@
 %{ open Ast %}
 
-%token LPAREN RPAREN NIL TRUE FALSE EOF
+%token LPAREN RPAREN NIL TRUE FALSE EOF PLUS MINUS DIVIDE TIMES
 %token <int> INTEGER
 %token <string> SYMBOL
 
@@ -9,22 +9,24 @@
 
 %%
 prog:
-  sexprs EOF { Prog(List.rev $1) }
+    sexprs EOF { Prog(List.rev $1) }
 
 atom:
-  NIL { Nil }
-| TRUE { Bool(true) }
-| FALSE { Bool(false) }
-| INTEGER { Int($1) }
-| SYMBOL { Symbol($1) }
+   NIL { Nil }
+ | TRUE { Bool(true) }
+ | FALSE { Bool(false) }
+ | INTEGER { Int($1) }
+ | SYMBOL { Symbol($1) }
 
 sexpr:
-  atom { Atom($1) }
-| LPAREN sexprs RPAREN { let rec buildDP = function
-                           [] -> Atom(Nil)
-			   |h::t -> DottedPair(h, buildDP t)
-			 in buildDP($2)
-		       }
+   atom { Atom($1) }
+ | PLUS sexprs { }
+ | LPAREN sexprs RPAREN {
+       let rec buildDP = function
+            [] -> Atom(Nil)
+          | h::t -> DottedPair(h, buildDP t)
+       in buildDP($2)
+   }
 
 sexprs:
   sexpr sexprs { $1::$2 }

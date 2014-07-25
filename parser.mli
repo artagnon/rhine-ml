@@ -5,6 +5,10 @@ type token =
   | TRUE
   | FALSE
   | EOF
+  | PLUS
+  | MINUS
+  | DIVIDE
+  | TIMES
   | INTEGER of (int)
   | SYMBOL of (string)
 
