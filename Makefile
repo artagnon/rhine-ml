@@ -1,4 +1,4 @@
-OBJS = parser.cmo main.cmo lexer.cmo
+OBJS = parser.cmo lexer.cmo main.cmo
 
 rhine : $(OBJS)
 	ocamlc -o rhine $(OBJS)
