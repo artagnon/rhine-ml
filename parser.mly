@@ -1,6 +1,6 @@
 %{ open Ast %}
 
-%token LPAREN RPAREN NIL TRUE FALSE EOF PLUS MINUS DIVIDE TIMES
+%token LPAREN RPAREN NIL TRUE FALSE EOF
 %token <int> INTEGER
 %token <string> SYMBOL
 
@@ -9,7 +9,7 @@
 
 %%
 prog:
-    sexprs EOF { Prog(List.rev $1) }
+    sexprs EOF { Prog($1) }
 
 atom:
    NIL { Nil }
@@ -20,7 +20,6 @@ atom:
 
 sexpr:
    atom { Atom($1) }
- | PLUS sexpr sexpr { Plus($2, $3) }
  | LPAREN sexprs RPAREN {
        let rec buildDP = function
             [] -> Atom(Nil)
