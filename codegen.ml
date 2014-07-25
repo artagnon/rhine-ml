@@ -7,17 +7,16 @@ let the_module = create_module context "Rhine JIT"
 let builder = builder context
 let named_values:(string, llvalue) Hashtbl.t = Hashtbl.create 10
 let i64_type = i64_type context
+let i1_type = i1_type context
+let double_type = double_type context
+let void_type = void_type context
+
+let int_of_bool = function true -> 1 | false -> 0
 
 let rec codegen_expr = function
-  | Ast.Int n -> const_int i64_type n
-  | Ast.BinaryOp (op, lhs, rhs) ->
-     let lhs_val = codegen_expr lhs in
-     let rhs_val = codegen_expr rhs in
-     begin
-       match op with
-       | '+' -> build_add lhs_val rhs_val "addtmp" builder
-       | '-' -> build_sub lhs_val rhs_val "subtmp" builder
-       | '*' -> build_mul lhs_val rhs_val "multmp" builder
-       | '<' -> build_cmp Fcmp.Ult lhs_val rhs_val "cmptmp" builder
-       | _ -> raise (Error "invalid binary operator")
-     end
+  | Ast.Atom n -> begin function
+                    | Ast.Int n -> const_int i64_type n
+                    | Ast.Bool n -> const_int i1_type (int_of_bool n)
+                    | Ast.Double n -> const_float double_type n
+                    | Ast.Nil -> const_null void_type
+                  end
