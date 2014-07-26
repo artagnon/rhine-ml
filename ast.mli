@@ -13,7 +13,7 @@ type prog =
     Prog of sexpr list
 
 type proto =
-    Prototype of string * string list
+    Prototype of string * string array
 
 type func =
-    Function of proto * sexpr list
+    Function of proto * sexpr
