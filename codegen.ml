@@ -15,15 +15,17 @@ let int_of_bool = function true -> 1 | false -> 0
 
 let extract_args s = match s with
     Ast.DottedPair(s1, s2) ->
-    match (s1, s2) with
-      (Ast.Atom n, Ast.DottedPair(Ast.Atom m, Ast.Atom(Ast.Nil))) -> (n, m)
-    | _ -> raise (Error "Expected two atoms")
+    (match (s1, s2) with
+       (Ast.Atom n, Ast.DottedPair(Ast.Atom m, Ast.Atom(Ast.Nil))) -> (n, m)
+     | _ -> raise (Error "Expected two atoms"))
+  | _ -> raise (Error "Expected sexp")
 
 let codegen_atom = function
     Ast.Int n -> const_int i64_type n
   | Ast.Bool n -> const_int i1_type (int_of_bool n)
   | Ast.Double n -> const_float double_type n
   | Ast.Nil -> const_null i1_type
+  | Ast.Symbol n -> raise (Error "Can't codegen_atom a symbol")
 
 let codegen_operator op s2 =
   let lhs_val = codegen_atom (fst (extract_args s2)) in
@@ -40,9 +42,10 @@ let rec codegen_sexpr s = match s with
      begin match s1 with
              Ast.Atom a ->
              begin match a with
-                     Symbol s -> codegen_operator s s2
+                     Ast.Symbol s -> codegen_operator s s2
                    | _ -> raise (Error "Expected function call")
              end
+           | _ -> raise (Error "Sexpr parser broken!")
      end
 
 let codegen_proto = function
