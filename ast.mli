@@ -11,3 +11,9 @@ type sexpr =
 
 type prog =
     Prog of sexpr list
+
+type proto =
+    Prototype of string * string list
+
+type func =
+    Function of proto * sexpr list
