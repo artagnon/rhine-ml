@@ -18,14 +18,3 @@ let codegen_atom = function
   | Ast.Bool n -> const_int i1_type (int_of_bool n)
   | Ast.Double n -> const_float double_type n
   | Ast.Nil -> const_null i1_type
-
-let rec codegen_sexpr = function
-    Ast.Atom n -> codegen_atom n
-  | Ast.DottedPair(s1, s2) -> begin match s1 with
-                                      Ast.Atom n -> codegen_atom n
-                                    | _ -> codegen_sexpr s1
-                              end;
-                              begin match s2 with
-                                      Ast.Atom n -> codegen_atom n
-                                    | _ -> codegen_sexpr s2
-                              end

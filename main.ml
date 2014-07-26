@@ -1,5 +1,4 @@
 open Ast
-open Llvm
 type action = Pprint | Normal
 
 let print_bool = function true -> print_string "true"
@@ -47,8 +46,7 @@ let _ =
   let lexbuf = Lexing.from_channel stdin in
   let prog = Parser.prog Lexer.token lexbuf in
   match action with
-    Normal -> begin match prog with
-                      Prog(ss) -> List.iter (fun i -> dump_value (Codegen.codegen_sexpr i)) ss
-              end
+    Normal -> (match prog with
+                Prog(ss) -> Toplevel.main_loop ss)
   | Pprint -> pprint prog
 ;;

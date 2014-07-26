@@ -1,4 +1,4 @@
-OBJS = parser.cmo lexer.cmo codegen.cmo main.cmo
+OBJS = parser.cmo lexer.cmo codegen.cmo toplevel.cmo main.cmo
 
 rhine : $(OBJS)
 	ocamlfind ocamlc -package llvm -linkpkg $(OBJS) -o rhine
@@ -8,7 +8,7 @@ parser.ml parser.mli : parser.mly
 	ocamlyacc parser.mly
 codegen.cmo: codegen.ml
 	ocamlfind ocamlc -c -package llvm -linkpkg $<
-main.cmo: main.ml
+toplevel.cmo: toplevel.ml
 	ocamlfind ocamlc -c -package llvm -linkpkg $<
 %.cmo : %.ml
 	ocamlc -c $<
@@ -21,9 +21,11 @@ codegen.cmo : ast.cmi
 codegen.cmx : ast.cmi
 lexer.cmo : parser.cmi
 lexer.cmx : parser.cmx
-main.cmo : parser.cmi lexer.cmo ast.cmi
-main.cmx : parser.cmx lexer.cmx ast.cmi
+main.cmo : toplevel.cmo parser.cmi lexer.cmo ast.cmi
+main.cmx : toplevel.cmx parser.cmx lexer.cmx ast.cmi
 parser.cmo : ast.cmi parser.cmi
 parser.cmx : ast.cmi parser.cmi
+toplevel.cmo : codegen.cmi ast.cmi
+toplevel.cmx : codegen.cmx ast.cmx
 ast.cmi :
 parser.cmi : ast.cmi
