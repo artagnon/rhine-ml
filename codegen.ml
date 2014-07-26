@@ -13,22 +13,35 @@ let void_type = void_type context
 
 let int_of_bool = function true -> 1 | false -> 0
 
+let extract_args s = match s with
+    Ast.DottedPair(s1, s2) ->
+    match (s1, s2) with
+      (Ast.Atom n, Ast.Atom m) -> (n, m)
+    | _ -> Pretty.ppsexpr s2; raise (Error "Expected atoms")
+
 let codegen_atom = function
     Ast.Int n -> const_int i64_type n
   | Ast.Bool n -> const_int i1_type (int_of_bool n)
   | Ast.Double n -> const_float double_type n
   | Ast.Nil -> const_null i1_type
 
+let codegen_operator op s2 =
+  let lhs_val = codegen_atom (fst (extract_args s2)) in
+  let rhs_val = codegen_atom (snd (extract_args s2)) in
+  match op with
+    "+" -> build_add lhs_val rhs_val "addtmp" builder
+   | _ -> raise (Error "Unknown operator")
+
 let rec codegen_sexpr s = match s with
     Ast.Atom n -> codegen_atom n
-  | Ast.DottedPair(s1, s2) -> begin match s1 with
-                                      Ast.Atom n -> codegen_atom n
-                                    | _ -> codegen_sexpr s1
-                              end;
-                              begin match s2 with
-                                      Ast.Atom n -> codegen_atom n
-                                    | _ -> codegen_sexpr s2
-                              end
+  | Ast.DottedPair(s1, s2) ->
+     begin match s1 with
+             Ast.Atom a ->
+             begin match a with
+                     Symbol s -> codegen_operator s s2
+                   | _ -> raise (Error "Expected function call")
+             end
+     end
 
 let codegen_proto = function
   | Ast.Prototype (name, args) ->
