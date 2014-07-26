@@ -48,7 +48,7 @@ let _ =
   let prog = Parser.prog Lexer.token lexbuf in
   match action with
     Normal -> begin match prog with
-                      Prog(ss) -> List.iter (fun i -> dump_value (Codegen.codegen_expr i)) ss
+                      Prog(ss) -> List.iter (fun i -> dump_value (Codegen.codegen_sexpr i)) ss
               end
   | Pprint -> pprint prog
 ;;
