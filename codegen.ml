@@ -30,7 +30,9 @@ let codegen_operator op s2 =
   let rhs_val = codegen_atom (snd (extract_args s2)) in
   match op with
     "+" -> build_add lhs_val rhs_val "addtmp" builder
-   | _ -> raise (Error "Unknown operator")
+  | "-" -> build_sub lhs_val rhs_val "subtmp" builder
+  | "*" -> build_mul lhs_val rhs_val "multmp" builder
+  | _ -> raise (Error "Unknown operator")
 
 let rec codegen_sexpr s = match s with
     Ast.Atom n -> codegen_atom n
