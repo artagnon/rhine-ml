@@ -6,7 +6,7 @@ let print_bool = function true -> print_string "true"
                         | false -> print_string "false"
 
 (* pretty print atoms *)
-let ppatom p a = match p with
+let ppatom p = match p with
     Symbol(s) -> print_string ("sym:" ^ s)
    |Int(i) -> print_string "int:"; print_int i
    |Bool(i) -> print_string "bool:"; print_bool i
@@ -14,23 +14,23 @@ let ppatom p a = match p with
    |Nil -> print_string "nil"
 
 (* pretty print S-expressions *)
-let rec ppsexpr p islist act = match p with
-    Atom(a) -> ppatom a act
+let rec ppsexpr p islist = match p with
+    Atom(a) -> ppatom a
    |DottedPair(se1,se2) -> if islist then () else 
                              print_string "( ";
                            (match se1 with
-                              Atom(a) -> ppatom a act
-                             |_ -> ppsexpr se1 false act);
+                              Atom(a) -> ppatom a
+                             |_ -> ppsexpr se1 false);
                            print_char ' ';
                            (match se2 with
                               Atom(Nil) -> print_char ')'
                              |Atom(_ as a) -> print_string ". ";
-                                              ppatom a act;
+                                              ppatom a;
                                               print_string " )"
-                             |_ -> ppsexpr se2 true act)
+                             |_ -> ppsexpr se2 true)
 (* pretty print the program *)
-let pprint p a = match p with
-    Prog(ss) -> List.iter (fun i -> ppsexpr i false a;
+let pprint p = match p with
+    Prog(ss) -> List.iter (fun i -> ppsexpr i false;
                                     print_newline ();
                                     print_newline ()) ss
 
@@ -46,6 +46,9 @@ let _ =
   in
   let lexbuf = Lexing.from_channel stdin in
   let prog = Parser.prog Lexer.token lexbuf in
-  match prog with
-    Prog(ss) -> List.iter (fun i -> dump_value (Codegen.codegen_expr i)) ss
+  match action with
+    Normal -> begin match prog with
+                      Prog(ss) -> List.iter (fun i -> dump_value (Codegen.codegen_expr i)) ss
+              end
+  | Pprint -> pprint prog
 ;;
