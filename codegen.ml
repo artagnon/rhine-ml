@@ -16,8 +16,8 @@ let int_of_bool = function true -> 1 | false -> 0
 let extract_args s = match s with
     Ast.DottedPair(s1, s2) ->
     match (s1, s2) with
-      (Ast.Atom n, Ast.Atom m) -> (n, m)
-    | _ -> Pretty.ppsexpr s2; raise (Error "Expected atoms")
+      (Ast.Atom n, Ast.DottedPair(Ast.Atom m, Ast.Atom(Ast.Nil))) -> (n, m)
+    | _ -> raise (Error "Expected two atoms")
 
 let codegen_atom = function
     Ast.Int n -> const_int i64_type n
