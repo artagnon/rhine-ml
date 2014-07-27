@@ -13,15 +13,6 @@ let void_type = void_type context
 
 let int_of_bool = function true -> 1 | false -> 0
 
-let rec extract_args s = match s with
-    Ast.DottedPair(s1, s2) ->
-    begin match (s1, s2) with
-            (Ast.Atom m, Ast.DottedPair(_, _)) -> m::(extract_args s2)
-          | (Ast.Atom m, Ast.Atom(Ast.Nil)) -> [m]
-          | _ -> raise (Error "Malformed sexp")
-    end
-  | _ -> raise (Error "Expected sexp")
-
 let codegen_atom = function
     Ast.Int n -> const_int i64_type n
   | Ast.Bool n -> const_int i1_type (int_of_bool n)
@@ -29,16 +20,29 @@ let codegen_atom = function
   | Ast.Nil -> const_null i1_type
   | Ast.Symbol n -> raise (Error "Can't codegen_atom a symbol")
 
-let codegen_operator op s2 =
-  let lhs_val = codegen_atom (List.nth (extract_args s2) 0) in
-  let rhs_val = codegen_atom (List.nth (extract_args s2) 1) in
+let rec extract_args s = match s with
+    Ast.DottedPair(s1, s2) ->
+    begin match (s1, s2) with
+            (Ast.Atom m, Ast.DottedPair(_, _)) ->
+            (codegen_atom m)::(extract_args s2)
+          | (Ast.Atom m, Ast.Atom(Ast.Nil)) -> [codegen_atom m]
+          | (Ast.DottedPair(_, _), Ast.DottedPair(_, _)) ->
+             (codegen_sexpr s1)::(extract_args s2)
+          | (Ast.DottedPair(_, _), Ast.Atom(Ast.Nil)) -> [codegen_sexpr s1]
+          | _ -> raise (Error "Malformed sexp")
+    end
+  | _ -> raise (Error "Expected sexp")
+
+and codegen_operator op s2 =
+  let lhs_val = List.nth (extract_args s2) 0 in
+  let rhs_val = List.nth (extract_args s2) 1 in
   match op with
     "+" -> build_add lhs_val rhs_val "addtmp" builder
   | "-" -> build_sub lhs_val rhs_val "subtmp" builder
   | "*" -> build_mul lhs_val rhs_val "multmp" builder
   | _ -> raise (Error "Unknown operator")
 
-let rec codegen_sexpr s = match s with
+and codegen_sexpr s = match s with
     Ast.Atom n -> codegen_atom n
   | Ast.DottedPair(s1, s2) ->
      begin match s1 with
