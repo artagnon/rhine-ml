@@ -16,6 +16,11 @@ let void_type = void_type context
 
 let int_of_bool = function true -> 1 | false -> 0
 
+let (--) i j =
+    let rec aux n acc =
+      if n < i then acc else aux (n-1) (n :: acc)
+    in aux j []
+
 let arith_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
                                [ "+"; "-"; "*"; "/" ]
@@ -23,6 +28,14 @@ let arith_ops = List.fold_left (fun s k -> StringSet.add k s)
 let vector_ops = List.fold_left (fun s k -> StringSet.add k s)
                                 StringSet.empty
                                 [ "head"; "tail" ]
+
+let undef_vec len =
+  let undef_list = List.map (fun i -> undef i64_type) (0--(len - 1)) in
+  const_vector (Array.of_list undef_list)
+
+let mask_vec len =
+  let mask_list = List.map (fun i -> const_int i32_type i) (1--(len - 1)) in
+  const_vector (Array.of_list mask_list)
 
 let typeconvert_atom = function
     Ast.Int n -> Ast.Double (float_of_int n)
@@ -50,6 +63,13 @@ let rec extract_args s = match s with
     end
   | _ -> raise (Error "Expected sexp")
 
+and extract_vec s = match s with
+    Ast.DottedPair(s1, s2) ->
+    begin match (s1, s2) with
+          | (Ast.Vector(qs), Ast.Atom(Ast.Nil)) -> qs
+    end
+  | _ -> raise (Error "Expected sexp")
+
 and codegen_arith_op op args =
   let lhs_val = List.nth args 0 in
   let rhs_val = List.nth args 1 in
@@ -60,11 +80,14 @@ and codegen_arith_op op args =
   | "/" -> build_fdiv lhs_val rhs_val "divtmp" builder
   | _ -> raise (Error "Unknown arithmetic operator")
 
-and codegen_vector_op op args =
-  let vec = List.nth args 0 in
+and codegen_vector_op op vec =
+  let llvec = codegen_vector vec in
+  let len = Array.length vec in
   let idx0 = const_int i32_type 0 in
   match op with
-    "head" -> build_extractelement vec idx0 "extracttmp" builder
+    "head" -> build_extractelement llvec idx0 "extracttmp" builder
+  | "tail" -> build_shufflevector llvec (undef_vec len)
+                                  (mask_vec len) "shuffletmp" builder
   | _ -> raise (Error "Unknown vector operator")
 
 and codegen_sexpr s = match s with
@@ -74,11 +97,12 @@ and codegen_sexpr s = match s with
              Ast.Atom a ->
              begin match a with
                      Ast.Symbol s ->
-                     let args = extract_args s2 in
                      if StringSet.mem s arith_ops then
+                       let args = extract_args s2 in
                        codegen_arith_op s args
                      else if StringSet.mem s vector_ops then
-                       codegen_vector_op s args
+                       let vec = extract_vec s2 in
+                       codegen_vector_op s vec
                      else
                        raise (Error "Unknown operation")
                    | _ -> raise (Error "Expected function call")
