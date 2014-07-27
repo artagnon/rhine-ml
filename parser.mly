@@ -2,6 +2,7 @@
 
 %token LPAREN RPAREN NIL TRUE FALSE EOF
 %token <int> INTEGER
+%token <float> DOUBLE
 %token <string> SYMBOL
 
 %start prog
@@ -16,6 +17,7 @@ atom:
  | TRUE { Bool(true) }
  | FALSE { Bool(false) }
  | INTEGER { Int($1) }
+ | DOUBLE { Double($1) }
  | SYMBOL { Symbol($1) }
 
 sexpr:

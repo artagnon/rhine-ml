@@ -13,6 +13,9 @@ let void_type = void_type context
 
 let int_of_bool = function true -> 1 | false -> 0
 
+let typeconvert_atom = function
+    Ast.Int n -> Ast.Double (float_of_int n)
+
 let codegen_atom = function
     Ast.Int n -> const_int i64_type n
   | Ast.Bool n -> const_int i1_type (int_of_bool n)

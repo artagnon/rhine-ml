@@ -12,6 +12,7 @@ rule token = parse
  | "true" { TRUE }
  | "false" { FALSE }
  | ['0'-'9']+ as s { INTEGER(int_of_string s) }
+ | ['0'-'9']* '.' ['0'-'9']+  as s { DOUBLE(float_of_string s) }
  | ['a'-'z' 'A'-'Z' '-' '?' '+' '*' '/']+ as s { SYMBOL(s) }
  | eof { EOF }
 
