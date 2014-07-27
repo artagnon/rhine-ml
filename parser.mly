@@ -1,12 +1,14 @@
 %{ open Ast %}
 
-%token LPAREN RPAREN NIL TRUE FALSE EOF
+%token LPAREN RPAREN LSQBR RSQBR NIL TRUE FALSE EOF
 %token <int> INTEGER
 %token <float> DOUBLE
 %token <string> SYMBOL
 
 %start prog
 %type <Ast.prog> prog
+%type <Ast.atom> atom
+%type <Ast.sexpr> sexpr
 
 %%
 prog:
@@ -29,7 +31,11 @@ sexpr:
        in buildDP($2)
    }
 
-sexprs:
-  sexpr sexprs { $1::$2 }
-| sexpr { [$1] }
+qsexpr:
+   LSQBR sexprs RSQBR { QMembers($2) }
 
+sexprs:
+   sexpr sexprs { $1::$2 }
+ | qsexpr sexprs { $1::$2 }
+ | sexpr { [$1] }
+ | qsexpr { [$1] }

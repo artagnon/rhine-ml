@@ -8,6 +8,8 @@ rule token = parse
  | ";;" { comment lexbuf }
  | '(' { LPAREN }
  | ')' { RPAREN }
+ | '[' { LSQBR }
+ | ']' { RSQBR }
  | "nil" { NIL }
  | "true" { TRUE }
  | "false" { FALSE }

@@ -8,6 +8,7 @@ type atom =
 type sexpr =
     Atom of atom
   | DottedPair of sexpr * sexpr
+  | QMembers of sexpr list
 
 type prog =
     Prog of sexpr list
