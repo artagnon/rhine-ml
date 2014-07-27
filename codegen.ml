@@ -44,6 +44,8 @@ and codegen_operator op s2 =
   | "-" -> build_sub lhs_val rhs_val "subtmp" builder
   | "*" -> build_mul lhs_val rhs_val "multmp" builder
   | "/" -> build_fdiv lhs_val rhs_val "divtmp" builder
+  | "head" -> lhs_val
+  | "tail" -> const_vector (Array.of_list (List.tl (extract_args s2)))
   | _ -> raise (Error "Unknown operator")
 
 and codegen_sexpr s = match s with
