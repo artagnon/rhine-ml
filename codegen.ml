@@ -95,20 +95,16 @@ and codegen_sexpr s = match s with
     Ast.Atom n -> codegen_atom n
   | Ast.DottedPair(s1, s2) ->
      begin match s1 with
-             Ast.Atom a ->
-             begin match a with
-                     Ast.Symbol s ->
-                     if StringSet.mem s arith_ops then
-                       let args = extract_args s2 in
-                       codegen_arith_op s args
-                     else if StringSet.mem s vector_ops then
-                       let vec = extract_vec s2 in
-                       codegen_vector_op s vec
-                     else
-                       raise (Error "Unknown operation")
-                   | _ -> raise (Error "Expected function call")
-             end
-           | _ -> raise (Error "Sexpr parser broken!")
+             Ast.Atom(Ast.Symbol s) ->
+             if StringSet.mem s arith_ops then
+               let args = extract_args s2 in
+               codegen_arith_op s args
+             else if StringSet.mem s vector_ops then
+               let vec = extract_vec s2 in
+               codegen_vector_op s vec
+             else
+               raise (Error "Unknown operation")
+           | _ -> raise (Error "Expected function call")
      end
   | Ast.Vector(qs) -> codegen_vector qs
 
