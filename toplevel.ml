@@ -1,7 +1,10 @@
 open Codegen
 open Llvm
+open Llvm_executionengine
 
 exception Error of string
+
+let the_execution_engine = ExecutionEngine.create the_module
 
 let emit_anonymous_f s =
   codegen_func(Ast.Function(Ast.Prototype("", [||]), s))
@@ -26,4 +29,12 @@ let sexpr_matcher sexpr = match sexpr with
     codegen_func(Ast.Function(Ast.Prototype(sym, args), body))
   | _ -> emit_anonymous_f sexpr
 
-let main_loop ss = List.iter (fun i -> dump_value (sexpr_matcher i)) ss
+let print_and_jit se =
+  let f = sexpr_matcher se in
+  dump_value f;
+  let result = ExecutionEngine.run_function f [||] the_execution_engine in
+  print_string "Evaluated to ";
+  print_int (GenericValue.as_int result);
+  print_newline ();;
+
+let main_loop ss = List.iter (fun se -> print_and_jit se) ss;
