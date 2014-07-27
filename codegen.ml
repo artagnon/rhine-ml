@@ -13,11 +13,13 @@ let void_type = void_type context
 
 let int_of_bool = function true -> 1 | false -> 0
 
-let extract_args s = match s with
+let rec extract_args s = match s with
     Ast.DottedPair(s1, s2) ->
-    (match (s1, s2) with
-       (Ast.Atom n, Ast.DottedPair(Ast.Atom m, Ast.Atom(Ast.Nil))) -> (n, m)
-     | _ -> raise (Error "Expected two atoms"))
+    begin match (s1, s2) with
+            (Ast.Atom m, Ast.DottedPair(_, _)) -> m::(extract_args s2)
+          | (Ast.Atom m, Ast.Atom(Ast.Nil)) -> [m]
+          | _ -> raise (Error "Malformed sexp")
+    end
   | _ -> raise (Error "Expected sexp")
 
 let codegen_atom = function
@@ -28,8 +30,8 @@ let codegen_atom = function
   | Ast.Symbol n -> raise (Error "Can't codegen_atom a symbol")
 
 let codegen_operator op s2 =
-  let lhs_val = codegen_atom (fst (extract_args s2)) in
-  let rhs_val = codegen_atom (snd (extract_args s2)) in
+  let lhs_val = codegen_atom (List.nth (extract_args s2) 0) in
+  let rhs_val = codegen_atom (List.nth (extract_args s2) 1) in
   match op with
     "+" -> build_add lhs_val rhs_val "addtmp" builder
   | "-" -> build_sub lhs_val rhs_val "subtmp" builder
