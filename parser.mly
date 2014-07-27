@@ -4,6 +4,7 @@
 %token <int> INTEGER
 %token <float> DOUBLE
 %token <string> SYMBOL
+%token <string> STRING
 
 %start prog
 %type <Ast.prog> prog
@@ -20,6 +21,7 @@ atom:
  | FALSE { Bool(false) }
  | INTEGER { Int($1) }
  | DOUBLE { Double($1) }
+ | STRING { String($1) }
  | SYMBOL { Symbol($1) }
 
 sexpr:

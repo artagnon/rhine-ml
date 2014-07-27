@@ -3,6 +3,7 @@ type atom =
   | Int of int
   | Bool of bool
   | Double of float
+  | String of string
   | Nil
 
 type sexpr =

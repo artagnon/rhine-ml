@@ -6,6 +6,7 @@ let print_bool = function true -> print_string "true"
 (* pretty print atoms *)
 let ppatom p = match p with
     Symbol(s) -> print_string ("sym:" ^ s)
+  | String(s) -> print_string ("str:" ^ s)
   | Int(i) -> print_string "int:"; print_int i
   | Bool(i) -> print_string "bool:"; print_bool i
   | Double(d) -> print_string "dbl:"; print_float d
