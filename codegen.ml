@@ -1,17 +1,28 @@
 open Llvm
 
+module StringSet = Set.Make(String)
+
 exception Error of string
 
 let context = global_context ()
 let the_module = create_module context "Rhine JIT"
 let builder = builder context
 let named_values:(string, llvalue) Hashtbl.t = Hashtbl.create 10
+let i32_type = i32_type context
 let i64_type = i64_type context
 let i1_type = i1_type context
 let double_type = double_type context
 let void_type = void_type context
 
 let int_of_bool = function true -> 1 | false -> 0
+
+let arith_ops = List.fold_left (fun s k -> StringSet.add k s)
+                               StringSet.empty
+                               [ "+"; "-"; "*"; "/" ]
+
+let vector_ops = List.fold_left (fun s k -> StringSet.add k s)
+                                StringSet.empty
+                                [ "head"; "tail" ]
 
 let typeconvert_atom = function
     Ast.Int n -> Ast.Double (float_of_int n)
@@ -39,17 +50,22 @@ let rec extract_args s = match s with
     end
   | _ -> raise (Error "Expected sexp")
 
-and codegen_operator op s2 =
-  let lhs_val = List.nth (extract_args s2) 0 in
-  let rhs_val = List.nth (extract_args s2) 1 in
+and codegen_arith_op op args =
+  let lhs_val = List.nth args 0 in
+  let rhs_val = List.nth args 1 in
   match op with
     "+" -> build_add lhs_val rhs_val "addtmp" builder
   | "-" -> build_sub lhs_val rhs_val "subtmp" builder
   | "*" -> build_mul lhs_val rhs_val "multmp" builder
   | "/" -> build_fdiv lhs_val rhs_val "divtmp" builder
-  | "head" -> lhs_val
-  | "tail" -> const_vector (Array.of_list (List.tl (extract_args s2)))
-  | _ -> raise (Error "Unknown operator")
+  | _ -> raise (Error "Unknown arithmetic operator")
+
+and codegen_vector_op op args =
+  let vec = List.nth args 0 in
+  let idx0 = const_int i32_type 0 in
+  match op with
+    "head" -> build_extractelement vec idx0 "extracttmp" builder
+  | _ -> raise (Error "Unknown vector operator")
 
 and codegen_sexpr s = match s with
     Ast.Atom n -> codegen_atom n
@@ -57,7 +73,14 @@ and codegen_sexpr s = match s with
      begin match s1 with
              Ast.Atom a ->
              begin match a with
-                     Ast.Symbol s -> codegen_operator s s2
+                     Ast.Symbol s ->
+                     let args = extract_args s2 in
+                     if StringSet.mem s arith_ops then
+                       codegen_arith_op s args
+                     else if StringSet.mem s vector_ops then
+                       codegen_vector_op s args
+                     else
+                       raise (Error "Unknown operation")
                    | _ -> raise (Error "Expected function call")
              end
            | _ -> raise (Error "Sexpr parser broken!")
