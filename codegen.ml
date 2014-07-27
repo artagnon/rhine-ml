@@ -43,6 +43,7 @@ and codegen_operator op s2 =
     "+" -> build_add lhs_val rhs_val "addtmp" builder
   | "-" -> build_sub lhs_val rhs_val "subtmp" builder
   | "*" -> build_mul lhs_val rhs_val "multmp" builder
+  | "/" -> build_fdiv lhs_val rhs_val "divtmp" builder
   | _ -> raise (Error "Unknown operator")
 
 and codegen_sexpr s = match s with
