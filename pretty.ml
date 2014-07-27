@@ -26,9 +26,9 @@ let rec ppsexpr p islist = match p with
                                               ppatom a;
                                               print_string " )"
                              |_ -> ppsexpr se2 true)
-  | QMembers(qs) -> print_string "[ ";
-                    List.iter (fun i -> ppsexpr i false;
-                                        print_char ' ') qs;
+  | Vector(qs) -> print_string "[ ";
+                    Array.iter (fun i -> ppsexpr i false;
+                                         print_char ' ') qs;
                     print_char ']'
 (* pretty print the program *)
 let pprint p = match p with

@@ -32,7 +32,7 @@ sexpr:
    }
 
 qsexpr:
-   LSQBR sexprs RSQBR { QMembers($2) }
+   LSQBR sexprs RSQBR { Vector(Array.of_list $2) }
 
 sexprs:
    sexpr sexprs { $1::$2 }
