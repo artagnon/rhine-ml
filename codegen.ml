@@ -59,6 +59,8 @@ and codegen_sexpr s = match s with
              end
            | _ -> raise (Error "Sexpr parser broken!")
      end
+  | Ast.QMembers(qs) ->
+     const_vector (Array.of_list (List.map (fun se -> codegen_sexpr se) qs))
 
 let codegen_proto = function
   | Ast.Prototype (name, args) ->
