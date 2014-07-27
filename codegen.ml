@@ -71,14 +71,15 @@ and extract_vec s = match s with
   | _ -> raise (Error "Expected sexp")
 
 and codegen_arith_op op args =
-  let lhs_val = List.nth args 0 in
-  let rhs_val = List.nth args 1 in
-  match op with
-    "+" -> build_add lhs_val rhs_val "addtmp" builder
-  | "-" -> build_sub lhs_val rhs_val "subtmp" builder
-  | "*" -> build_mul lhs_val rhs_val "multmp" builder
-  | "/" -> build_fdiv lhs_val rhs_val "divtmp" builder
-  | _ -> raise (Error "Unknown arithmetic operator")
+  let hd = List.hd args in
+  let tl = List.tl args in
+  if tl == [] then hd else
+    match op with
+      "+" -> build_add hd (codegen_arith_op op tl) "addtmp" builder
+    | "-" -> build_sub hd (codegen_arith_op op tl) "subtmp" builder
+    | "*" -> build_mul hd (codegen_arith_op op tl) "multmp" builder
+    | "/" -> build_fdiv hd (codegen_arith_op op tl) "divtmp" builder
+    | _ -> raise (Error "Unknown arithmetic operator")
 
 and codegen_vector_op op vec =
   let llvec = codegen_vector vec in
