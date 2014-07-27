@@ -45,7 +45,8 @@ let codegen_atom = function
   | Ast.Bool n -> const_int i1_type (int_of_bool n)
   | Ast.Double n -> const_float double_type n
   | Ast.Nil -> const_null i1_type
-  | Ast.Symbol n -> raise (Error "Can't codegen_atom a symbol")
+  | Ast.Symbol n -> (try Hashtbl.find named_values n with
+                       Not_found -> raise (Error "Symbol not bound"))
 
 let rec extract_args s = match s with
     Ast.DottedPair(s1, s2) ->
@@ -112,9 +113,8 @@ and codegen_vector qs = const_vector (Array.map (fun se -> codegen_sexpr se) qs)
 
 let codegen_proto = function
   | Ast.Prototype (name, args) ->
-      (* Make the function type: double(double,double) etc. *)
-      let doubles = Array.make (Array.length args) double_type in
-      let ft = function_type double_type doubles in
+      let ints = Array.make (Array.length args) i64_type in
+      let ft = function_type i64_type ints in
       let f =
         match lookup_function name the_module with
         | None -> declare_function name ft the_module
