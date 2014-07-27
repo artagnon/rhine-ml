@@ -12,6 +12,7 @@
 %type <Ast.sexpr> sexpr
 
 %%
+
 prog:
     sexprs EOF { Prog($1) }
 

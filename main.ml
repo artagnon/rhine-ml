@@ -1,6 +1,7 @@
 open Ast
 type action = Pprint | Normal
 
+
 let _ =
   let action = 
     if Array.length Sys.argv > 1 then

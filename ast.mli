@@ -4,6 +4,7 @@ type atom =
   | Bool of bool
   | Double of float
   | String of string
+  | Pointer of string ref
   | Nil
 
 type sexpr =

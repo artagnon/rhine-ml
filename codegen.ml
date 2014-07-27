@@ -14,6 +14,8 @@ let i1_type = i1_type context
 let double_type = double_type context
 let void_type = void_type context
 
+let stringpointer = pointer_type (array_type i64_type 100)
+
 let int_of_bool = function true -> 1 | false -> 0
 
 let (--) i j =
@@ -45,6 +47,7 @@ let codegen_atom = function
   | Ast.Bool n -> const_int i1_type (int_of_bool n)
   | Ast.Double n -> const_float double_type n
   | Ast.Nil -> const_null i1_type
+  | Ast.String n -> const_string context n
   | Ast.Symbol n -> raise (Error "Can't codegen_atom a symbol")
 
 let rec extract_args s = match s with
