@@ -32,6 +32,9 @@ let rec extract_args s = match s with
           | (Ast.DottedPair(_, _), Ast.DottedPair(_, _)) ->
              (codegen_sexpr s1)::(extract_args s2)
           | (Ast.DottedPair(_, _), Ast.Atom(Ast.Nil)) -> [codegen_sexpr s1]
+          | (Ast.Vector(qs), Ast.DottedPair(_, _)) ->
+             (codegen_vector qs)::(extract_args s2)
+          | (Ast.Vector(qs), Ast.Atom(Ast.Nil)) -> [codegen_vector qs]
           | _ -> raise (Error "Malformed sexp")
     end
   | _ -> raise (Error "Expected sexp")
@@ -59,8 +62,9 @@ and codegen_sexpr s = match s with
              end
            | _ -> raise (Error "Sexpr parser broken!")
      end
-  | Ast.Vector(qs) ->
-     const_vector (Array.map (fun se -> codegen_sexpr se) qs)
+  | Ast.Vector(qs) -> codegen_vector qs
+
+and codegen_vector qs = const_vector (Array.map (fun se -> codegen_sexpr se) qs)
 
 let codegen_proto = function
   | Ast.Prototype (name, args) ->
