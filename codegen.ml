@@ -8,6 +8,7 @@ let context = global_context ()
 let the_module = create_module context "Rhine JIT"
 let builder = builder context
 let named_values:(string, llvalue) Hashtbl.t = Hashtbl.create 10
+let i8_type = i8_type context
 let i32_type = i32_type context
 let i64_type = i64_type context
 let i1_type = i1_type context
@@ -33,7 +34,7 @@ let vector_ops = List.fold_left (fun s k -> StringSet.add k s)
 
 let string_ops = List.fold_left (fun s k -> StringSet.add k s)
                                 StringSet.empty
-                                [ "str-split" ]
+                                [ "str-split"; "str-join" ]
 
 let undef_vec len =
   let undef_list = List.map (fun i -> undef i64_type) (0--(len - 1)) in
@@ -42,9 +43,6 @@ let undef_vec len =
 let mask_vec len =
   let mask_list = List.map (fun i -> const_int i32_type i) (1--(len - 1)) in
   const_vector (Array.of_list mask_list)
-
-let typeconvert_atom = function
-    Ast.Int n -> Ast.Double (float_of_int n)
 
 let codegen_atom = function
     Ast.Int n -> const_int i64_type n
@@ -101,6 +99,14 @@ and codegen_string_op op s2 =
                                          str i "extracttmp" builder)
                              (0--(len - 1))
                    in const_vector (Array.of_list l)
+  | "str-join" -> let vec = List.hd s2 in
+                  let len = vector_size (type_of vec) in
+                  let idx i = const_int i32_type i in
+                  let l = List.map
+                            (fun i -> build_extractelement
+                                        vec (idx i) "extracttmp" builder)
+                            (0--(len - 1)) in
+                  const_array i8_type (Array.of_list l)
   | _ -> raise (Error "Unknown string operator")
 
 and codegen_sexpr s = match s with
