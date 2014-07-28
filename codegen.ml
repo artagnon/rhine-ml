@@ -31,6 +31,10 @@ let vector_ops = List.fold_left (fun s k -> StringSet.add k s)
                                 StringSet.empty
                                 [ "head"; "tail" ]
 
+let string_ops = List.fold_left (fun s k -> StringSet.add k s)
+                                StringSet.empty
+                                [ "str-split" ]
+
 let undef_vec len =
   let undef_list = List.map (fun i -> undef i64_type) (0--(len - 1)) in
   const_vector (Array.of_list undef_list)
@@ -47,7 +51,7 @@ let codegen_atom = function
   | Ast.Bool n -> const_int i1_type (int_of_bool n)
   | Ast.Double n -> const_float double_type n
   | Ast.Nil -> const_null i1_type
-  | Ast.String n -> const_string context n
+  | Ast.String s -> const_string context s
   | Ast.Symbol n -> (try Hashtbl.find named_values n with
                        Not_found -> raise (Error "Symbol not bound"))
 
@@ -70,7 +74,15 @@ let rec extract_args s = match s with
 and extract_vec s = match s with
     Ast.DottedPair(s1, s2) ->
     begin match (s1, s2) with
-          | (Ast.Vector(qs), Ast.Atom(Ast.Nil)) -> qs
+            (Ast.Vector(qs), Ast.Atom(Ast.Nil)) -> qs
+    end
+  | _ -> raise (Error "Expected sexp")
+
+and extract_string s = match s with
+    Ast.DottedPair(s1, s2) ->
+    begin match (s1, s2) with
+            (Ast.Atom(Ast.String(qs)), Ast.Atom(Ast.Nil)) -> qs
+          | _ -> raise (Error "Expected string")
     end
   | _ -> raise (Error "Expected sexp")
 
@@ -95,6 +107,19 @@ and codegen_vector_op op vec =
                                   (mask_vec len) "shuffletmp" builder
   | _ -> raise (Error "Unknown vector operator")
 
+and codegen_string_op op s2 =
+  let str = extract_string s2 in
+  let len = String.length str in
+  let llstr = const_string context str in
+  let idx0 = const_int i32_type 0 in
+  match op with
+    "str-split" -> let l = List.map
+                             (fun i -> build_extractvalue
+                                         llstr i "extracttmp" builder)
+                             (0--(len - 1))
+                   in const_vector (Array.of_list l)
+  | _ -> raise (Error "Unknown string operator")
+
 and codegen_sexpr s = match s with
     Ast.Atom n -> codegen_atom n
   | Ast.DottedPair(s1, s2) ->
@@ -106,6 +131,8 @@ and codegen_sexpr s = match s with
              else if StringSet.mem s vector_ops then
                let vec = extract_vec s2 in
                codegen_vector_op s vec
+             else if StringSet.mem s string_ops then
+               codegen_string_op s s2
              else
                raise (Error "Unknown operation")
            | _ -> raise (Error "Expected function call")
