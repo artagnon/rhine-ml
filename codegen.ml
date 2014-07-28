@@ -111,7 +111,6 @@ and codegen_string_op op s2 =
   let str = extract_string s2 in
   let len = String.length str in
   let llstr = const_string context str in
-  let idx0 = const_int i32_type 0 in
   match op with
     "str-split" -> let l = List.map
                              (fun i -> build_extractvalue
