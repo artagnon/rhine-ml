@@ -20,7 +20,7 @@ rule token = parse
  | digit+ as s { INTEGER(int_of_string s) }
  | digit* '.' digit+  as s { DOUBLE(float_of_string s) }
  | symbol_characters+ as s { SYMBOL(s) }
- | '"' { let b = Buffer.create 1024 in Buffer.add_char b '"'; read_string b lexbuf }
+ | '"' { let b = Buffer.create 1024 in read_string b lexbuf }
  | eof { EOF }
 
 and comment = parse
@@ -29,5 +29,5 @@ and comment = parse
 
 and read_string b = parse
  "\\\"" { Buffer.add_string b (Lexing.lexeme lexbuf); read_string b lexbuf }
- | '"' { Buffer.add_char b '"'; STRING(Buffer.contents b) }
+ | '"' { STRING(Buffer.contents b) }
  | [^'"'] { Buffer.add_string b (Lexing.lexeme lexbuf); read_string b lexbuf }
