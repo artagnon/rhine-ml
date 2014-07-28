@@ -71,14 +71,6 @@ let rec extract_args s = match s with
     end
   | _ -> raise (Error "Expected sexp")
 
-and extract_string s = match s with
-    Ast.DottedPair(s1, s2) ->
-    begin match (s1, s2) with
-            (Ast.Atom(Ast.String(qs)), Ast.Atom(Ast.Nil)) -> qs
-          | _ -> raise (Error "Expected string")
-    end
-  | _ -> raise (Error "Expected sexp")
-
 and codegen_arith_op op args =
   let hd = List.hd args in
   let tl = List.tl args in
@@ -102,12 +94,11 @@ and codegen_vector_op op args =
 
 and codegen_string_op op s2 =
   match op with
-    "str-split" -> let str = extract_string s2 in
-                   let len = String.length str in
-                   let llstr = const_string context str in
+    "str-split" -> let str = List.hd s2 in
+                   let len = array_length (type_of str) in
                    let l = List.map
                              (fun i -> build_extractvalue
-                                         llstr i "extracttmp" builder)
+                                         str i "extracttmp" builder)
                              (0--(len - 1))
                    in const_vector (Array.of_list l)
   | _ -> raise (Error "Unknown string operator")
@@ -117,14 +108,13 @@ and codegen_sexpr s = match s with
   | Ast.DottedPair(s1, s2) ->
      begin match s1 with
              Ast.Atom(Ast.Symbol s) ->
+             let args = extract_args s2 in
              if StringSet.mem s arith_ops then
-               let args = extract_args s2 in
                codegen_arith_op s args
              else if StringSet.mem s vector_ops then
-               let args = extract_args s2 in
                codegen_vector_op s args
              else if StringSet.mem s string_ops then
-               codegen_string_op s s2
+               codegen_string_op s args
              else
                raise (Error "Unknown operation")
            | _ -> raise (Error "Expected function call")
