@@ -71,13 +71,6 @@ let rec extract_args s = match s with
     end
   | _ -> raise (Error "Expected sexp")
 
-and extract_vec s = match s with
-    Ast.DottedPair(s1, s2) ->
-    begin match (s1, s2) with
-            (Ast.Vector(qs), Ast.Atom(Ast.Nil)) -> qs
-    end
-  | _ -> raise (Error "Expected sexp")
-
 and extract_string s = match s with
     Ast.DottedPair(s1, s2) ->
     begin match (s1, s2) with
@@ -97,22 +90,22 @@ and codegen_arith_op op args =
     | "/" -> build_fdiv hd (codegen_arith_op op tl) "divtmp" builder
     | _ -> raise (Error "Unknown arithmetic operator")
 
-and codegen_vector_op op vec =
-  let llvec = codegen_vector vec in
-  let len = Array.length vec in
+and codegen_vector_op op args =
+  let vec = List.hd args in
+  let len = vector_size (type_of vec) in
   let idx0 = const_int i32_type 0 in
   match op with
-    "head" -> build_extractelement llvec idx0 "extracttmp" builder
-  | "tail" -> build_shufflevector llvec (undef_vec len)
+    "head" -> build_extractelement vec idx0 "extracttmp" builder
+  | "tail" -> build_shufflevector vec (undef_vec len)
                                   (mask_vec len) "shuffletmp" builder
   | _ -> raise (Error "Unknown vector operator")
 
 and codegen_string_op op s2 =
-  let str = extract_string s2 in
-  let len = String.length str in
-  let llstr = const_string context str in
   match op with
-    "str-split" -> let l = List.map
+    "str-split" -> let str = extract_string s2 in
+                   let len = String.length str in
+                   let llstr = const_string context str in
+                   let l = List.map
                              (fun i -> build_extractvalue
                                          llstr i "extracttmp" builder)
                              (0--(len - 1))
@@ -128,8 +121,8 @@ and codegen_sexpr s = match s with
                let args = extract_args s2 in
                codegen_arith_op s args
              else if StringSet.mem s vector_ops then
-               let vec = extract_vec s2 in
-               codegen_vector_op s vec
+               let args = extract_args s2 in
+               codegen_vector_op s args
              else if StringSet.mem s string_ops then
                codegen_string_op s s2
              else
