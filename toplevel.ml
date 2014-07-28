@@ -41,7 +41,7 @@ let define_globals =
   let llar = [| Codegen.i64_type;
                 array_type Codegen.i8_type 10;
                 vector_type Codegen.i64_type 10 |] in
-  let value_t = struct_type context llar in
+  let value_t = pointer_type (struct_type context llar) in
   declare_global value_t "value_t" the_module; ()
 
 let main_loop ss = define_globals;
