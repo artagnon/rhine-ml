@@ -37,4 +37,13 @@ let print_and_jit se =
   print_int (GenericValue.as_int result);
   print_newline ();;
 
-let main_loop ss = List.iter (fun se -> print_and_jit se) ss;
+let define_globals =
+  let llar = [| Codegen.i64_type;
+                array_type Codegen.i8_type 10;
+                vector_type Codegen.i64_type 10 |] in
+  let value_t = struct_type context llar in
+  declare_global value_t "value_t" the_module; ()
+
+let main_loop ss = define_globals;
+                   List.iter (fun se -> print_and_jit se) ss;
+                   dump_module the_module
