@@ -29,7 +29,7 @@ let arith_ops = List.fold_left (fun s k -> StringSet.add k s)
 
 let vector_ops = List.fold_left (fun s k -> StringSet.add k s)
                                 StringSet.empty
-                                [ "head"; "tail" ]
+                                [ "head"; "rest" ]
 
 let string_ops = List.fold_left (fun s k -> StringSet.add k s)
                                 StringSet.empty
@@ -96,7 +96,7 @@ and codegen_vector_op op args =
   let idx0 = const_int i32_type 0 in
   match op with
     "head" -> build_extractelement vec idx0 "extracttmp" builder
-  | "tail" -> build_shufflevector vec (undef_vec len)
+  | "rest" -> build_shufflevector vec (undef_vec len)
                                   (mask_vec len) "shuffletmp" builder
   | _ -> raise (Error "Unknown vector operator")
 
