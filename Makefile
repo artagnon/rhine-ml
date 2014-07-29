@@ -17,8 +17,8 @@ toplevel.cmo: toplevel.ml
 clean :
 	rm -f rhine parser.ml parser.mli lexer.ml *.cmo *.cmi *.cmx
 
-codegen.cmo : pretty.cmo ast.cmi
-codegen.cmx : pretty.cmx ast.cmi
+codegen.cmo : ast.cmi
+codegen.cmx : ast.cmi
 lexer.cmo : parser.cmi
 lexer.cmx : parser.cmx
 main.cmo : toplevel.cmo pretty.cmo parser.cmi lexer.cmo ast.cmi
