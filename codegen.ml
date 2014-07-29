@@ -14,8 +14,7 @@ let i64_type = i64_type context
 let i1_type = i1_type context
 let double_type = double_type context
 let void_type = void_type context
-
-let stringpointer = pointer_type (array_type i64_type 100)
+let struct_type = struct_type context
 
 let int_of_bool = function true -> 1 | false -> 0
 
@@ -36,6 +35,17 @@ let string_ops = List.fold_left (fun s k -> StringSet.add k s)
                                 StringSet.empty
                                 [ "str-split"; "str-join" ]
 
+let box_value llval =
+  let value_t = match lookup_global "value_t" the_module with
+      Some t -> type_of t
+    | None -> raise (Error "Could not find global value_t") in
+  let value_ptr = build_alloca value_t "value" builder in
+  let idx0 = [| const_int i32_type 0 |] in
+  let dst = match type_of llval with
+      i64_type -> build_in_bounds_gep value_ptr idx0 "boxptrtmp" builder
+    | _ -> raise (Error "Don't know how to box type") in
+  build_store llval dst builder
+
 let undef_vec len =
   let undef_list = List.map (fun i -> undef i64_type) (0--(len - 1)) in
   const_vector (Array.of_list undef_list)
@@ -45,7 +55,7 @@ let mask_vec len =
   const_vector (Array.of_list mask_list)
 
 let codegen_atom = function
-    Ast.Int n -> const_int i64_type n
+    Ast.Int n -> box_value (const_int i64_type n)
   | Ast.Bool n -> const_int i1_type (int_of_bool n)
   | Ast.Double n -> const_float double_type n
   | Ast.Nil -> const_null i1_type
