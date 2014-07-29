@@ -6,13 +6,6 @@ exception Error of string
 
 let the_execution_engine = ExecutionEngine.create the_module
 
-let value_ptr =
-  let llar = [| i64_type;
-                array_type i8_type 10;
-                vector_type i64_type 10 |] in
-  let value_t = struct_type llar in
-  declare_global value_t "value_t" the_module
-
 let emit_anonymous_f s =
   codegen_func(Ast.Function(Ast.Prototype("", [||]), s))
 

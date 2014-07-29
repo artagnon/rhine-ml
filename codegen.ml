@@ -36,15 +36,16 @@ let string_ops = List.fold_left (fun s k -> StringSet.add k s)
                                 [ "str-split"; "str-join" ]
 
 let box_value llval =
-  let value_t = match lookup_global "value_t" the_module with
-      Some t -> type_of t
-    | None -> raise (Error "Could not find global value_t") in
+  let llar = [| i64_type;
+                array_type i8_type 10;
+                vector_type i64_type 10 |] in
+  let value_t = struct_type llar in
   let value_ptr = build_alloca value_t "value" builder in
-  let idx0 = [| const_int i32_type 0 |] in
+  let idx0 = [| const_int i32_type 0; const_int i32_type 0 |] in
   let dst = match type_of llval with
       i64_type -> build_in_bounds_gep value_ptr idx0 "boxptrtmp" builder
     | _ -> raise (Error "Don't know how to box type") in
-  build_store llval dst builder
+  build_store llval dst builder; value_ptr
 
 let undef_vec len =
   let undef_list = List.map (fun i -> undef i64_type) (0--(len - 1)) in
