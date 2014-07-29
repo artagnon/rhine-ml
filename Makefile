@@ -27,7 +27,7 @@ parser.cmo : ast.cmi parser.cmi
 parser.cmx : ast.cmi parser.cmi
 pretty.cmo : ast.cmi
 pretty.cmx : ast.cmi
-toplevel.cmo : codegen.cmi ast.cmi
+toplevel.cmo : codegen.cmo ast.cmi
 toplevel.cmx : codegen.cmx ast.cmx
 ast.cmi :
 parser.cmi : ast.cmi
