@@ -43,9 +43,14 @@ let box_value llval =
   let value_ptr = build_alloca value_t "value" builder in
   let idx0 = [| const_int i32_type 0; const_int i32_type 0 |] in
   let dst = match type_of llval with
-      i64_type -> build_in_bounds_gep value_ptr idx0 "boxptrtmp" builder
+      i64_type -> build_in_bounds_gep value_ptr idx0 "boxptr" builder
     | _ -> raise (Error "Don't know how to box type") in
   build_store llval dst builder; value_ptr
+
+let unbox_int llval =
+  let idx0 = [| const_int i32_type 0; const_int i32_type 0 |] in
+  let dst = build_in_bounds_gep llval idx0 "boxptr" builder in
+  build_load dst "load" builder
 
 let undef_vec len =
   let undef_list = List.map (fun i -> undef i64_type) (0--(len - 1)) in
@@ -85,10 +90,12 @@ and codegen_arith_op op args =
   let tl = List.tl args in
   if tl == [] then hd else
     match op with
-      "+" -> build_add hd (codegen_arith_op op tl) "addtmp" builder
-    | "-" -> build_sub hd (codegen_arith_op op tl) "subtmp" builder
-    | "*" -> build_mul hd (codegen_arith_op op tl) "multmp" builder
-    | "/" -> build_fdiv hd (codegen_arith_op op tl) "divtmp" builder
+      "+" -> build_add (unbox_int hd)
+                       (unbox_int (codegen_arith_op op tl))
+                       "add" builder
+    | "-" -> build_sub hd (codegen_arith_op op tl) "sub" builder
+    | "*" -> build_mul hd (codegen_arith_op op tl) "mul" builder
+    | "/" -> build_fdiv hd (codegen_arith_op op tl) "div" builder
     | _ -> raise (Error "Unknown arithmetic operator")
 
 and codegen_vector_op op args =
@@ -96,9 +103,9 @@ and codegen_vector_op op args =
   let len = vector_size (type_of vec) in
   let idx0 = const_int i32_type 0 in
   match op with
-    "head" -> build_extractelement vec idx0 "extracttmp" builder
+    "head" -> build_extractelement vec idx0 "extract" builder
   | "rest" -> build_shufflevector vec (undef_vec len)
-                                  (mask_vec len) "shuffletmp" builder
+                                  (mask_vec len) "shuffle" builder
   | _ -> raise (Error "Unknown vector operator")
 
 and codegen_string_op op s2 =
@@ -107,7 +114,7 @@ and codegen_string_op op s2 =
                    let len = array_length (type_of str) in
                    let l = List.map
                              (fun i -> build_extractvalue
-                                         str i "extracttmp" builder)
+                                         str i "extract" builder)
                              (0--(len - 1))
                    in const_vector (Array.of_list l)
   | "str-join" -> let vec = List.hd s2 in
@@ -115,7 +122,7 @@ and codegen_string_op op s2 =
                   let idx i = const_int i32_type i in
                   let l = List.map
                             (fun i -> build_extractelement
-                                        vec (idx i) "extracttmp" builder)
+                                        vec (idx i) "extract" builder)
                             (0--(len - 1)) in
                   const_array i8_type (Array.of_list l)
   | _ -> raise (Error "Unknown string operator")
