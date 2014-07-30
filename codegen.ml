@@ -186,7 +186,7 @@ let codegen_func = function
       position_at_end bb builder;
 
       try
-        let ret_val = codegen_sexpr body in
+        let ret_val = unbox_int (codegen_sexpr body) in
 
         (* Finish off the function. *)
         let _ = build_ret ret_val builder in
