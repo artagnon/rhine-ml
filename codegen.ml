@@ -60,14 +60,16 @@ let mask_vec len =
   let mask_list = List.map (fun i -> const_int i32_type i) (1--(len - 1)) in
   const_vector (Array.of_list mask_list)
 
-let codegen_atom = function
-    Ast.Int n -> box_value (const_int i64_type n)
-  | Ast.Bool n -> const_int i1_type (int_of_bool n)
-  | Ast.Double n -> const_float double_type n
-  | Ast.Nil -> const_null i1_type
-  | Ast.String s -> const_string context s
-  | Ast.Symbol n -> (try Hashtbl.find named_values n with
-                       Not_found -> raise (Error "Symbol not bound"))
+let codegen_atom atom =
+    let unboxed_value = match atom with
+        Ast.Int n -> const_int i64_type n
+      | Ast.Bool n -> const_int i1_type (int_of_bool n)
+      | Ast.Double n -> const_float double_type n
+      | Ast.Nil -> const_null i1_type
+      | Ast.String s -> const_string context s
+      | Ast.Symbol n -> try Hashtbl.find named_values n with
+                          Not_found -> raise (Error "Symbol not bound")
+    in box_value unboxed_value
 
 let rec extract_args s = match s with
     Ast.DottedPair(s1, s2) ->
