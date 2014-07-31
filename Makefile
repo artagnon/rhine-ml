@@ -1,7 +1,7 @@
 OBJS = parser.cmo lexer.cmo pretty.cmo codegen.cmo toplevel.cmo main.cmo
 
 rhine : $(OBJS)
-	ocamlfind ocamlc -package llvm -package llvm.executionengine -linkpkg $(OBJS) -o rhine
+	ocamlfind ocamlc -package llvm -package llvm.executionengine -package llvm.analysis -package llvm.target -package llvm.scalar_opts -linkpkg $(OBJS) -o rhine
 lexer.ml : lexer.mll
 	ocamllex lexer.mll
 parser.ml parser.mli : parser.mly
