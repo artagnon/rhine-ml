@@ -86,17 +86,17 @@ let rec extract_args s = match s with
   | _ -> raise (Error "Expected sexp")
 
 and codegen_arith_op op args =
-  let hd = List.hd args in
+  let hd = unbox_int (List.hd args) in
   let tl = List.tl args in
-  if tl == [] then hd else
-    match op with
-      "+" -> build_add (unbox_int hd)
-                       (unbox_int (codegen_arith_op op tl))
-                       "add" builder
-    | "-" -> build_sub hd (codegen_arith_op op tl) "sub" builder
-    | "*" -> build_mul hd (codegen_arith_op op tl) "mul" builder
-    | "/" -> build_fdiv hd (codegen_arith_op op tl) "div" builder
-    | _ -> raise (Error "Unknown arithmetic operator")
+  if tl == [] then box_value hd else
+    let unboxed_value = match op with
+        "+" -> build_add hd (unbox_int (codegen_arith_op op tl))
+                         "add" builder
+      | "-" -> build_sub hd (unbox_int (codegen_arith_op op tl)) "sub" builder
+      | "*" -> build_mul hd (unbox_int (codegen_arith_op op tl)) "mul" builder
+      | "/" -> build_fdiv hd (codegen_arith_op op tl) "div" builder
+      | _ -> raise (Error "Unknown arithmetic operator")
+    in box_value unboxed_value
 
 and codegen_vector_op op args =
   let vec = List.hd args in
