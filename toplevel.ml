@@ -9,6 +9,10 @@ exception Error of string
 let the_execution_engine = ExecutionEngine.create_interpreter the_module
 let the_fpm = PassManager.create_function the_module
 
+let value_t_elts = [| i64_type;
+                      array_type i8_type 10;
+                      vector_type i64_type 10 |]
+
 let emit_anonymous_f s =
   codegen_func(Ast.Function(Ast.Prototype("", [||]), s))
 
@@ -33,6 +37,10 @@ let sexpr_matcher sexpr = match sexpr with
   | _ -> emit_anonymous_f sexpr
 
 let print_and_jit se =
+  (* Declare global variables/ types *)
+  let llvalue_t = named_struct_type context "value_t" in
+  struct_set_body llvalue_t value_t_elts false;
+
   let f = sexpr_matcher se in
 
   (* Validate the generated code, checking for consistency. *)

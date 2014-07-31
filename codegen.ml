@@ -14,11 +14,6 @@ let i64_type = i64_type context
 let i1_type = i1_type context
 let double_type = double_type context
 let void_type = void_type context
-let struct_type = struct_type context
-
-let value_t = struct_type [| i64_type;
-                             array_type i8_type 10;
-                             vector_type i64_type 10 |]
 
 let int_of_bool = function true -> 1 | false -> 0
 
@@ -40,6 +35,10 @@ let string_ops = List.fold_left (fun s k -> StringSet.add k s)
                                 [ "str-split"; "str-join" ]
 
 let box_value llval =
+  let value_t = match type_by_name the_module "value_t" with
+      Some t -> t
+    | None -> raise (Error "Could not look up value_t")
+  in
   let value_ptr = build_alloca value_t "value" builder in
   let idx0 = [| const_int i32_type 0; const_int i32_type 0 |] in
   let dst = match type_of llval with
