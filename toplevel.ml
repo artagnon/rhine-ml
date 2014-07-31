@@ -42,10 +42,12 @@ let print_and_jit se =
   ignore (PassManager.run_function f the_fpm);
 
   dump_value f;
-  let result = ExecutionEngine.run_function f [||] the_execution_engine in
-  print_string "Evaluated to ";
-  print_int (GenericValue.as_int result);
-  print_newline ();;
+  if Array.length (params f) == 0 then (
+    let result = ExecutionEngine.run_function f [||] the_execution_engine in
+    print_string "Evaluated to ";
+    print_int (GenericValue.as_int result);
+    print_newline ()
+  )
 
 let main_loop ss =
   (* Do simple "peephole" optimizations and bit-twiddling optzn. *)
