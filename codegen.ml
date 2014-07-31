@@ -16,6 +16,10 @@ let double_type = double_type context
 let void_type = void_type context
 let struct_type = struct_type context
 
+let value_t = struct_type [| i64_type;
+                             array_type i8_type 10;
+                             vector_type i64_type 10 |]
+
 let int_of_bool = function true -> 1 | false -> 0
 
 let (--) i j =
@@ -36,10 +40,6 @@ let string_ops = List.fold_left (fun s k -> StringSet.add k s)
                                 [ "str-split"; "str-join" ]
 
 let box_value llval =
-  let llar = [| i64_type;
-                array_type i8_type 10;
-                vector_type i64_type 10 |] in
-  let value_t = struct_type llar in
   let value_ptr = build_alloca value_t "value" builder in
   let idx0 = [| const_int i32_type 0; const_int i32_type 0 |] in
   let dst = match type_of llval with
@@ -129,6 +129,17 @@ and codegen_string_op op s2 =
                   const_array i8_type (Array.of_list l)
   | _ -> raise (Error "Unknown string operator")
 
+and codegen_call_op f args =
+  let callee =
+    match lookup_function f the_module with
+    | Some callee -> callee
+    | None -> raise (Error "Unknown function referenced")
+  in
+  if Array.length (params callee) != List.length args then
+    raise (Error "Incorrect # arguments passed");
+  let args = Array.of_list (List.map unbox_int args) in
+  box_value (build_call callee args "call" builder)
+
 and codegen_sexpr s = match s with
     Ast.Atom n -> codegen_atom n
   | Ast.DottedPair(s1, s2) ->
@@ -142,7 +153,7 @@ and codegen_sexpr s = match s with
              else if StringSet.mem s string_ops then
                codegen_string_op s args
              else
-               raise (Error "Unknown operation")
+               codegen_call_op s args
            | _ -> raise (Error "Expected function call")
      end
   | Ast.Vector(qs) -> codegen_vector qs
