@@ -45,7 +45,7 @@ let box_value llval =
   let dst = match type_of llval with
       i64_type -> build_in_bounds_gep value_ptr idx0 "boxptr" builder
     | _ -> raise (Error "Don't know how to box type") in
-  build_store llval dst builder; value_ptr
+  ignore (build_store llval dst builder); value_ptr
 
 let unbox_int llval =
   let idx0 = [| const_int i32_type 0; const_int i32_type 0 |] in
