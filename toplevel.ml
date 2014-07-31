@@ -6,7 +6,8 @@ open Codegen
 
 exception Error of string
 
-let the_execution_engine = ExecutionEngine.create_interpreter the_module
+let _ = initialize_native_target ()
+let the_execution_engine = ExecutionEngine.create_jit the_module 1
 let the_fpm = PassManager.create_function the_module
 
 let emit_anonymous_f s =

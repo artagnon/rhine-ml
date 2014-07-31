@@ -137,7 +137,7 @@ and codegen_call_op f args =
   if Array.length (params callee) != List.length args then
     raise (Error "Incorrect # arguments passed");
   let args = Array.of_list (List.map unbox_int args) in
-  box_value (build_call callee args "call" builder)
+  build_call callee args "call" builder
 
 and codegen_sexpr s = match s with
     Ast.Atom n -> codegen_atom n
@@ -159,34 +159,43 @@ and codegen_sexpr s = match s with
 
 and codegen_vector qs = const_vector (Array.map (fun se -> codegen_sexpr se) qs)
 
-let codegen_proto = function
-  | Ast.Prototype (name, args) ->
-      let ints = Array.make (Array.length args) i64_type in
-      let ft = function_type i64_type ints in
-      let f =
-        match lookup_function name the_module with
-        | None -> declare_function name ft the_module
+let codegen_proto p =
+  let value_t = match type_by_name the_module "value_t" with
+      Some t -> t
+    | None -> raise (Error "Could not look up value_t")
+  in
+  match p with
+    Ast.Prototype (name, args) ->
+    let args_len = Array.length args in
+    let ints = Array.make args_len i64_type in
+    let ft = if args_len == 0 then
+               function_type i64_type ints
+             else
+               function_type (pointer_type value_t) ints in
+    let f =
+      match lookup_function name the_module with
+        None -> declare_function name ft the_module
 
-        (* If 'f' conflicted, there was already something named 'name'. If it
-         * has a body, don't allow redefinition or reextern. *)
-        | Some f ->
-            (* If 'f' already has a body, reject this. *)
-            if block_begin f <> At_end f then
-              raise (Error "redefinition of function");
+      (* If 'f' conflicted, there was already something named 'name'. If it
+       * has a body, don't allow redefinition or reextern. *)
+      | Some f ->
+         (* If 'f' already has a body, reject this. *)
+         if block_begin f <> At_end f then
+           raise (Error "redefinition of function");
 
-            (* If 'f' took a different number of arguments, reject. *)
-            if element_type (type_of f) <> ft then
-              raise (Error "redefinition of function with different # args");
-            f
-      in
+         (* If 'f' took a different number of arguments, reject. *)
+         if element_type (type_of f) <> ft then
+           raise (Error "redefinition of function with different # args");
+         f
+    in
 
-      (* Set names for all arguments. *)
-      Array.iteri (fun i a ->
-        let n = args.(i) in
-        set_value_name n a;
-        Hashtbl.add named_values n a;
-      ) (params f);
-      f
+    (* Set names for all arguments. *)
+    Array.iteri (fun i a ->
+                 let n = args.(i) in
+                 set_value_name n a;
+                 Hashtbl.add named_values n a;
+                ) (params f);
+    f
 
 let codegen_func = function
   | Ast.Function (proto, body) ->
@@ -198,7 +207,11 @@ let codegen_func = function
       position_at_end bb builder;
 
       try
-        let ret_val = unbox_int (codegen_sexpr body) in
+        let ret_val =
+          if Array.length (params the_function) == 0 then
+            unbox_int (codegen_sexpr body)
+          else
+            codegen_sexpr body in
 
         (* Finish off the function. *)
         let _ = build_ret ret_val builder in

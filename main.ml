@@ -1,8 +1,7 @@
 open Ast
 type action = Pprint | Normal
 
-
-let _ =
+let main () =
   let action = 
     if Array.length Sys.argv > 1 then
       try
@@ -15,6 +14,8 @@ let _ =
   let prog = Parser.prog Lexer.token lexbuf in
   match action with
     Normal -> (match prog with
-                Prog(ss) -> Toplevel.main_loop ss)
+                 Prog(ss) -> Toplevel.main_loop ss)
   | Pprint -> Pretty.pprint prog
+;;
 
+main ()
