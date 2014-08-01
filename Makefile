@@ -1,5 +1,5 @@
 OBJS = parser.cmo lexer.cmo pretty.cmo codegen.cmo toplevel.cmo main.cmo
-ocamlc = ocamlc -w @5@8@10@11@12@14@23@24@26@29@40
+ocamlc = ocamlc -g -w @5@8@10@11@12@14@23@24@26@29@40
 
 rhine : $(OBJS)
 	ocamlfind $(ocamlc) -package llvm -package llvm.executionengine -package llvm.analysis -package llvm.target -package llvm.scalar_opts -linkpkg $(OBJS) -o rhine
