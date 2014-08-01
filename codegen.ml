@@ -194,7 +194,13 @@ and codegen_sexpr s = match s with
      end
   | Ast.Vector(qs) -> codegen_vector qs
 
-and codegen_vector qs = const_vector (Array.map (fun se -> codegen_sexpr se) qs)
+and codegen_vector qs =
+  let value_t = match type_by_name the_module "value_t" with
+      Some t -> t
+    | None -> raise (Error "Could not look up value_t") in
+  let unboxed_value = const_array (pointer_type value_t)
+                                  (Array.map codegen_sexpr qs) in
+  box_value unboxed_value
 
 let codegen_proto p =
   let value_t = match type_by_name the_module "value_t" with

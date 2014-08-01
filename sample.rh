@@ -1,2 +1,1 @@
-(defn foo [a b] (+ a b))
-(foo 3 4)
+(defn foo [a] [1 2 3])
