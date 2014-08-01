@@ -45,20 +45,23 @@ let box_value llval =
   in
   let value_ptr = build_alloca value_t "value" builder in
   let idx n = [| const_int i32_type 0; const_int i32_type n |] in
+  let match_composite ty = match classify_type ty with
+      TypeKind.Vector ->
+      let size = vector_size (type_of llval) in
+      let ptr = build_in_bounds_gep value_ptr (idx 3) "boxptr" builder in
+      let vec_ptr = build_in_bounds_gep ptr [| const_int i32_type 0 |]
+                                        "vecptr" builder in
+      let new_vec = build_alloca (vector_type i64_type size) "vec" builder in
+      let new_vec_ptr = build_in_bounds_gep new_vec (idx 0) "vecptr" builder in
+      ignore (build_store new_vec_ptr vec_ptr builder);
+      build_bitcast ptr (pointer_type (vector_type i64_type size)) "dst" builder
+    | _ -> raise (Error "Don't know how to box type") in
   let dst = match type_of llval with
       ty when ty = i64_type ->
       build_in_bounds_gep value_ptr (idx 0) "boxptr" builder;
     | ty when ty = i1_type ->
        build_in_bounds_gep value_ptr (idx 1) "boxptr" builder;
-    | ty -> (match classify_type ty with
-               TypeKind.Vector ->
-               let size = vector_size (type_of llval) in
-               let ptr = build_in_bounds_gep value_ptr (idx 3)
-                                             "boxptr" builder in
-               let new_vec = build_alloca (vector_type i64_type size)
-                                          "vec" builder in
-               ignore (build_store new_vec vec_ptr builder); vec_ptr
-             | _ -> raise (Error "Don't know how to box type"))
+    | ty -> match_composite ty
   in ignore (build_store llval dst builder); value_ptr
 
 let unbox_int llval =
