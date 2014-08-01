@@ -34,6 +34,10 @@ let string_ops = List.fold_left (fun s k -> StringSet.add k s)
                                 StringSet.empty
                                 [ "str-split"; "str-join" ]
 
+let cf_ops = List.fold_left (fun s k -> StringSet.add k s)
+                            StringSet.empty
+                            [ "if"; "dotimes" ]
+
 let box_value llval =
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
@@ -128,6 +132,29 @@ and codegen_string_op op s2 =
                   const_array i8_type (Array.of_list l)
   | _ -> raise (Error "Unknown string operator")
 
+and codegen_cf_op op s2 =
+  let cond_val = List.hd s2 in
+  let true_val = List.hd (List.tl s2) in
+  let false_val = List.hd (List.tl (List.tl s2)) in
+  let start_bb = insertion_block builder in
+  let the_function = block_parent start_bb in
+  let truebb = append_block context "then" the_function in
+  position_at_end truebb builder;
+  let new_truebb = insertion_block builder in
+  let falsebb = append_block context "else" the_function in
+  position_at_end falsebb builder;
+  let new_falsebb = insertion_block builder in
+  let mergebb = append_block context "ifcont" the_function in
+  position_at_end mergebb builder;
+  let incoming = [(true_val, new_truebb); (false_val, new_falsebb)] in
+  let phi = build_phi incoming "iftmp" builder in
+  position_at_end start_bb builder;
+  ignore (build_cond_br cond_val truebb falsebb builder);
+  position_at_end new_truebb builder; ignore (build_br mergebb builder);
+  position_at_end new_falsebb builder; ignore (build_br mergebb builder);
+  position_at_end mergebb builder;
+  box_value phi
+
 and codegen_call_op f args =
   let callee =
     match lookup_function f the_module with
@@ -151,6 +178,8 @@ and codegen_sexpr s = match s with
                codegen_vector_op s args
              else if StringSet.mem s string_ops then
                codegen_string_op s args
+             else if StringSet.mem s cf_ops then
+               codegen_cf_op s args
              else
                codegen_call_op s args
            | _ -> raise (Error "Expected function call")
