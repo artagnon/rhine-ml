@@ -44,14 +44,22 @@ let box_value llval =
     | None -> raise (Error "Could not look up value_t")
   in
   let value_ptr = build_alloca value_t "value" builder in
-  let idx0 = [| const_int i32_type 0; const_int i32_type 0 |] in
+  let idx n = [| const_int i32_type 0; const_int i32_type n |] in
   let dst = match type_of llval with
-      i64_type -> build_in_bounds_gep value_ptr idx0 "boxptr" builder
+      ty when ty = i64_type ->
+      build_in_bounds_gep value_ptr (idx 0) "boxptr" builder
+    | ty when ty = i1_type ->
+       build_in_bounds_gep value_ptr (idx 1) "boxptr" builder
     | _ -> raise (Error "Don't know how to box type") in
   ignore (build_store llval dst builder); value_ptr
 
 let unbox_int llval =
   let idx0 = [| const_int i32_type 0; const_int i32_type 0 |] in
+  let dst = build_in_bounds_gep llval idx0 "boxptr" builder in
+  build_load dst "load" builder
+
+let unbox_bool llval =
+  let idx0 = [| const_int i32_type 0; const_int i32_type 1 |] in
   let dst = build_in_bounds_gep llval idx0 "boxptr" builder in
   build_load dst "load" builder
 
@@ -64,15 +72,15 @@ let mask_vec len =
   const_vector (Array.of_list mask_list)
 
 let codegen_atom atom =
-    let unboxed_value = match atom with
-        Ast.Int n -> const_int i64_type n
-      | Ast.Bool n -> const_int i1_type (int_of_bool n)
-      | Ast.Double n -> const_float double_type n
-      | Ast.Nil -> const_null i1_type
-      | Ast.String s -> const_string context s
-      | Ast.Symbol n -> try Hashtbl.find named_values n with
-                          Not_found -> raise (Error "Symbol not bound")
-    in box_value unboxed_value
+  let unboxed_value = match atom with
+      Ast.Int n -> const_int i64_type n
+    | Ast.Bool n -> const_int i1_type (int_of_bool n)
+    | Ast.Double n -> const_float double_type n
+    | Ast.Nil -> const_null i1_type
+    | Ast.String s -> const_string context s
+    | Ast.Symbol n -> try Hashtbl.find named_values n with
+                        Not_found -> raise (Error "Symbol not bound")
+  in box_value unboxed_value
 
 let rec extract_args s = match s with
     Ast.DottedPair(s1, s2) ->
