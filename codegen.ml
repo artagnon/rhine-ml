@@ -141,7 +141,7 @@ and codegen_string_op op s2 =
   | _ -> raise (Error "Unknown string operator")
 
 and codegen_cf_op op s2 =
-  let cond_val = List.hd s2 in
+  let cond_val = unbox_bool (List.hd s2) in
   let true_val = List.hd (List.tl s2) in
   let false_val = List.hd (List.tl (List.tl s2)) in
   let start_bb = insertion_block builder in
@@ -161,7 +161,7 @@ and codegen_cf_op op s2 =
   position_at_end new_truebb builder; ignore (build_br mergebb builder);
   position_at_end new_falsebb builder; ignore (build_br mergebb builder);
   position_at_end mergebb builder;
-  box_value phi
+  phi
 
 and codegen_call_op f args =
   let callee =
