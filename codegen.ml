@@ -47,11 +47,19 @@ let box_value llval =
   let idx n = [| const_int i32_type 0; const_int i32_type n |] in
   let dst = match type_of llval with
       ty when ty = i64_type ->
-      build_in_bounds_gep value_ptr (idx 0) "boxptr" builder
+      build_in_bounds_gep value_ptr (idx 0) "boxptr" builder;
     | ty when ty = i1_type ->
-       build_in_bounds_gep value_ptr (idx 1) "boxptr" builder
-    | _ -> raise (Error "Don't know how to box type") in
-  ignore (build_store llval dst builder); value_ptr
+       build_in_bounds_gep value_ptr (idx 1) "boxptr" builder;
+    | ty -> (match classify_type ty with
+               TypeKind.Vector ->
+               let size = vector_size (type_of llval) in
+               let ptr = build_in_bounds_gep value_ptr (idx 3)
+                                             "boxptr" builder in
+               let new_vec = build_alloca (vector_type i64_type size)
+                                          "vec" builder in
+               ignore (build_store new_vec vec_ptr builder); vec_ptr
+             | _ -> raise (Error "Don't know how to box type"))
+  in ignore (build_store llval dst builder); value_ptr
 
 let unbox_int llval =
   let idx0 = [| const_int i32_type 0; const_int i32_type 0 |] in
@@ -60,6 +68,11 @@ let unbox_int llval =
 
 let unbox_bool llval =
   let idx0 = [| const_int i32_type 0; const_int i32_type 1 |] in
+  let dst = build_in_bounds_gep llval idx0 "boxptr" builder in
+  build_load dst "load" builder
+
+let unbox_vec llval =
+  let idx0 = [| const_int i32_type 0; const_int i32_type 3 |] in
   let dst = build_in_bounds_gep llval idx0 "boxptr" builder in
   build_load dst "load" builder
 
@@ -112,14 +125,15 @@ and codegen_arith_op op args =
     in box_value unboxed_value
 
 and codegen_vector_op op args =
-  let vec = List.hd args in
+  let vec = unbox_vec (List.hd args) in
   let len = vector_size (type_of vec) in
   let idx0 = const_int i32_type 0 in
-  match op with
-    "head" -> build_extractelement vec idx0 "extract" builder
-  | "rest" -> build_shufflevector vec (undef_vec len)
-                                  (mask_vec len) "shuffle" builder
-  | _ -> raise (Error "Unknown vector operator")
+  let unboxed_value = match op with
+      "head" -> build_extractelement vec idx0 "extract" builder
+    | "rest" -> build_shufflevector vec (undef_vec len)
+                                    (mask_vec len) "shuffle" builder
+    | _ -> raise (Error "Unknown vector operator")
+  in box_value unboxed_value
 
 and codegen_string_op op s2 =
   match op with
@@ -194,12 +208,19 @@ and codegen_sexpr s = match s with
      end
   | Ast.Vector(qs) -> codegen_vector qs
 
-and codegen_vector qs =
+and codegen_array qs =
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
     | None -> raise (Error "Could not look up value_t") in
   let unboxed_value = const_array (pointer_type value_t)
                                   (Array.map codegen_sexpr qs) in
+  box_value unboxed_value
+
+and codegen_vector qs =
+  let codegen_sexpr_unboxed = function
+      Ast.Atom (Ast.Int n) -> const_int i64_type n
+     | _ -> raise (Error "Expected int to fill vector") in
+  let unboxed_value = const_vector (Array.map codegen_sexpr_unboxed qs) in
   box_value unboxed_value
 
 let codegen_proto p =

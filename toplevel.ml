@@ -38,8 +38,9 @@ let print_and_jit se =
   let llvalue_t = named_struct_type context "value_t" in
   let value_t_elts = [| i64_type;
                         i1_type;
-                        array_type i8_type 10;
-                        vector_type (pointer_type llvalue_t) 10 |] in
+                        (pointer_type i8_type); (* string *)
+                        (pointer_type i64_type) (* vector *)
+                       |] in
   struct_set_body llvalue_t value_t_elts false;
 
   let f = sexpr_matcher se in
