@@ -55,7 +55,8 @@ let box_value llval =
       let new_vec_ptr = build_in_bounds_gep new_vec (idx 0) "vecptr" builder in
       let rhvector_type size = pointer_type (vector_type i64_type size) in
       ignore (build_store new_vec_ptr vec_ptr builder);
-      build_bitcast ptr (rhvector_type size) "dst" builder
+      let el = build_load ptr "el" builder in
+      build_bitcast el (rhvector_type size) "dst" builder
     | _ -> raise (Error "Don't know how to box type") in
   let dst = match type_of llval with
       ty when ty = i64_type ->
@@ -77,9 +78,10 @@ let unbox_bool llval =
 
 let unbox_vec llval =
   let idx0 = [| const_int i32_type 0; const_int i32_type 3 |] in
-  let dst = build_in_bounds_gep llval idx0 "boxptr" builder in
+  let ptr = build_in_bounds_gep llval idx0 "boxptr" builder in
+  let el = build_load ptr "el" builder in
   let rhvector_type size = pointer_type (vector_type i64_type size) in
-  let vec = build_bitcast dst (rhvector_type 3) "vecptr" builder in
+  let vec = build_bitcast el (rhvector_type 3) "vecptr" builder in
   build_load vec "load" builder
 
 let undef_vec len =
