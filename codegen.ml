@@ -38,25 +38,28 @@ let cf_ops = List.fold_left (fun s k -> StringSet.add k s)
                             StringSet.empty
                             [ "if"; "dotimes" ]
 
+let idx n = [| const_int i32_type 0; const_int i32_type n |]
+
 let box_value llval =
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
     | None -> raise (Error "Could not look up value_t")
   in
   let value_ptr = build_alloca value_t "value" builder in
-  let idx n = [| const_int i32_type 0; const_int i32_type n |] in
   let match_composite ty = match classify_type ty with
       TypeKind.Vector ->
+      let rhvector_type size = vector_type i64_type size in
       let size = vector_size (type_of llval) in
       let ptr = build_in_bounds_gep value_ptr (idx 3) "boxptr" builder in
+      let size_ptr = build_in_bounds_gep value_ptr (idx 5) "sizeptr" builder in
       let vec_ptr = build_in_bounds_gep ptr [| const_int i32_type 0 |]
                                         "vecptr" builder in
-      let new_vec = build_alloca (vector_type i64_type size) "vec" builder in
+      let new_vec = build_alloca (rhvector_type size) "vec" builder in
       let new_vec_ptr = build_in_bounds_gep new_vec (idx 0) "vecptr" builder in
-      let rhvector_type size = pointer_type (vector_type i64_type size) in
       ignore (build_store new_vec_ptr vec_ptr builder);
+      ignore (build_store (const_int i32_type size) size_ptr builder);
       let el = build_load ptr "el" builder in
-      build_bitcast el (rhvector_type size) "dst" builder
+      build_bitcast el (pointer_type (rhvector_type size)) "dst" builder
     | _ -> raise (Error "Don't know how to box type") in
   let dst = match type_of llval with
       ty when ty = i64_type ->
@@ -67,18 +70,15 @@ let box_value llval =
   in ignore (build_store llval dst builder); value_ptr
 
 let unbox_int llval =
-  let idx0 = [| const_int i32_type 0; const_int i32_type 0 |] in
-  let dst = build_in_bounds_gep llval idx0 "boxptr" builder in
+  let dst = build_in_bounds_gep llval (idx 0) "boxptr" builder in
   build_load dst "load" builder
 
 let unbox_bool llval =
-  let idx0 = [| const_int i32_type 0; const_int i32_type 1 |] in
-  let dst = build_in_bounds_gep llval idx0 "boxptr" builder in
+  let dst = build_in_bounds_gep llval (idx 1) "boxptr" builder in
   build_load dst "load" builder
 
 let unbox_vec llval =
-  let idx0 = [| const_int i32_type 0; const_int i32_type 3 |] in
-  let ptr = build_in_bounds_gep llval idx0 "boxptr" builder in
+  let ptr = build_in_bounds_gep llval (idx 3) "boxptr" builder in
   let el = build_load ptr "el" builder in
   let rhvector_type size = pointer_type (vector_type i64_type size) in
   let vec = build_bitcast el (rhvector_type 3) "vecptr" builder in
