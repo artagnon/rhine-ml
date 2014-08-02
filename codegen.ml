@@ -79,10 +79,21 @@ let unbox_bool llval =
 
 let unbox_vec llval =
   let ptr = build_in_bounds_gep llval (idx 3) "boxptr" builder in
+  let size_ptr = build_in_bounds_gep llval (idx 5) "sizeptr" builder in
+  let size = build_load size_ptr "size" builder in
   let el = build_load ptr "el" builder in
   let rhvector_type size = pointer_type (vector_type i64_type size) in
-  let vec = build_bitcast el (rhvector_type 3) "vecptr" builder in
-  build_load vec "load" builder
+  let vec n = build_bitcast el (rhvector_type n) "vecptr" builder in
+  let vecbb n =
+    let parent_bb = block_parent (insertion_block builder) in
+    let vecbb = append_block context "vecN" parent_bb in
+    position_at_end vecbb builder;
+    insert_into_builder (vec n) "vecN" builder; vecbb in
+  let llsize n = const_int i32_type n in
+  let switch = build_switch size (vecbb 1) 3 builder in
+  let add_case_vec n = add_case switch (llsize n) (vecbb n) in
+  add_case_vec 1; add_case_vec 2; add_case_vec 3;
+  switch
 
 let undef_vec len =
   let undef_list = List.map (fun i -> undef i64_type) (0--(len - 1)) in
