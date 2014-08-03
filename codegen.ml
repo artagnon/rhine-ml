@@ -53,7 +53,18 @@ let box_value llval =
     let mask_list = List.map (fun i -> const_int i32_type i) (0--(len - 1)) in
     const_vector (Array.of_list mask_list) in
   let rhvector_type size = vector_type i64_type size in
+  let rhstring_type size = array_type i8_type size in
   let value_ptr = build_alloca value_t "value" builder in
+  let match_pointer ty = match element_type ty with
+      ty when ty = i8_type ->
+      let ptr = build_in_bounds_gep value_ptr (idx 2) "boxptr" builder in
+      let str_ptr = build_in_bounds_gep ptr [| const_int i32_type 0 |]
+                                        "strptr" builder in
+      let new_str = build_alloca (rhstring_type 10) "str" builder in
+      let new_str_ptr = build_in_bounds_gep new_str (idx 0) "strptr" builder in
+      ignore (build_store new_str_ptr str_ptr builder);
+      ptr
+    | ty -> raise (Error "Don't know how to box type") in
   let match_composite ty = match classify_type ty with
       TypeKind.Vector ->
       let ptr = build_in_bounds_gep value_ptr (idx 3) "boxptr" builder in
@@ -64,6 +75,7 @@ let box_value llval =
       ignore (build_store new_vec_ptr vec_ptr builder);
       let el = build_load ptr "el" builder in
       build_bitcast el (pointer_type (rhvector_type 10)) "dst" builder
+    | TypeKind.Pointer -> match_pointer ty
     | _ -> raise (Error "Don't know how to box type") in
   let dst = match type_of llval with
       ty when ty = i64_type ->
@@ -77,7 +89,6 @@ let box_value llval =
                    build_shufflevector llval (undef_vec size)
                                        (mask_vec 10) "llval" builder
               else llval in
-  dump_value (llval);
   ignore (build_store llval dst builder); value_ptr
 
 let unbox_int llval =
@@ -96,13 +107,21 @@ let unbox_vec llval =
   let vecload n = build_load (vec n) "load" builder in
   vecload 10
 
+let unbox_str llval =
+  let ptr = build_in_bounds_gep llval (idx 2) "boxptr" builder in
+  let el = build_load ptr "el" builder in
+  let rhstring_type size = pointer_type (array_type i8_type size) in
+  let str n = build_bitcast el (rhstring_type n) "strptr" builder in
+  let strload n = build_load (str n) "load" builder in
+  strload 10
+
 let codegen_atom atom =
   let unboxed_value = match atom with
       Ast.Int n -> const_int i64_type n
     | Ast.Bool n -> const_int i1_type (int_of_bool n)
     | Ast.Double n -> const_float double_type n
     | Ast.Nil -> const_null i1_type
-    | Ast.String s -> const_string context s
+    | Ast.String s -> build_global_stringptr s "string" builder
     | Ast.Symbol n -> try Hashtbl.find named_values n with
                         Not_found -> raise (Error "Symbol not bound")
   in box_value unboxed_value
@@ -151,23 +170,24 @@ and codegen_vector_op op args =
   in box_value unboxed_value
 
 and codegen_string_op op s2 =
-  match op with
-    "str-split" -> let str = List.hd s2 in
-                   let len = array_length (type_of str) in
-                   let l = List.map
-                             (fun i -> build_extractvalue
-                                         str i "extract" builder)
-                             (0--(len - 1))
-                   in const_vector (Array.of_list l)
-  | "str-join" -> let vec = List.hd s2 in
-                  let len = vector_size (type_of vec) in
-                  let idx i = const_int i32_type i in
-                  let l = List.map
-                            (fun i -> build_extractelement
-                                        vec (idx i) "extract" builder)
-                            (0--(len - 1)) in
-                  const_array i8_type (Array.of_list l)
-  | _ -> raise (Error "Unknown string operator")
+  let unboxed_value = match op with
+      "str-split" -> let str = unbox_str (List.hd s2) in
+                     let len = array_length (type_of str) in
+                     let l = List.map
+                               (fun i -> build_extractvalue
+                                           str i "extract" builder)
+                               (0--(len - 1))
+                     in const_vector (Array.of_list l)
+    | "str-join" -> let vec = unbox_vec (List.hd s2) in
+                    let len = vector_size (type_of vec) in
+                    let idx i = const_int i32_type i in
+                    let l = List.map
+                              (fun i -> build_extractelement
+                                          vec (idx i) "extract" builder)
+                              (0--(len - 1)) in
+                    const_array i8_type (Array.of_list l)
+    | _ -> raise (Error "Unknown string operator")
+  in box_value unboxed_value
 
 and codegen_cf_op op s2 =
   let cond_val = unbox_bool (List.hd s2) in
