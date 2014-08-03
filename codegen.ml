@@ -65,12 +65,9 @@ let box_value llval =
       let new_str_ptr = build_in_bounds_gep new_str (idx 0) "strptr" builder in
       ignore (build_store new_str_ptr str_ptr builder);
       ptr
-    | ty -> raise (Error "Don't know how to box type") in
-  let match_array ty = match element_type ty with
-      ty when ty = pointer_type value_t ->
-      let ptr = build_in_bounds_gep value_ptr (idx 4) "boxptr" builder in
-      let el = build_load ptr "el" builder in
-      build_bitcast el (pointer_type (rharray_type 10)) "dst" builder
+    | ty when ty = rharray_type 10 ->
+       let ptr = build_in_bounds_gep value_ptr (idx 4) "boxptr" builder in
+       ptr
     | ty -> raise (Error "Don't know how to box type") in
   let match_composite ty = match classify_type ty with
       TypeKind.Vector ->
@@ -83,7 +80,6 @@ let box_value llval =
       let el = build_load ptr "el" builder in
       build_bitcast el (pointer_type (rhvector_type 10)) "dst" builder
     | TypeKind.Pointer -> match_pointer ty
-    | TypeKind.Array -> match_array ty
     | _ -> raise (Error "Don't know how to box type") in
   let dst = match type_of llval with
       ty when ty = i64_type ->
@@ -96,6 +92,10 @@ let box_value llval =
               then let size = vector_size (type_of llval) in
                    build_shufflevector llval (undef_vec size)
                                        (mask_vec 10) "llval" builder
+              else if element_type (type_of llval) = rharray_type 10
+              then
+                let ptr = build_in_bounds_gep llval (idx 0) "llval" builder in
+                build_load ptr "llval" builder
               else llval in
   ignore (build_store llval dst builder); value_ptr
 
@@ -259,11 +259,11 @@ and codegen_vector qs =
       Some t -> t
     | None -> raise (Error "Could not look up value_t") in
   let rharray_type size = array_type (pointer_type value_t) size in
-  let new_array = build_alloca (rharray_type 10) "array" builder in
-  let ptr n = build_in_bounds_gep new_array (idx n) "arrayptr" builder in
+  let new_array = build_alloca (rharray_type 10) "ar" builder in
+  let ptr n = build_in_bounds_gep new_array (idx n) "arptr" builder in
   let llqs = Array.map codegen_sexpr qs in
   Array.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llqs;
-  box_value (build_load new_array "new_array" builder)
+  box_value new_array
 
 and codegen_vector2 qs =
   let codegen_sexpr_unboxed = function
