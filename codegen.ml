@@ -54,6 +54,7 @@ let box_value llval =
     const_vector (Array.of_list mask_list) in
   let rhvector_type size = vector_type i64_type size in
   let rhstring_type size = array_type i8_type size in
+  let rharray_type size = array_type (pointer_type value_t) size in
   let value_ptr = build_alloca value_t "value" builder in
   let match_pointer ty = match element_type ty with
       ty when ty = i8_type ->
@@ -64,6 +65,12 @@ let box_value llval =
       let new_str_ptr = build_in_bounds_gep new_str (idx 0) "strptr" builder in
       ignore (build_store new_str_ptr str_ptr builder);
       ptr
+    | ty -> raise (Error "Don't know how to box type") in
+  let match_array ty = match element_type ty with
+      ty when ty = pointer_type value_t ->
+      let ptr = build_in_bounds_gep value_ptr (idx 4) "boxptr" builder in
+      let el = build_load ptr "el" builder in
+      build_bitcast el (pointer_type (rharray_type 10)) "dst" builder
     | ty -> raise (Error "Don't know how to box type") in
   let match_composite ty = match classify_type ty with
       TypeKind.Vector ->
@@ -76,6 +83,7 @@ let box_value llval =
       let el = build_load ptr "el" builder in
       build_bitcast el (pointer_type (rhvector_type 10)) "dst" builder
     | TypeKind.Pointer -> match_pointer ty
+    | TypeKind.Array -> match_array ty
     | _ -> raise (Error "Don't know how to box type") in
   let dst = match type_of llval with
       ty when ty = i64_type ->
@@ -246,15 +254,18 @@ and codegen_sexpr s = match s with
      end
   | Ast.Vector(qs) -> codegen_vector qs
 
-and codegen_array qs =
+and codegen_vector qs =
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
     | None -> raise (Error "Could not look up value_t") in
-  let unboxed_value = const_array (pointer_type value_t)
-                                  (Array.map codegen_sexpr qs) in
-  box_value unboxed_value
+  let rharray_type size = array_type (pointer_type value_t) size in
+  let new_array = build_alloca (rharray_type 10) "array" builder in
+  let ptr n = build_in_bounds_gep new_array (idx n) "arrayptr" builder in
+  let llqs = Array.map codegen_sexpr qs in
+  Array.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llqs;
+  box_value (build_load new_array "new_array" builder)
 
-and codegen_vector qs =
+and codegen_vector2 qs =
   let codegen_sexpr_unboxed = function
       Ast.Atom (Ast.Int n) -> const_int i64_type n
      | _ -> raise (Error "Expected int to fill vector") in
