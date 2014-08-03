@@ -40,26 +40,30 @@ let cf_ops = List.fold_left (fun s k -> StringSet.add k s)
 
 let idx n = [| const_int i32_type 0; const_int i32_type n |]
 
+let undef_vec len =
+  let undef_list = List.map (fun i -> undef i64_type) (0--(len - 1)) in
+  const_vector (Array.of_list undef_list)
+
 let box_value llval =
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
     | None -> raise (Error "Could not look up value_t")
   in
+  let mask_vec len =
+    let mask_list = List.map (fun i -> const_int i32_type i) (0--(len - 1)) in
+    const_vector (Array.of_list mask_list) in
+  let rhvector_type size = vector_type i64_type size in
   let value_ptr = build_alloca value_t "value" builder in
   let match_composite ty = match classify_type ty with
       TypeKind.Vector ->
-      let rhvector_type size = vector_type i64_type size in
-      let size = vector_size (type_of llval) in
       let ptr = build_in_bounds_gep value_ptr (idx 3) "boxptr" builder in
-      let size_ptr = build_in_bounds_gep value_ptr (idx 5) "sizeptr" builder in
       let vec_ptr = build_in_bounds_gep ptr [| const_int i32_type 0 |]
                                         "vecptr" builder in
-      let new_vec = build_alloca (rhvector_type size) "vec" builder in
+      let new_vec = build_alloca (rhvector_type 10) "vec" builder in
       let new_vec_ptr = build_in_bounds_gep new_vec (idx 0) "vecptr" builder in
       ignore (build_store new_vec_ptr vec_ptr builder);
-      ignore (build_store (const_int i32_type size) size_ptr builder);
       let el = build_load ptr "el" builder in
-      build_bitcast el (pointer_type (rhvector_type size)) "dst" builder
+      build_bitcast el (pointer_type (rhvector_type 10)) "dst" builder
     | _ -> raise (Error "Don't know how to box type") in
   let dst = match type_of llval with
       ty when ty = i64_type ->
@@ -67,7 +71,14 @@ let box_value llval =
     | ty when ty = i1_type ->
        build_in_bounds_gep value_ptr (idx 1) "boxptr" builder;
     | ty -> match_composite ty
-  in ignore (build_store llval dst builder); value_ptr
+  in
+  let llval = if classify_type (type_of llval) = TypeKind.Vector
+              then let size = vector_size (type_of llval) in
+                   build_shufflevector llval (undef_vec size)
+                                       (mask_vec 10) "llval" builder
+              else llval in
+  dump_value (llval);
+  ignore (build_store llval dst builder); value_ptr
 
 let unbox_int llval =
   let dst = build_in_bounds_gep llval (idx 0) "boxptr" builder in
@@ -79,30 +90,11 @@ let unbox_bool llval =
 
 let unbox_vec llval =
   let ptr = build_in_bounds_gep llval (idx 3) "boxptr" builder in
-  let size_ptr = build_in_bounds_gep llval (idx 5) "sizeptr" builder in
-  let size = build_load size_ptr "size" builder in
   let el = build_load ptr "el" builder in
   let rhvector_type size = pointer_type (vector_type i64_type size) in
   let vec n = build_bitcast el (rhvector_type n) "vecptr" builder in
   let vecload n = build_load (vec n) "load" builder in
-  let vecbb n =
-    let parent_bb = block_parent (insertion_block builder) in
-    let vecbb = append_block context "vecN" parent_bb in
-    position_at_end vecbb builder;
-    ignore (build_ret (vecload n) builder); vecbb in
-  let llsize n = const_int i32_type n in
-  let switch = build_switch size (vecbb 1) 3 builder in
-  let add_case_vec n = add_case switch (llsize n) (vecbb n) in
-  add_case_vec 1; add_case_vec 2; add_case_vec 3;
-  switch
-
-let undef_vec len =
-  let undef_list = List.map (fun i -> undef i64_type) (0--(len - 1)) in
-  const_vector (Array.of_list undef_list)
-
-let mask_vec len =
-  let mask_list = List.map (fun i -> const_int i32_type i) (1--(len - 1)) in
-  const_vector (Array.of_list mask_list)
+  vecload 10
 
 let codegen_atom atom =
   let unboxed_value = match atom with
@@ -145,6 +137,9 @@ and codegen_arith_op op args =
     in box_value unboxed_value
 
 and codegen_vector_op op args =
+  let mask_vec len =
+    let mask_list = List.map (fun i -> const_int i32_type i) (1--(len - 1)) in
+    const_vector (Array.of_list mask_list) in
   let vec = unbox_vec (List.hd args) in
   let len = vector_size (type_of vec) in
   let idx0 = const_int i32_type 0 in
