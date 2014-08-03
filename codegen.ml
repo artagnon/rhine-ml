@@ -92,7 +92,8 @@ let box_value llval =
               then let size = vector_size (type_of llval) in
                    build_shufflevector llval (undef_vec size)
                                        (mask_vec 10) "llval" builder
-              else if element_type (type_of llval) = rharray_type 10
+              else if classify_type (type_of llval) = TypeKind.Pointer &&
+                        element_type (type_of llval) = rharray_type 10
               then
                 let ptr = build_in_bounds_gep llval (idx 0) "llval" builder in
                 build_load ptr "llval" builder
