@@ -84,11 +84,12 @@ let unbox_vec llval =
   let el = build_load ptr "el" builder in
   let rhvector_type size = pointer_type (vector_type i64_type size) in
   let vec n = build_bitcast el (rhvector_type n) "vecptr" builder in
+  let vecload n = build_load (vec n) "load" builder in
   let vecbb n =
     let parent_bb = block_parent (insertion_block builder) in
     let vecbb = append_block context "vecN" parent_bb in
     position_at_end vecbb builder;
-    insert_into_builder (vec n) "vecN" builder; vecbb in
+    ignore (build_ret (vecload n) builder); vecbb in
   let llsize n = const_int i32_type n in
   let switch = build_switch size (vecbb 1) 3 builder in
   let add_case_vec n = add_case switch (llsize n) (vecbb n) in
