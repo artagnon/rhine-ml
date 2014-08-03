@@ -170,22 +170,25 @@ and codegen_vector_op op args =
   in box_value unboxed_value
 
 and codegen_string_op op s2 =
+  let rhcvector_type size = vector_type i8_type size in
   let unboxed_value = match op with
-      "str-split" -> let str = unbox_str (List.hd s2) in
-                     let len = array_length (type_of str) in
-                     let l = List.map
-                               (fun i -> build_extractvalue
-                                           str i "extract" builder)
-                               (0--(len - 1))
-                     in const_vector (Array.of_list l)
-    | "str-join" -> let vec = unbox_vec (List.hd s2) in
-                    let len = vector_size (type_of vec) in
-                    let idx i = const_int i32_type i in
-                    let l = List.map
-                              (fun i -> build_extractelement
-                                          vec (idx i) "extract" builder)
-                              (0--(len - 1)) in
-                    const_array i8_type (Array.of_list l)
+      "str-split" ->
+      let str = unbox_str (List.hd s2) in
+      let len = array_length (type_of str) in
+      let l = List.map (fun i -> build_extractvalue
+                                   str i "extract" builder) (0--(len - 1)) in
+      let cvector = build_alloca (rhcvector_type 10) "cvector" builder in
+      let ptr n = build_in_bounds_gep cvector (idx n) "cvectorptr" builder in
+      List.iteri (fun i m -> ignore (build_store m (ptr i) builder)) l;
+      build_load cvector "cvector" builder
+    | "str-join" ->
+       let vec = unbox_vec (List.hd s2) in
+       let len = vector_size (type_of vec) in
+       let idx i = const_int i32_type i in
+       let l = List.map (fun i -> build_extractelement
+                                    vec (idx i) "extract" builder)
+                        (0--(len - 1)) in
+       const_array i8_type (Array.of_list l)
     | _ -> raise (Error "Unknown string operator")
   in box_value unboxed_value
 
