@@ -108,6 +108,14 @@ let unbox_bool llval =
   let dst = build_in_bounds_gep llval (idx 1) "boxptr" builder in
   build_load dst "load" builder
 
+let unbox_str llval =
+  let ptr = build_in_bounds_gep llval (idx 2) "boxptr" builder in
+  let el = build_load ptr "el" builder in
+  let rhstring_type size = pointer_type (array_type i8_type size) in
+  let str n = build_bitcast el (rhstring_type n) "strptr" builder in
+  let strload n = build_load (str n) "load" builder in
+  strload 10
+
 let unbox_vec llval =
   let ptr = build_in_bounds_gep llval (idx 3) "boxptr" builder in
   let el = build_load ptr "el" builder in
@@ -116,13 +124,18 @@ let unbox_vec llval =
   let vecload n = build_load (vec n) "load" builder in
   vecload 10
 
-let unbox_str llval =
-  let ptr = build_in_bounds_gep llval (idx 2) "boxptr" builder in
+let unbox_ar llval =
+  let value_t = match type_by_name the_module "value_t" with
+      Some t -> t
+    | None -> raise (Error "Could not look up value_t")
+  in
+  let ptr = build_in_bounds_gep llval (idx 4) "boxptr" builder in
   let el = build_load ptr "el" builder in
-  let rhstring_type size = pointer_type (array_type i8_type size) in
-  let str n = build_bitcast el (rhstring_type n) "strptr" builder in
-  let strload n = build_load (str n) "load" builder in
-  strload 10
+  let rharray_type size = pointer_type (array_type
+                                          (pointer_type value_t) size) in
+  let vec n = build_bitcast el (rharray_type n) "arptr" builder in
+  let arload n = build_load (vec n) "load" builder in
+  arload 10
 
 let codegen_atom atom =
   let unboxed_value = match atom with
@@ -165,18 +178,13 @@ and codegen_arith_op op args =
     in box_value unboxed_value
 
 and codegen_vector_op op args =
-  let mask_vec len =
-    let mask_list = List.map (fun i -> const_int i32_type i) (1--(len - 1)) in
-    const_vector (Array.of_list mask_list) in
-  let vec = unbox_vec (List.hd args) in
-  let len = vector_size (type_of vec) in
-  let idx0 = const_int i32_type 0 in
-  let unboxed_value = match op with
-      "head" -> build_extractelement vec idx0 "extract" builder
-    | "rest" -> build_shufflevector vec (undef_vec len)
-                                    (mask_vec len) "shuffle" builder
+  let ar = unbox_ar (List.hd args) in
+  let len = array_length (type_of ar) in
+  let boxed_value = match op with
+      "head" -> build_extractvalue ar 0 "extract" builder
     | _ -> raise (Error "Unknown vector operator")
-  in box_value unboxed_value
+  in
+  boxed_value
 
 and codegen_string_op op s2 =
   let rhcvector_type size = vector_type i8_type size in
