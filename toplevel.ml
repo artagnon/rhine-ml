@@ -40,7 +40,7 @@ let print_and_jit se =
                         i1_type;                  (* bool *)
                         (pointer_type i8_type);   (* string *)
                         (pointer_type i64_type);  (* vector *)
-                        (pointer_type llvalue_t); (* array *)
+                        (pointer_type (pointer_type llvalue_t)); (* array *)
                        |] in
   struct_set_body llvalue_t value_t_elts false;
 

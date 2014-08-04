@@ -95,8 +95,7 @@ let box_value llval =
               else if classify_type (type_of llval) = TypeKind.Pointer &&
                         element_type (type_of llval) = rharray_type 10
               then
-                let ptr = build_in_bounds_gep llval (idx 0) "llval" builder in
-                build_load ptr "llval" builder
+                build_in_bounds_gep llval (idx 0) "llval" builder
               else llval in
   ignore (build_store llval dst builder); value_ptr
 
