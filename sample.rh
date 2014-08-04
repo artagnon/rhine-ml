@@ -1,1 +1,1 @@
-(head (rest [3 4 5]))
+(head (rest ["foo" 7 "bar"]))
