@@ -198,17 +198,33 @@ and codegen_array_op op args =
   | _ -> raise (Error "Unknown array operator")
 
 and codegen_string_op op s2 =
-  let rhcvector_type size = vector_type i8_type size in
+  let value_t = match type_by_name the_module "value_t" with
+      Some t -> t
+    | None -> raise (Error "Could not look up value_t") in
+  let rharray_type size = array_type (pointer_type value_t) size in
+  let rhstring_type size = array_type i8_type size in
+  let nullterm = const_int i8_type 0 in
   let unboxed_value = match op with
       "str-split" ->
       let str = unbox_str (List.hd s2) in
       let len = array_length (type_of str) in
       let l = List.map (fun i -> build_extractvalue
                                    str i "extract" builder) (0--(len - 1)) in
-      let cvector = build_alloca (rhcvector_type 10) "cvector" builder in
-      let ptr n = build_in_bounds_gep cvector (idx n) "cvectorptr" builder in
-      List.iteri (fun i m -> ignore (build_store m (ptr i) builder)) l;
-      build_load cvector "cvector" builder
+      let store_char c =
+        let strseg = build_alloca (rhstring_type 2) "strseg" builder in
+        let strseg0 = build_in_bounds_gep strseg (idx 0) "strseg0" builder in
+        let strseg1 = build_in_bounds_gep strseg (idx 1) "strseg1" builder in
+        ignore (build_store c strseg0 builder);
+        ignore (build_store nullterm strseg1 builder);
+        box_value strseg0 in
+      let splits = List.map store_char l in
+      let new_array = build_alloca (rharray_type 10) "ar" builder in
+      let ptr n = build_in_bounds_gep new_array (idx n) "arptr" builder in
+      List.iteri (fun i m ->
+                  dump_type (type_of m);
+                  dump_type (type_of (ptr i));
+                  ignore (build_store m (ptr i) builder)) splits;
+      new_array
     | "str-join" ->
        let vec = unbox_vec (List.hd s2) in
        let len = vector_size (type_of vec) in

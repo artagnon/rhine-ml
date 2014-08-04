@@ -1,1 +1,1 @@
-(head (rest ["foo" 7 "bar"]))
+(str-split "foo")
