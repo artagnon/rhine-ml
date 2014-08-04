@@ -36,10 +36,11 @@ let sexpr_matcher sexpr = match sexpr with
 let print_and_jit se =
   (* Declare global variables/ types *)
   let llvalue_t = named_struct_type context "value_t" in
-  let value_t_elts = [| i64_type;
-                        i1_type;
-                        (pointer_type i8_type); (* string *)
-                        (pointer_type i64_type) (* vector *)
+  let value_t_elts = [| i64_type;                 (* integer *)
+                        i1_type;                  (* bool *)
+                        (pointer_type i8_type);   (* string *)
+                        (pointer_type i64_type);  (* vector *)
+                        (pointer_type (pointer_type llvalue_t)); (* array *)
                        |] in
   struct_set_body llvalue_t value_t_elts false;
   ignore(dump_value codegen_proto(Ast.Prototype("hi", Array.make 1 "X")));
@@ -77,5 +78,4 @@ let main_loop ss =
 
   ignore (PassManager.initialize the_fpm);
 
-  List.iter (fun se -> print_and_jit se) ss;
-  dump_module the_module
+  List.iter (fun se -> print_and_jit se) ss

@@ -26,9 +26,9 @@ let arith_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
                                [ "+"; "-"; "*"; "/" ]
 
-let vector_ops = List.fold_left (fun s k -> StringSet.add k s)
-                                StringSet.empty
-                                [ "head"; "rest" ]
+let array_ops = List.fold_left (fun s k -> StringSet.add k s)
+                               StringSet.empty
+                               [ "head"; "rest" ]
 
 let string_ops = List.fold_left (fun s k -> StringSet.add k s)
                                 StringSet.empty
@@ -38,6 +38,12 @@ let cf_ops = List.fold_left (fun s k -> StringSet.add k s)
                             StringSet.empty
                             [ "if"; "dotimes" ]
 
+let idx n = [| const_int i32_type 0; const_int i32_type n |]
+
+let undef_vec len =
+  let undef_list = List.map (fun i -> undef i64_type) (0--(len - 1)) in
+  const_vector (Array.of_list undef_list)
+
 let box_value llval =
     print_newline(print_string "Boxing");
 
@@ -45,53 +51,87 @@ let box_value llval =
       Some t -> t
     | None -> raise (Error "Could not look up value_t")
   in
+  let mask_vec len =
+    let mask_list = List.map (fun i -> const_int i32_type i) (0--(len - 1)) in
+    const_vector (Array.of_list mask_list) in
+  let rhvector_type size = vector_type i64_type size in
+  let rhstring_type size = array_type i8_type size in
+  let rharray_type size = array_type (pointer_type value_t) size in
   let value_ptr = build_alloca value_t "value" builder in
-  let idx n = [| const_int i32_type 0; const_int i32_type n |] in
+  let match_pointer ty = match element_type ty with
+      ty when ty = i8_type ->
+      let ptr = build_in_bounds_gep value_ptr (idx 2) "boxptr" builder in
+      let str_ptr = build_in_bounds_gep ptr [| const_int i32_type 0 |]
+                                        "strptr" builder in
+      let new_str = build_alloca (rhstring_type 10) "str" builder in
+      let new_str_ptr = build_in_bounds_gep new_str (idx 0) "strptr" builder in
+      ignore (build_store new_str_ptr str_ptr builder);
+      (ptr, llval)
+    | ty when ty = rharray_type 10 ->
+       let ptr = build_in_bounds_gep value_ptr (idx 4) "boxptr" builder in
+       let llval = build_in_bounds_gep llval (idx 0) "llval" builder in
+       (ptr, llval)
+    | ty -> raise (Error "Don't know how to box type") in
   let match_composite ty = match classify_type ty with
       TypeKind.Vector ->
-      let size = vector_size (type_of llval) in
       let ptr = build_in_bounds_gep value_ptr (idx 3) "boxptr" builder in
       let vec_ptr = build_in_bounds_gep ptr [| const_int i32_type 0 |]
                                         "vecptr" builder in
-      let new_vec = build_alloca (vector_type i64_type size) "vec" builder in
+      let new_vec = build_alloca (rhvector_type 10) "vec" builder in
       let new_vec_ptr = build_in_bounds_gep new_vec (idx 0) "vecptr" builder in
-      let rhvector_type size = pointer_type (vector_type i64_type size) in
       ignore (build_store new_vec_ptr vec_ptr builder);
-      build_bitcast ptr (rhvector_type size) "dst" builder
+      let el = build_load ptr "el" builder in
+      let size = vector_size (type_of llval) in
+      let llval = build_shufflevector llval (undef_vec size)
+                                      (mask_vec 10) "llval" builder in
+      (build_bitcast el (pointer_type (rhvector_type 10)) "dst" builder, llval)
+    | TypeKind.Pointer -> match_pointer ty
     | _ -> raise (Error "Don't know how to box type") in
-  let dst = match type_of llval with
+  let (dst, llval) = match type_of llval with
       ty when ty = i64_type ->
-      build_in_bounds_gep value_ptr (idx 0) "boxptr" builder;
+      (build_in_bounds_gep value_ptr (idx 0) "boxptr" builder, llval)
     | ty when ty = i1_type ->
-       build_in_bounds_gep value_ptr (idx 1) "boxptr" builder;
+       (build_in_bounds_gep value_ptr (idx 1) "boxptr" builder, llval)
     | ty -> match_composite ty
   in ignore (build_store llval dst builder); value_ptr
 
 let unbox_int llval =
   print_newline(print_string "Unboxing int");
-  let idx0 = [| const_int i32_type 0; const_int i32_type 0 |] in
-  let dst = build_in_bounds_gep llval idx0 "boxptr" builder in
+  let dst = build_in_bounds_gep llval (idx 0) "boxptr" builder in
   build_load dst "load" builder
 
 let unbox_bool llval =
-  let idx0 = [| const_int i32_type 0; const_int i32_type 1 |] in
-  let dst = build_in_bounds_gep llval idx0 "boxptr" builder in
+  let dst = build_in_bounds_gep llval (idx 1) "boxptr" builder in
   build_load dst "load" builder
 
+let unbox_str llval =
+  let ptr = build_in_bounds_gep llval (idx 2) "boxptr" builder in
+  let el = build_load ptr "el" builder in
+  let rhstring_type size = pointer_type (array_type i8_type size) in
+  let str n = build_bitcast el (rhstring_type n) "strptr" builder in
+  let strload n = build_load (str n) "load" builder in
+  strload 10
+
 let unbox_vec llval =
-  let idx0 = [| const_int i32_type 0; const_int i32_type 3 |] in
-  let dst = build_in_bounds_gep llval idx0 "boxptr" builder in
+  let ptr = build_in_bounds_gep llval (idx 3) "boxptr" builder in
+  let el = build_load ptr "el" builder in
   let rhvector_type size = pointer_type (vector_type i64_type size) in
-  let vec = build_bitcast dst (rhvector_type 3) "vecptr" builder in
-  build_load vec "load" builder
+  let vec n = build_bitcast el (rhvector_type n) "vecptr" builder in
+  let vecload n = build_load (vec n) "load" builder in
+  vecload 10
 
-let undef_vec len =
-  let undef_list = List.map (fun i -> undef i64_type) (0--(len - 1)) in
-  const_vector (Array.of_list undef_list)
-
-let mask_vec len =
-  let mask_list = List.map (fun i -> const_int i32_type i) (1--(len - 1)) in
-  const_vector (Array.of_list mask_list)
+let unbox_ar llval =
+  let value_t = match type_by_name the_module "value_t" with
+      Some t -> t
+    | None -> raise (Error "Could not look up value_t")
+  in
+  let ptr = build_in_bounds_gep llval (idx 4) "boxptr" builder in
+  let el = build_load ptr "el" builder in
+  let rharray_type size = pointer_type (array_type
+                                          (pointer_type value_t) size) in
+  let vec n = build_bitcast el (rharray_type n) "arptr" builder in
+  let arload n = build_load (vec n) "load" builder in
+  arload 10
 
 let codegen_atom atom =
   let unboxed_value = match atom with
@@ -99,7 +139,7 @@ let codegen_atom atom =
     | Ast.Bool n -> const_int i1_type (int_of_bool n)
     | Ast.Double n -> const_float double_type n
     | Ast.Nil -> const_null i1_type
-    | Ast.String s -> const_string context s
+    | Ast.String s -> build_global_stringptr s "string" builder
     | Ast.Symbol n -> try Hashtbl.find named_values n with
                         Not_found -> raise (Error "Symbol not bound")
   in box_value unboxed_value
@@ -130,35 +170,65 @@ and codegen_arith_op op args =
       | _ -> raise (Error "Unknown arithmetic operator")
     in box_value unboxed_value
 
-and codegen_vector_op op args =
-  let vec = unbox_vec (List.hd args) in
-  let len = vector_size (type_of vec) in
-  let idx0 = const_int i32_type 0 in
-  let unboxed_value = match op with
-      "head" -> build_extractelement vec idx0 "extract" builder
-    | "rest" -> build_shufflevector vec (undef_vec len)
-                                    (mask_vec len) "shuffle" builder
-    | _ -> raise (Error "Unknown vector operator")
-  in box_value unboxed_value
+and codegen_array_op op args =
+  let value_t = match type_by_name the_module "value_t" with
+      Some t -> t
+    | None -> raise (Error "Could not look up value_t")
+  in
+  let arg = List.hd args in
+  match op with
+    "head" ->
+    let ar = unbox_ar arg in
+    build_extractvalue ar 0 "extract" builder
+  | "rest" ->
+     let ptr = build_in_bounds_gep arg (idx 4) "boxptr" builder in
+     let el = build_load ptr "el" builder in
+     let rharray_type size = pointer_type (array_type
+                                             (pointer_type value_t) size) in
+     let ar = build_bitcast el (rharray_type 10) "arptr" builder in
+     let new_ptr = build_in_bounds_gep ar (idx 1) "rest" builder in
+     let new_ar = build_bitcast new_ptr (rharray_type 10) "newar" builder in
+     box_value new_ar
+  | _ -> raise (Error "Unknown array operator")
 
 and codegen_string_op op s2 =
-  match op with
-    "str-split" -> let str = List.hd s2 in
-                   let len = array_length (type_of str) in
-                   let l = List.map
-                             (fun i -> build_extractvalue
-                                         str i "extract" builder)
-                             (0--(len - 1))
-                   in const_vector (Array.of_list l)
-  | "str-join" -> let vec = List.hd s2 in
-                  let len = vector_size (type_of vec) in
-                  let idx i = const_int i32_type i in
-                  let l = List.map
-                            (fun i -> build_extractelement
-                                        vec (idx i) "extract" builder)
-                            (0--(len - 1)) in
-                  const_array i8_type (Array.of_list l)
-  | _ -> raise (Error "Unknown string operator")
+  let value_t = match type_by_name the_module "value_t" with
+      Some t -> t
+    | None -> raise (Error "Could not look up value_t") in
+  let rharray_type size = array_type (pointer_type value_t) size in
+  let rhstring_type size = array_type i8_type size in
+  let nullterm = const_int i8_type 0 in
+  let unboxed_value = match op with
+      "str-split" ->
+      let str = unbox_str (List.hd s2) in
+      let len = array_length (type_of str) in
+      let l = List.map (fun i -> build_extractvalue
+                                   str i "extract" builder) (0--(len - 1)) in
+      let store_char c =
+        let strseg = build_alloca (rhstring_type 2) "strseg" builder in
+        let strseg0 = build_in_bounds_gep strseg (idx 0) "strseg0" builder in
+        let strseg1 = build_in_bounds_gep strseg (idx 1) "strseg1" builder in
+        ignore (build_store c strseg0 builder);
+        ignore (build_store nullterm strseg1 builder);
+        box_value strseg0 in
+      let splits = List.map store_char l in
+      let new_array = build_alloca (rharray_type 10) "ar" builder in
+      let ptr n = build_in_bounds_gep new_array (idx n) "arptr" builder in
+      List.iteri (fun i m ->
+                  dump_type (type_of m);
+                  dump_type (type_of (ptr i));
+                  ignore (build_store m (ptr i) builder)) splits;
+      new_array
+    | "str-join" ->
+       let vec = unbox_vec (List.hd s2) in
+       let len = vector_size (type_of vec) in
+       let idx i = const_int i32_type i in
+       let l = List.map (fun i -> build_extractelement
+                                    vec (idx i) "extract" builder)
+                        (0--(len - 1)) in
+       const_array i8_type (Array.of_list l)
+    | _ -> raise (Error "Unknown string operator")
+  in box_value unboxed_value
 
 and codegen_cf_op op s2 =
   let cond_val = unbox_bool (List.hd s2) in
@@ -203,8 +273,8 @@ and codegen_sexpr s = match s with
              let args = extract_args s2 in
              if StringSet.mem s arith_ops then
                codegen_arith_op s args
-             else if StringSet.mem s vector_ops then
-               codegen_vector_op s args
+             else if StringSet.mem s array_ops then
+               codegen_array_op s args
              else if StringSet.mem s string_ops then
                codegen_string_op s args
              else if StringSet.mem s cf_ops then
@@ -213,15 +283,18 @@ and codegen_sexpr s = match s with
                codegen_call_op s args;
            | _ -> raise (Error "Expected function call")
      end
-  | Ast.Vector(qs) -> codegen_vector qs
+  | Ast.Vector(qs) -> codegen_array qs
 
 and codegen_array qs =
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
     | None -> raise (Error "Could not look up value_t") in
-  let unboxed_value = const_array (pointer_type value_t)
-                                  (Array.map codegen_sexpr qs) in
-  box_value unboxed_value
+  let rharray_type size = array_type (pointer_type value_t) size in
+  let new_array = build_alloca (rharray_type 10) "ar" builder in
+  let ptr n = build_in_bounds_gep new_array (idx n) "arptr" builder in
+  let llqs = Array.map codegen_sexpr qs in
+  Array.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llqs;
+  box_value new_array
 
 and codegen_vector qs =
   let codegen_sexpr_unboxed = function

@@ -1,3 +1,1 @@
-(defn foo [a b] (+ a b))
-(foo 3 4)
-(foo 3 4)
+(head (rest ["foo" 7 "moo"]))
