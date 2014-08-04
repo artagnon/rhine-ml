@@ -64,10 +64,11 @@ let box_value llval =
       let new_str = build_alloca (rhstring_type 10) "str" builder in
       let new_str_ptr = build_in_bounds_gep new_str (idx 0) "strptr" builder in
       ignore (build_store new_str_ptr str_ptr builder);
-      ptr
+      (ptr, llval)
     | ty when ty = rharray_type 10 ->
        let ptr = build_in_bounds_gep value_ptr (idx 4) "boxptr" builder in
-       ptr
+       let llval = build_in_bounds_gep llval (idx 0) "llval" builder in
+       (ptr, llval)
     | ty -> raise (Error "Don't know how to box type") in
   let match_composite ty = match classify_type ty with
       TypeKind.Vector ->
@@ -78,26 +79,19 @@ let box_value llval =
       let new_vec_ptr = build_in_bounds_gep new_vec (idx 0) "vecptr" builder in
       ignore (build_store new_vec_ptr vec_ptr builder);
       let el = build_load ptr "el" builder in
-      build_bitcast el (pointer_type (rhvector_type 10)) "dst" builder
+      let size = vector_size (type_of llval) in
+      let llval = build_shufflevector llval (undef_vec size)
+                                      (mask_vec 10) "llval" builder in
+      (build_bitcast el (pointer_type (rhvector_type 10)) "dst" builder, llval)
     | TypeKind.Pointer -> match_pointer ty
     | _ -> raise (Error "Don't know how to box type") in
-  let dst = match type_of llval with
+  let (dst, llval) = match type_of llval with
       ty when ty = i64_type ->
-      build_in_bounds_gep value_ptr (idx 0) "boxptr" builder;
+      (build_in_bounds_gep value_ptr (idx 0) "boxptr" builder, llval)
     | ty when ty = i1_type ->
-       build_in_bounds_gep value_ptr (idx 1) "boxptr" builder;
+       (build_in_bounds_gep value_ptr (idx 1) "boxptr" builder, llval)
     | ty -> match_composite ty
-  in
-  let llval = if classify_type (type_of llval) = TypeKind.Vector
-              then let size = vector_size (type_of llval) in
-                   build_shufflevector llval (undef_vec size)
-                                       (mask_vec 10) "llval" builder
-              else if classify_type (type_of llval) = TypeKind.Pointer &&
-                        element_type (type_of llval) = rharray_type 10
-              then
-                build_in_bounds_gep llval (idx 0) "llval" builder
-              else llval in
-  ignore (build_store llval dst builder); value_ptr
+  in ignore (build_store llval dst builder); value_ptr
 
 let unbox_int llval =
   let dst = build_in_bounds_gep llval (idx 0) "boxptr" builder in
