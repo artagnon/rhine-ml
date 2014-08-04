@@ -1,4 +1,4 @@
-OBJS = parser.cmo lexer.cmo pretty.cmo codegen.cmo toplevel.cmo main.cmo
+OBJS = parser.cmo lexer.cmo pretty.cmo codegen.cmo toplevel.cmo main.cmo bindings.o
 ocamlc = ocamlc -g -w @5@8@10@11@12@14@23@24@26@29@40
 
 rhine : $(OBJS)

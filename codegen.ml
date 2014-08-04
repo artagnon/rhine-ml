@@ -39,6 +39,8 @@ let cf_ops = List.fold_left (fun s k -> StringSet.add k s)
                             [ "if"; "dotimes" ]
 
 let box_value llval =
+    print_newline(print_string "Boxing");
+
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
     | None -> raise (Error "Could not look up value_t")
@@ -66,6 +68,7 @@ let box_value llval =
   in ignore (build_store llval dst builder); value_ptr
 
 let unbox_int llval =
+  print_newline(print_string "Unboxing int");
   let idx0 = [| const_int i32_type 0; const_int i32_type 0 |] in
   let dst = build_in_bounds_gep llval idx0 "boxptr" builder in
   build_load dst "load" builder
@@ -92,7 +95,7 @@ let mask_vec len =
 
 let codegen_atom atom =
   let unboxed_value = match atom with
-      Ast.Int n -> const_int i64_type n
+      Ast.Int n -> const_int i64_type n (*i32*)
     | Ast.Bool n -> const_int i1_type (int_of_bool n)
     | Ast.Double n -> const_float double_type n
     | Ast.Nil -> const_null i1_type
@@ -104,14 +107,11 @@ let codegen_atom atom =
 let rec extract_args s = match s with
     Ast.DottedPair(s1, s2) ->
     begin match (s1, s2) with
-            (Ast.Atom m, Ast.DottedPair(_, _)) ->
-            (codegen_atom m)::(extract_args s2)
+          | (Ast.Atom m, Ast.DottedPair(_, _)) -> (codegen_atom m)::(extract_args s2)
           | (Ast.Atom m, Ast.Atom(Ast.Nil)) -> [codegen_atom m]
-          | (Ast.DottedPair(_, _), Ast.DottedPair(_, _)) ->
-             (codegen_sexpr s1)::(extract_args s2)
+          | (Ast.DottedPair(_, _), Ast.DottedPair(_, _)) -> (codegen_sexpr s1)::(extract_args s2)
           | (Ast.DottedPair(_, _), Ast.Atom(Ast.Nil)) -> [codegen_sexpr s1]
-          | (Ast.Vector(qs), Ast.DottedPair(_, _)) ->
-             (codegen_vector qs)::(extract_args s2)
+          | (Ast.Vector(qs), Ast.DottedPair(_, _)) -> (codegen_vector qs)::(extract_args s2)
           | (Ast.Vector(qs), Ast.Atom(Ast.Nil)) -> [codegen_vector qs]
           | _ -> raise (Error "Malformed sexp")
     end
@@ -184,6 +184,7 @@ and codegen_cf_op op s2 =
   phi
 
 and codegen_call_op f args =
+  ignore(print_newline(print_string "Calling function"));
   let callee =
     match lookup_function f the_module with
     | Some callee -> callee
@@ -192,7 +193,7 @@ and codegen_call_op f args =
   if Array.length (params callee) != List.length args then
     raise (Error "Incorrect # arguments passed");
   let args = Array.of_list (List.map unbox_int args) in
-  build_call callee args "call" builder
+  build_call callee args "call" builder;
 
 and codegen_sexpr s = match s with
     Ast.Atom n -> codegen_atom n
@@ -209,7 +210,7 @@ and codegen_sexpr s = match s with
              else if StringSet.mem s cf_ops then
                codegen_cf_op s args
              else
-               codegen_call_op s args
+               codegen_call_op s args;
            | _ -> raise (Error "Expected function call")
      end
   | Ast.Vector(qs) -> codegen_vector qs
@@ -230,16 +231,20 @@ and codegen_vector qs =
   box_value unboxed_value
 
 let codegen_proto p =
+  ignore(print_newline(print_string "Proto"));
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
     | None -> raise (Error "Could not look up value_t")
   in
   match p with
     Ast.Prototype (name, args) ->
+    ignore(print_newline(print_int(Array.length args)));
     let args_len = Array.length args in
-    let ints = Array.make args_len i64_type in
+    let ints = Array.make args_len i32_type in
     let ft = if args_len == 0 then
                function_type i64_type ints
+             else if args_len == 1 then
+               function_type i32_type ints
              else
                function_type (pointer_type value_t) ints in
     let f =
@@ -270,8 +275,7 @@ let codegen_proto p =
 let codegen_func = function
   | Ast.Function (proto, body) ->
       Hashtbl.clear named_values;
-      let the_function = codegen_proto proto in
-
+      let the_function = codegen_proto proto in 
       (* Create a new basic block to start insertion into. *)
       let bb = append_block context "entry" the_function in
       position_at_end bb builder;
@@ -285,7 +289,6 @@ let codegen_func = function
 
         (* Finish off the function. *)
         let _ = build_ret ret_val builder in
-
         the_function
       with e ->
         delete_function the_function;

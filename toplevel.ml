@@ -28,9 +28,9 @@ let parse_defn_form sexpr = match sexpr with
   | _ -> raise (Error "Unparseable defn form")
 
 let sexpr_matcher sexpr = match sexpr with
-    Ast.DottedPair(Ast.Atom(Ast.Symbol("defn")), s2) ->
-    let (sym, args, body) = parse_defn_form s2 in
-    codegen_func(Ast.Function(Ast.Prototype(sym, args), body))
+  | Ast.DottedPair(Ast.Atom(Ast.Symbol("defn")), s2) ->
+        let (sym, args, body) = parse_defn_form s2 in
+        codegen_func(Ast.Function(Ast.Prototype(sym, args), body))
   | _ -> emit_anonymous_f sexpr
 
 let print_and_jit se =
@@ -42,16 +42,18 @@ let print_and_jit se =
                         (pointer_type i64_type) (* vector *)
                        |] in
   struct_set_body llvalue_t value_t_elts false;
+  ignore(dump_value codegen_proto(Ast.Prototype("hi", Array.make 1 "X")));
 
   let f = sexpr_matcher se in
 
   (* Validate the generated code, checking for consistency. *)
-  Llvm_analysis.assert_valid_function f;
+  (*  Llvm_analysis.assert_valid_function f;*)
 
   (* Optimize the function. *)
   ignore (PassManager.run_function f the_fpm);
 
   dump_value f;
+
   if Array.length (params f) == 0 then (
     let result = ExecutionEngine.run_function f [||] the_execution_engine in
     print_string "Evaluated to ";
@@ -61,6 +63,7 @@ let print_and_jit se =
 
 let main_loop ss =
   (* Do simple "peephole" optimizations and bit-twiddling optzn. *)
+
   add_instruction_combination the_fpm;
 
   (* reassociate expressions. *)
@@ -75,4 +78,4 @@ let main_loop ss =
   ignore (PassManager.initialize the_fpm);
 
   List.iter (fun se -> print_and_jit se) ss;
-                   dump_module the_module
+  dump_module the_module
