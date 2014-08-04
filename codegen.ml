@@ -26,9 +26,9 @@ let arith_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
                                [ "+"; "-"; "*"; "/" ]
 
-let vector_ops = List.fold_left (fun s k -> StringSet.add k s)
-                                StringSet.empty
-                                [ "head"; "rest" ]
+let array_ops = List.fold_left (fun s k -> StringSet.add k s)
+                               StringSet.empty
+                               [ "head"; "rest" ]
 
 let string_ops = List.fold_left (fun s k -> StringSet.add k s)
                                 StringSet.empty
@@ -157,8 +157,8 @@ let rec extract_args s = match s with
              (codegen_sexpr s1)::(extract_args s2)
           | (Ast.DottedPair(_, _), Ast.Atom(Ast.Nil)) -> [codegen_sexpr s1]
           | (Ast.Vector(qs), Ast.DottedPair(_, _)) ->
-             (codegen_vector qs)::(extract_args s2)
-          | (Ast.Vector(qs), Ast.Atom(Ast.Nil)) -> [codegen_vector qs]
+             (codegen_array qs)::(extract_args s2)
+          | (Ast.Vector(qs), Ast.Atom(Ast.Nil)) -> [codegen_array qs]
           | _ -> raise (Error "Malformed sexp")
     end
   | _ -> raise (Error "Expected sexp")
@@ -176,7 +176,7 @@ and codegen_arith_op op args =
       | _ -> raise (Error "Unknown arithmetic operator")
     in box_value unboxed_value
 
-and codegen_vector_op op args =
+and codegen_array_op op args =
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
     | None -> raise (Error "Could not look up value_t")
@@ -195,7 +195,7 @@ and codegen_vector_op op args =
      let new_ptr = build_in_bounds_gep ar (idx 1) "rest" builder in
      let new_ar = build_bitcast new_ptr (rharray_type 10) "newar" builder in
      box_value new_ar
-  | _ -> raise (Error "Unknown vector operator")
+  | _ -> raise (Error "Unknown array operator")
 
 and codegen_string_op op s2 =
   let rhcvector_type size = vector_type i8_type size in
@@ -262,8 +262,8 @@ and codegen_sexpr s = match s with
              let args = extract_args s2 in
              if StringSet.mem s arith_ops then
                codegen_arith_op s args
-             else if StringSet.mem s vector_ops then
-               codegen_vector_op s args
+             else if StringSet.mem s array_ops then
+               codegen_array_op s args
              else if StringSet.mem s string_ops then
                codegen_string_op s args
              else if StringSet.mem s cf_ops then
@@ -272,9 +272,9 @@ and codegen_sexpr s = match s with
                codegen_call_op s args
            | _ -> raise (Error "Expected function call")
      end
-  | Ast.Vector(qs) -> codegen_vector qs
+  | Ast.Vector(qs) -> codegen_array qs
 
-and codegen_vector qs =
+and codegen_array qs =
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
     | None -> raise (Error "Could not look up value_t") in
@@ -285,7 +285,7 @@ and codegen_vector qs =
   Array.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llqs;
   box_value new_array
 
-and codegen_vector2 qs =
+and codegen_vector qs =
   let codegen_sexpr_unboxed = function
       Ast.Atom (Ast.Int n) -> const_int i64_type n
      | _ -> raise (Error "Expected int to fill vector") in
