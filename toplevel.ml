@@ -75,5 +75,4 @@ let main_loop ss =
 
   ignore (PassManager.initialize the_fpm);
 
-  List.iter (fun se -> print_and_jit se) ss;
-                   dump_module the_module
+  List.iter (fun se -> print_and_jit se) ss
