@@ -177,13 +177,25 @@ and codegen_arith_op op args =
     in box_value unboxed_value
 
 and codegen_vector_op op args =
-  let ar = unbox_ar (List.hd args) in
-  let len = array_length (type_of ar) in
-  let boxed_value = match op with
-      "head" -> build_extractvalue ar 0 "extract" builder
-    | _ -> raise (Error "Unknown vector operator")
+  let value_t = match type_by_name the_module "value_t" with
+      Some t -> t
+    | None -> raise (Error "Could not look up value_t")
   in
-  boxed_value
+  let arg = List.hd args in
+  match op with
+    "head" ->
+    let ar = unbox_ar arg in
+    build_extractvalue ar 0 "extract" builder
+  | "rest" ->
+     let ptr = build_in_bounds_gep arg (idx 4) "boxptr" builder in
+     let el = build_load ptr "el" builder in
+     let rharray_type size = pointer_type (array_type
+                                             (pointer_type value_t) size) in
+     let ar = build_bitcast el (rharray_type 10) "arptr" builder in
+     let new_ptr = build_in_bounds_gep ar (idx 1) "rest" builder in
+     let new_ar = build_bitcast new_ptr (rharray_type 10) "newar" builder in
+     box_value new_ar
+  | _ -> raise (Error "Unknown vector operator")
 
 and codegen_string_op op s2 =
   let rhcvector_type size = vector_type i8_type size in
