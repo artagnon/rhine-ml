@@ -47,7 +47,7 @@ let print_and_jit se =
   let f = sexpr_matcher se in
 
   (* Validate the generated code, checking for consistency. *)
-  (*  Llvm_analysis.assert_valid_function f;*)
+  (* Llvm_analysis.assert_valid_function f;*)
 
   (* Optimize the function. *)
   ignore (PassManager.run_function f the_fpm);
