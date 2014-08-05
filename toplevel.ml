@@ -43,7 +43,9 @@ let print_and_jit se =
                         (pointer_type (pointer_type llvalue_t)); (* array *)
                        |] in
   struct_set_body llvalue_t value_t_elts false;
-  ignore(dump_value codegen_proto(Ast.Prototype("hi", Array.make 1 "X")));
+
+  let f = codegen_proto (Ast.Prototype("hi", Array.make 1 "X")) in
+  dump_value f;
 
   let f = sexpr_matcher se in
 

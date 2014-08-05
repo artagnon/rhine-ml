@@ -45,7 +45,7 @@ let undef_vec len =
   const_vector (Array.of_list undef_list)
 
 let box_value llval =
-    print_newline(print_string "Boxing");
+  print_newline (print_string "Boxing");
 
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
@@ -96,7 +96,7 @@ let box_value llval =
   in ignore (build_store llval dst builder); value_ptr
 
 let unbox_int llval =
-  print_newline(print_string "Unboxing int");
+  print_newline (print_string "Unboxing int");
   let dst = build_in_bounds_gep llval (idx 0) "boxptr" builder in
   build_load dst "load" builder
 
@@ -147,12 +147,15 @@ let codegen_atom atom =
 let rec extract_args s = match s with
     Ast.DottedPair(s1, s2) ->
     begin match (s1, s2) with
-          | (Ast.Atom m, Ast.DottedPair(_, _)) -> (codegen_atom m)::(extract_args s2)
+            (Ast.Atom m, Ast.DottedPair(_, _)) ->
+            (codegen_atom m)::(extract_args s2)
           | (Ast.Atom m, Ast.Atom(Ast.Nil)) -> [codegen_atom m]
-          | (Ast.DottedPair(_, _), Ast.DottedPair(_, _)) -> (codegen_sexpr s1)::(extract_args s2)
+          | (Ast.DottedPair(_, _), Ast.DottedPair(_, _)) ->
+             (codegen_sexpr s1)::(extract_args s2)
           | (Ast.DottedPair(_, _), Ast.Atom(Ast.Nil)) -> [codegen_sexpr s1]
-          | (Ast.Vector(qs), Ast.DottedPair(_, _)) -> (codegen_vector qs)::(extract_args s2)
-          | (Ast.Vector(qs), Ast.Atom(Ast.Nil)) -> [codegen_vector qs]
+          | (Ast.Vector(qs), Ast.DottedPair(_, _)) ->
+             (codegen_array qs)::(extract_args s2)
+          | (Ast.Vector(qs), Ast.Atom(Ast.Nil)) -> [codegen_array qs]
           | _ -> raise (Error "Malformed sexp")
     end
   | _ -> raise (Error "Expected sexp")
@@ -254,7 +257,7 @@ and codegen_cf_op op s2 =
   phi
 
 and codegen_call_op f args =
-  ignore(print_newline(print_string "Calling function"));
+  ignore (print_newline (print_string "Calling function"));
   let callee =
     match lookup_function f the_module with
     | Some callee -> callee
@@ -304,14 +307,14 @@ and codegen_vector qs =
   box_value unboxed_value
 
 let codegen_proto p =
-  ignore(print_newline(print_string "Proto"));
+  ignore (print_newline (print_string "Proto"));
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
     | None -> raise (Error "Could not look up value_t")
   in
   match p with
     Ast.Prototype (name, args) ->
-    ignore(print_newline(print_int(Array.length args)));
+    ignore (print_newline (print_int (Array.length args)));
     let args_len = Array.length args in
     let ints = Array.make args_len i32_type in
     let ft = if args_len == 0 then
