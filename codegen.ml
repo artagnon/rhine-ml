@@ -316,11 +316,11 @@ let codegen_proto p =
     Ast.Prototype (name, args) ->
     ignore (print_newline (print_int (Array.length args)));
     let args_len = Array.length args in
-    let ints = Array.make args_len i32_type in
+    let ints = Array.make args_len (pointer_type value_t)  in
     let ft = if args_len == 0 then
                function_type i64_type ints
              else if args_len == 1 then
-               function_type i32_type ints
+               function_type i64_type ints
              else
                function_type (pointer_type value_t) ints in
     let f =
