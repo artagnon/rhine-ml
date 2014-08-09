@@ -265,7 +265,7 @@ and codegen_call_op f args =
   in
   if Array.length (params callee) != List.length args then
     raise (Error "Incorrect # arguments passed");
-  let args = Array.of_list (List.map unbox_int args) in
+  let args = Array.of_list args in
   build_call callee args "call" builder;
 
 and codegen_sexpr s = match s with
