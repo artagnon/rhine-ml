@@ -1,1 +1,1 @@
-(head (rest ["foo" 7 "moo"]))
+(first (rest ["foo" 7 "moo"]))

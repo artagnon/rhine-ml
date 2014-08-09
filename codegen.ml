@@ -28,7 +28,7 @@ let arith_ops = List.fold_left (fun s k -> StringSet.add k s)
 
 let array_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
-                               [ "head"; "rest" ]
+                               [ "first"; "rest" ]
 
 let string_ops = List.fold_left (fun s k -> StringSet.add k s)
                                 StringSet.empty
@@ -161,7 +161,7 @@ and codegen_array_op op args =
   in
   let arg = List.hd args in
   match op with
-    "head" ->
+    "first" ->
     let ar = unbox_ar arg in
     build_extractvalue ar 0 "extract" builder
   | "rest" ->
