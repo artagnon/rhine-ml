@@ -4,7 +4,6 @@ struct value_t {
 	int int_val;
 	int bool_val:1;
 	char *string_val;
-	int *vector_val;
 	struct value_t *array_val;
 };
 

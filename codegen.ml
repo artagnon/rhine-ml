@@ -49,10 +49,6 @@ let box_value llval =
       Some t -> t
     | None -> raise (Error "Could not look up value_t")
   in
-  let mask_vec len =
-    let mask_list = List.map (fun i -> const_int i32_type i) (0--(len - 1)) in
-    const_vector (Array.of_list mask_list) in
-  let rhvector_type size = vector_type i64_type size in
   let rhstring_type size = array_type i8_type size in
   let rharray_type size = array_type (pointer_type value_t) size in
   let value_ptr = build_alloca value_t "value" builder in
@@ -66,24 +62,12 @@ let box_value llval =
       ignore (build_store new_str_ptr str_ptr builder);
       (ptr, llval)
     | ty when ty = rharray_type 10 ->
-       let ptr = build_in_bounds_gep value_ptr (idx 4) "boxptr" builder in
+       let ptr = build_in_bounds_gep value_ptr (idx 3) "boxptr" builder in
        let llval = build_in_bounds_gep llval (idx 0) "llval" builder in
        (ptr, llval)
     | ty -> raise (Error "Don't know how to box type") in
   let match_composite ty = match classify_type ty with
-      TypeKind.Vector ->
-      let ptr = build_in_bounds_gep value_ptr (idx 3) "boxptr" builder in
-      let vec_ptr = build_in_bounds_gep ptr [| const_int i32_type 0 |]
-                                        "vecptr" builder in
-      let new_vec = build_alloca (rhvector_type 10) "vec" builder in
-      let new_vec_ptr = build_in_bounds_gep new_vec (idx 0) "vecptr" builder in
-      ignore (build_store new_vec_ptr vec_ptr builder);
-      let el = build_load ptr "el" builder in
-      let size = vector_size (type_of llval) in
-      let llval = build_shufflevector llval (undef_vec size)
-                                      (mask_vec 10) "llval" builder in
-      (build_bitcast el (pointer_type (rhvector_type 10)) "dst" builder, llval)
-    | TypeKind.Pointer -> match_pointer ty
+      TypeKind.Pointer -> match_pointer ty
     | _ -> raise (Error "Don't know how to box type") in
   let (dst, llval) = match type_of llval with
       ty when ty = i64_type ->
@@ -122,7 +106,7 @@ let unbox_ar llval =
       Some t -> t
     | None -> raise (Error "Could not look up value_t")
   in
-  let ptr = build_in_bounds_gep llval (idx 4) "boxptr" builder in
+  let ptr = build_in_bounds_gep llval (idx 3) "boxptr" builder in
   let el = build_load ptr "el" builder in
   let rharray_type size = pointer_type (array_type
                                           (pointer_type value_t) size) in
@@ -181,7 +165,7 @@ and codegen_array_op op args =
     let ar = unbox_ar arg in
     build_extractvalue ar 0 "extract" builder
   | "rest" ->
-     let ptr = build_in_bounds_gep arg (idx 4) "boxptr" builder in
+     let ptr = build_in_bounds_gep arg (idx 3) "boxptr" builder in
      let el = build_load ptr "el" builder in
      let rharray_type size = pointer_type (array_type
                                              (pointer_type value_t) size) in
@@ -294,13 +278,6 @@ and codegen_array qs =
   let llqs = Array.map codegen_sexpr qs in
   Array.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llqs;
   box_value new_array
-
-and codegen_vector qs =
-  let codegen_sexpr_unboxed = function
-      Ast.Atom (Ast.Int n) -> const_int i64_type n
-     | _ -> raise (Error "Expected int to fill vector") in
-  let unboxed_value = const_vector (Array.map codegen_sexpr_unboxed qs) in
-  box_value unboxed_value
 
 let codegen_proto p =
   let value_t = match type_by_name the_module "value_t" with
