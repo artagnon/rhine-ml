@@ -45,8 +45,6 @@ let undef_vec len =
   const_vector (Array.of_list undef_list)
 
 let box_value llval =
-  print_newline (print_string "Boxing");
-
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
     | None -> raise (Error "Could not look up value_t")
@@ -96,7 +94,6 @@ let box_value llval =
   in ignore (build_store llval dst builder); value_ptr
 
 let unbox_int llval =
-  print_newline (print_string "Unboxing int");
   let dst = build_in_bounds_gep llval (idx 0) "boxptr" builder in
   build_load dst "load" builder
 
@@ -257,7 +254,6 @@ and codegen_cf_op op s2 =
   phi
 
 and codegen_call_op f args =
-  ignore (print_newline (print_string "Calling function"));
   let callee =
     match lookup_function f the_module with
     | Some callee -> callee
@@ -307,14 +303,12 @@ and codegen_vector qs =
   box_value unboxed_value
 
 let codegen_proto p =
-  ignore (print_newline (print_string "Proto"));
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
     | None -> raise (Error "Could not look up value_t")
   in
   match p with
     Ast.Prototype (name, args) ->
-    ignore (print_newline (print_int (Array.length args)));
     let args_len = Array.length args in
     let ints = Array.make args_len (pointer_type value_t)  in
     let ft = if args_len == 0 then
