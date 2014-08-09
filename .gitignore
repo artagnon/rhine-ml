@@ -2,6 +2,7 @@ rhine
 lexer.ml
 parser.ml
 parser.mli
+bindings.o
 *~
 *.cmi
 *.cmo
