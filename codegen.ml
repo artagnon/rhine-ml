@@ -289,13 +289,11 @@ let codegen_proto p =
   match p with
     Ast.Prototype (name, args) ->
     let args_len = Array.length args in
-    let ints = Array.make args_len (pointer_type value_t)  in
+    let argt = Array.make args_len (pointer_type value_t)  in
     let ft = if args_len == 0 then
-               function_type i64_type ints
-             else if args_len == 1 then
-               function_type i64_type ints
+               function_type i64_type argt
              else
-               function_type (pointer_type value_t) ints in
+               function_type (pointer_type value_t) argt in
     let f =
       match lookup_function name the_module with
         None -> declare_function name ft the_module

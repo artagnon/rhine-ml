@@ -77,7 +77,7 @@ let main_loop ss =
   struct_set_body llvalue_t value_t_elts false;
 
   (* Declare external functions *)
-  let f = codegen_proto (Ast.Prototype("hi", Array.make 1 "X")) in
+  let f = codegen_proto (Ast.Prototype("println", Array.make 1 "v")) in
   dump_value f;
 
   List.iter (fun se -> print_and_jit se) ss
