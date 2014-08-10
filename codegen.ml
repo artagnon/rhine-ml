@@ -73,7 +73,10 @@ let box_value llval =
       let new_str_ptr = build_in_bounds_gep new_str (idx 0) "strptr" builder in
       ignore (build_store new_str_ptr str_ptr builder);
       (3, llval)
-    | ty when ty = rharray_type 10 ->
+    | ty when ty = rharray_type (array_length ty) ->
+       let len = const_int i32_type (array_length ty) in
+       let lenptr = build_in_bounds_gep value_ptr (idx 5) "lenptr" builder in
+       ignore (build_store len lenptr builder);
        (4, build_in_bounds_gep llval (idx 0) "llval" builder)
     | ty -> raise (Error "Don't know how to box type") in
   let match_composite ty = match classify_type ty with
@@ -91,9 +94,7 @@ let box_value llval =
   let lltype_tag = const_int i32_type type_tag in
   ignore (build_store lltype_tag type_dst builder);
   ignore (build_store llval dst builder);
-  match type_tag with
-      4 -> (ignore (build_store (const_int i32_type 6) (build_in_bounds_gep value_ptr (idx 5) "lenptr" builder) builder); value_ptr)
-    | _ -> value_ptr
+  value_ptr
 
 let unbox_int llval =
   let dst = build_in_bounds_gep llval (idx 1) "boxptr" builder in
@@ -319,8 +320,9 @@ and codegen_array qs =
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
     | None -> raise (Error "Could not look up value_t") in
+  let len = Array.length qs in
   let rharray_type size = array_type (pointer_type value_t) size in
-  let new_array = build_alloca (rharray_type 10) "ar" builder in
+  let new_array = build_alloca (rharray_type len) "ar" builder in
   let ptr n = build_in_bounds_gep new_array (idx n) "arptr" builder in
   let llqs = Array.map codegen_sexpr qs in
   Array.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llqs;
