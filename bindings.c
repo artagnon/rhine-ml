@@ -24,7 +24,7 @@ extern struct value_t *print(struct value_t *v) {
 		printf("(string) %s", v->string_val);
 		break;
 	case 4:
-		printf("(array) [");
+		printf("(array len %d) [", v->array_len);
         for (i = 0; i < 10; i++) {
             // only integer arrays for now
 		    printf("%ld ", (*(v->array_val+i))->int_val);

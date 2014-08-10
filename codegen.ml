@@ -91,7 +91,9 @@ let box_value llval =
   let lltype_tag = const_int i32_type type_tag in
   ignore (build_store lltype_tag type_dst builder);
   ignore (build_store llval dst builder);
-  value_ptr
+  match type_tag with
+      4 -> (ignore (build_store (const_int i32_type 6) (build_in_bounds_gep value_ptr (idx 5) "lenptr" builder) builder); value_ptr)
+    | _ -> value_ptr
 
 let unbox_int llval =
   let dst = build_in_bounds_gep llval (idx 1) "boxptr" builder in
