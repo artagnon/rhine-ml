@@ -123,7 +123,9 @@ let codegen_atom atom =
     | Ast.String s -> build_global_stringptr s "string" builder
     | Ast.Symbol n -> try Hashtbl.find named_values n with
                         Not_found -> raise (Error "Symbol not bound")
-  in box_value unboxed_value
+  in match atom with
+       Ast.Symbol n -> unboxed_value
+     | _ -> box_value unboxed_value
 
 let rec extract_args s = match s with
     Ast.DottedPair(s1, s2) ->
