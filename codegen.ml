@@ -24,7 +24,7 @@ let (--) i j =
 
 let arith_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
-                               [ "+"; "-"; "*"; "/" ]
+                               [ "+"; "-"; "*"; "/"; "<" ]
 
 let array_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
@@ -161,11 +161,12 @@ and codegen_arith_op op args =
   let tl = List.tl args in
   if tl == [] then box_value hd else
     let unboxed_value = match op with
-        "+" -> build_add hd (unbox_int (codegen_arith_op op tl))
-                         "add" builder
+        "+" -> build_add hd (unbox_int (codegen_arith_op op tl)) "add" builder
       | "-" -> build_sub hd (unbox_int (codegen_arith_op op tl)) "sub" builder
       | "*" -> build_mul hd (unbox_int (codegen_arith_op op tl)) "mul" builder
       | "/" -> build_fdiv hd (codegen_arith_op op tl) "div" builder
+      | "<" -> build_icmp Icmp.Slt (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmp" builder
+      | ">" -> build_icmp Icmp.Sgt (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmp" builder
       | _ -> raise (Error "Unknown arithmetic operator")
     in box_value unboxed_value
 
