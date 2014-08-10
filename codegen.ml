@@ -246,7 +246,8 @@ and codegen_binding_op f s2 =
   match f with
     "let" ->
     let bindlist, body = match s2 with
-        Ast.DottedPair(Ast.Vector(qs), next) -> qs, next
+        Ast.DottedPair(Ast.Vector(qs),
+                       Ast.DottedPair(next, Ast.Atom(Ast.Nil))) -> qs, next
       | _ -> raise (Error "Malformed let") in
     let len = Array.length bindlist in
     if len mod 2 != 0 then
@@ -269,20 +270,21 @@ and codegen_sexpr s = match s with
   | Ast.DottedPair(s1, s2) ->
      begin match s1 with
              Ast.Atom(Ast.Symbol s) ->
-             let args = extract_args s2 in
-             if StringSet.mem s arith_ops then
-               codegen_arith_op s args
-             else if StringSet.mem s array_ops then
-               codegen_array_op s args
-             else if StringSet.mem s string_ops then
-               codegen_string_op s args
-             else if StringSet.mem s cf_ops then
-               codegen_cf_op s args
-             else if StringSet.mem s binding_ops then
+             if StringSet.mem s binding_ops then
                codegen_binding_op s s2
              else
-               codegen_call_op s args;
-           | _ -> raise (Error "Expected function call")
+               let args = extract_args s2 in
+               if StringSet.mem s arith_ops then
+                 codegen_arith_op s args
+               else if StringSet.mem s array_ops then
+                 codegen_array_op s args
+               else if StringSet.mem s string_ops then
+                 codegen_string_op s args
+               else if StringSet.mem s cf_ops then
+                 codegen_cf_op s args
+               else
+                 codegen_call_op s args
+           | _ -> raise (Error "Expected function call");
      end
   | Ast.Vector(qs) -> codegen_array qs
 
