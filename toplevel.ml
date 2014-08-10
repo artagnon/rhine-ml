@@ -70,14 +70,17 @@ let main_loop ss =
   (* Declare global variables/ types *)
   let llvalue_t = named_struct_type context "value_t" in
   let value_t_elts = [| i32_type;                 (* type *)
-                        i64_type;                 (* integer *)
-                        i1_type;                  (* bool *)
-                        (pointer_type i8_type);   (* string *)
-                        (pointer_type (pointer_type llvalue_t)); (* array *)
+                        i64_type;                 (* integer: 1 *)
+                        i1_type;                  (* bool: 2 *)
+                        (pointer_type i8_type);   (* string: 3 *)
+                        (pointer_type (pointer_type llvalue_t)); ;  (* array: 4 *)
+                                                                    (* null value: 5 *)
                        |] in
   struct_set_body llvalue_t value_t_elts false;
 
   (* Declare external functions *)
+  let f2 = codegen_proto (Ast.Prototype("print", Array.make 1 "v")) in
+  dump_value f2;
   let f = codegen_proto (Ast.Prototype("println", Array.make 1 "v")) in
   dump_value f;
 
