@@ -38,6 +38,10 @@ let cf_ops = List.fold_left (fun s k -> StringSet.add k s)
                             StringSet.empty
                             [ "if"; "dotimes" ]
 
+let binding_ops = List.fold_left (fun s k -> StringSet.add k s)
+                                 StringSet.empty
+                                 [ "let"; "def" ]
+
 let idx n = [| const_int i32_type 0; const_int i32_type n |]
 
 let undef_vec len =
@@ -238,6 +242,28 @@ and codegen_call_op f args =
   let args = Array.of_list args in
   build_call callee args "call" builder;
 
+and codegen_binding_op f s2 =
+  match f with
+    "let" ->
+    let bindlist, body = match s2 with
+        Ast.DottedPair(Ast.Vector(qs), next) -> qs, next
+      | _ -> raise (Error "Malformed let") in
+    let len = Array.length bindlist in
+    if len mod 2 != 0 then
+      raise (Error "Malformed binding form in let");
+    let bind n a =
+      let s = match n with
+          Ast.Atom(Ast.Symbol(s)) -> s
+        | _ -> raise (Error "Malformed binding form in let") in
+      let lla = codegen_sexpr a in
+      set_value_name s lla;
+      Hashtbl.add named_values s lla in
+    Array.iteri (fun i m ->
+                 if (i mod 2 == 0) then
+                   bind m (bindlist.(i+1))) bindlist;
+    codegen_sexpr body
+    | _ -> raise (Error "Unknown binding operator")
+
 and codegen_sexpr s = match s with
     Ast.Atom n -> codegen_atom n
   | Ast.DottedPair(s1, s2) ->
@@ -252,6 +278,8 @@ and codegen_sexpr s = match s with
                codegen_string_op s args
              else if StringSet.mem s cf_ops then
                codegen_cf_op s args
+             else if StringSet.mem s binding_ops then
+               codegen_binding_op s s2
              else
                codegen_call_op s args;
            | _ -> raise (Error "Expected function call")
