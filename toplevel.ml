@@ -41,17 +41,16 @@ let sexpr_matcher sexpr =
     let (sym, args, body) = parse_defn_form s2 in
     codegen_func(Ast.Function(Ast.Prototype(sym, args), body))
   | Ast.DottedPair(Ast.Atom(Ast.Symbol("def")), s2) ->
-     let (sym, expr) = parse_def_form s2 in
-     let llexpr = codegen_sexpr expr in
-     let global = define_global sym (const_null (pointer_type value_t))
-                                the_module in
-
      (* Emit initializer function *)
      let the_function = codegen_proto (Ast.Prototype("", [||])) in 
      let bb = append_block context "entry" the_function in
      position_at_end bb builder;
+     let (sym, expr) = parse_def_form s2 in
+     let llexpr = codegen_sexpr expr in
+     let llexpr = build_load llexpr "llexpr" builder in
+     let global = define_global sym (const_null value_t) the_module in
      ignore (build_store llexpr global builder);
-     ignore (build_ret (codegen_atom (Ast.Int(0))) builder);
+     ignore (build_ret (const_int i64_type 0) builder);
      the_function
   | _ -> emit_anonymous_f sexpr
 
