@@ -42,6 +42,14 @@ let binding_ops = List.fold_left (fun s k -> StringSet.add k s)
                                  StringSet.empty
                                  [ "let"; "def" ]
 
+let create_entry_block_alloca the_function var_name =
+  let value_t = match type_by_name the_module "value_t" with
+      Some t -> t
+    | None -> raise (Error "Could not look up value_t")
+  in
+  let builder = builder_at context (instr_begin (entry_block the_function)) in
+  build_alloca value_t var_name builder
+
 let idx n = [| const_int i32_type 0; const_int i32_type n |]
 
 let undef_vec len =
@@ -121,8 +129,11 @@ let codegen_atom atom =
     | Ast.Double n -> const_float double_type n
     | Ast.Nil -> const_null i1_type
     | Ast.String s -> build_global_stringptr s "string" builder
-    | Ast.Symbol n -> try Hashtbl.find named_values n with
-                        Not_found -> raise (Error "Symbol not bound")
+    | Ast.Symbol n -> match lookup_global n the_module with
+                        Some v -> v
+                      | None ->
+                         try Hashtbl.find named_values n with
+                           Not_found -> raise (Error "Symbol not bound")
   in match atom with
        Ast.Symbol n -> unboxed_value
      | _ -> box_value unboxed_value
@@ -243,6 +254,7 @@ and codegen_call_op f args =
   build_call callee args "call" builder;
 
 and codegen_binding_op f s2 =
+  let old_bindings = ref [] in
   match f with
     "let" ->
     let bindlist, body = match s2 with
@@ -256,13 +268,25 @@ and codegen_binding_op f s2 =
       let s = match n with
           Ast.Atom(Ast.Symbol(s)) -> s
         | _ -> raise (Error "Malformed binding form in let") in
-      let lla = codegen_sexpr a in
-      set_value_name s lla;
-      Hashtbl.add named_values s lla in
+      let llaptr = codegen_sexpr a in
+      let lla = build_load llaptr "load" builder in
+      let the_function = block_parent (insertion_block builder) in
+      let alloca = create_entry_block_alloca the_function s in
+      dump_type (type_of alloca);
+      ignore (build_store lla alloca builder);
+      begin try let old_value = Hashtbl.find named_values s in
+                old_bindings := (s, old_value) :: !old_bindings;
+            with Not_found -> ()
+      end;
+      Hashtbl.add named_values s alloca in
     Array.iteri (fun i m ->
                  if (i mod 2 == 0) then
                    bind m (bindlist.(i+1))) bindlist;
-    codegen_sexpr body
+    let llbody = codegen_sexpr body in
+    List.iter (fun (s, old_value) ->
+               Hashtbl.add named_values s old_value
+              ) !old_bindings;
+    llbody
     | _ -> raise (Error "Unknown binding operator")
 
 and codegen_sexpr s = match s with

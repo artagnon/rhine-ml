@@ -1,6 +1,7 @@
 (defn foo
   [a]
   (let [b a]
-    (println b)))
+    (let [b (+ 1 2)]
+      (println b))))
 
 (foo "foom")
