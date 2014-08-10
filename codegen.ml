@@ -97,14 +97,6 @@ let unbox_str llval =
   let strload n = build_load (str n) "load" builder in
   strload 10
 
-let unbox_vec llval =
-  let ptr = build_in_bounds_gep llval (idx 4) "boxptr" builder in
-  let el = build_load ptr "el" builder in
-  let rhvector_type size = pointer_type (vector_type i64_type size) in
-  let vec n = build_bitcast el (rhvector_type n) "vecptr" builder in
-  let vecload n = build_load (vec n) "load" builder in
-  vecload 10
-
 let unbox_ar llval =
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
@@ -209,14 +201,6 @@ and codegen_string_op op s2 =
                   dump_type (type_of (ptr i));
                   ignore (build_store m (ptr i) builder)) splits;
       new_array
-    | "str-join" ->
-       let vec = unbox_vec (List.hd s2) in
-       let len = vector_size (type_of vec) in
-       let idx i = const_int i32_type i in
-       let l = List.map (fun i -> build_extractelement
-                                    vec (idx i) "extract" builder)
-                        (0--(len - 1)) in
-       const_array i8_type (Array.of_list l)
     | _ -> raise (Error "Unknown string operator")
   in box_value unboxed_value
 
