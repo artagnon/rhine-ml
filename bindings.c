@@ -6,13 +6,13 @@ struct value_t {
 	long int_val;
 	int bool_val:1;
 	char *string_val;
-    struct value_t **array_val;
+	struct value_t **array_val;
 	int array_len;
 };
 
 extern struct value_t *print(struct value_t *v) {
 	struct value_t *ret;
-    int i;
+	int i;
 	switch(v->type_tag) {
 	case 1:
 		printf("(int) %ld", v->int_val);
@@ -25,10 +25,10 @@ extern struct value_t *print(struct value_t *v) {
 		break;
 	case 4:
 		printf("(array len %d) [", v->array_len);
-        for (i = 0; i < v->array_len; i++) {
-            // only integer arrays for now
-		    printf("%ld ", (*(v->array_val+i))->int_val);
-        }
+		for (i = 0; i < v->array_len; i++) {
+			// only integer arrays for now
+			printf("%ld ", (*(v->array_val+i))->int_val);
+		}
 		printf("]");
 		break;
 	default:
@@ -37,14 +37,13 @@ extern struct value_t *print(struct value_t *v) {
 	}
 	ret = malloc(sizeof(struct value_t));
 	ret->int_val = 5;
-    ret->type_tag = 1;
+	ret->type_tag = 1;
 	return ret;
 }
 
 
 extern struct value_t *println(struct value_t *v) {
 	struct value_t *ret = print(v);
-    printf("\n");
-    return ret;
+	printf("\n");
+	return ret;
 }
-
