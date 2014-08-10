@@ -6,7 +6,7 @@ struct value_t {
 	long int_val;
 	int bool_val:1;
 	char *string_val;
-	struct value_t *array_val;
+    struct value_t **array_val;
 	int array_len;
 };
 
@@ -27,7 +27,7 @@ extern struct value_t *print(struct value_t *v) {
 		printf("(array) [");
         for (i = 0; i < 10; i++) {
             // only integer arrays for now
-		    printf("%ld", (v->array_val+i)->int_val);
+		    printf("%ld ", (*(v->array_val+i))->int_val);
         }
 		printf("]");
 		break;
