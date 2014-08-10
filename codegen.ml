@@ -42,6 +42,14 @@ let binding_ops = List.fold_left (fun s k -> StringSet.add k s)
                                  StringSet.empty
                                  [ "let"; "def" ]
 
+let create_entry_block_alloca the_function var_name =
+  let value_t = match type_by_name the_module "value_t" with
+      Some t -> t
+    | None -> raise (Error "Could not look up value_t")
+  in
+  let builder = builder_at context (instr_begin (entry_block the_function)) in
+  build_alloca value_t var_name builder
+
 let idx n = [| const_int i32_type 0; const_int i32_type n |]
 
 let undef_vec len =
@@ -243,6 +251,7 @@ and codegen_call_op f args =
   build_call callee args "call" builder;
 
 and codegen_binding_op f s2 =
+  let old_bindings = ref [] in
   match f with
     "let" ->
     let bindlist, body = match s2 with
@@ -256,13 +265,25 @@ and codegen_binding_op f s2 =
       let s = match n with
           Ast.Atom(Ast.Symbol(s)) -> s
         | _ -> raise (Error "Malformed binding form in let") in
-      let lla = codegen_sexpr a in
-      set_value_name s lla;
-      Hashtbl.add named_values s lla in
+      let llaptr = codegen_sexpr a in
+      let lla = build_load llaptr "load" builder in
+      let the_function = block_parent (insertion_block builder) in
+      let alloca = create_entry_block_alloca the_function s in
+      dump_type (type_of alloca);
+      ignore (build_store lla alloca builder);
+      begin try let old_value = Hashtbl.find named_values s in
+                old_bindings := (s, old_value) :: !old_bindings;
+            with Not_found -> ()
+      end;
+      Hashtbl.add named_values s alloca in
     Array.iteri (fun i m ->
                  if (i mod 2 == 0) then
                    bind m (bindlist.(i+1))) bindlist;
-    codegen_sexpr body
+    let llbody = codegen_sexpr body in
+    List.iter (fun (s, old_value) ->
+               Hashtbl.add named_values s old_value
+              ) !old_bindings;
+    llbody
     | _ -> raise (Error "Unknown binding operator")
 
 and codegen_sexpr s = match s with
