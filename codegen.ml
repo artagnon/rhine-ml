@@ -60,22 +60,26 @@ let box_value llval =
       let new_str = build_alloca (rhstring_type 10) "str" builder in
       let new_str_ptr = build_in_bounds_gep new_str (idx 0) "strptr" builder in
       ignore (build_store new_str_ptr str_ptr builder);
-      (ptr, llval)
+      (3, llval)
     | ty when ty = rharray_type 10 ->
-       let ptr = build_in_bounds_gep value_ptr (idx 4) "boxptr" builder in
-       let llval = build_in_bounds_gep llval (idx 0) "llval" builder in
-       (ptr, llval)
+       (4, build_in_bounds_gep llval (idx 0) "llval" builder)
     | ty -> raise (Error "Don't know how to box type") in
   let match_composite ty = match classify_type ty with
       TypeKind.Pointer -> match_pointer ty
     | _ -> raise (Error "Don't know how to box type") in
-  let (dst, llval) = match type_of llval with
+  let (type_tag, llval) = match type_of llval with
       ty when ty = i64_type ->
-      (build_in_bounds_gep value_ptr (idx 1) "boxptr" builder, llval)
+      (1, llval)
     | ty when ty = i1_type ->
-       (build_in_bounds_gep value_ptr (idx 2) "boxptr" builder, llval)
+       (2, llval)
     | ty -> match_composite ty
-  in ignore (build_store llval dst builder); value_ptr
+  in
+  let type_dst = build_in_bounds_gep value_ptr (idx 0) "boxptr" builder in
+  let dst = build_in_bounds_gep value_ptr (idx type_tag) "boxptr" builder in
+  let lltype_tag = const_int i32_type type_tag in
+  ignore (build_store lltype_tag type_dst builder);
+  ignore (build_store llval dst builder);
+  value_ptr
 
 let unbox_int llval =
   let dst = build_in_bounds_gep llval (idx 1) "boxptr" builder in
