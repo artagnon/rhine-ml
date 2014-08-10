@@ -1,1 +1,2 @@
-(first (rest ["foo" 7 "moo"]))
+(defn id [list] (rest list))
+(first (id ["foo" 7 "moo"]))
