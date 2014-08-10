@@ -34,18 +34,6 @@ let sexpr_matcher sexpr = match sexpr with
   | _ -> emit_anonymous_f sexpr
 
 let print_and_jit se =
-  (* Declare global variables/ types *)
-  let llvalue_t = named_struct_type context "value_t" in
-  let value_t_elts = [| i64_type;                 (* integer *)
-                        i1_type;                  (* bool *)
-                        (pointer_type i8_type);   (* string *)
-                        (pointer_type (pointer_type llvalue_t)); (* array *)
-                       |] in
-  struct_set_body llvalue_t value_t_elts false;
-
-  let f = codegen_proto (Ast.Prototype("hi", Array.make 1 "X")) in
-  dump_value f;
-
   let f = sexpr_matcher se in
 
   (* Validate the generated code, checking for consistency. *)
@@ -78,5 +66,18 @@ let main_loop ss =
   add_cfg_simplification the_fpm;
 
   ignore (PassManager.initialize the_fpm);
+
+  (* Declare global variables/ types *)
+  let llvalue_t = named_struct_type context "value_t" in
+  let value_t_elts = [| i64_type;                 (* integer *)
+                        i1_type;                  (* bool *)
+                        (pointer_type i8_type);   (* string *)
+                        (pointer_type (pointer_type llvalue_t)); (* array *)
+                       |] in
+  struct_set_body llvalue_t value_t_elts false;
+
+  (* Declare external functions *)
+  let f = codegen_proto (Ast.Prototype("hi", Array.make 1 "X")) in
+  dump_value f;
 
   List.iter (fun se -> print_and_jit se) ss
