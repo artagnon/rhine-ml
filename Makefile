@@ -15,6 +15,8 @@ toplevel.cmo: toplevel.ml
 	$(ocamlc) -c $<
 %.cmi : %.mli
 	$(ocamlc) -c $<
+%.o   : %.c
+	cc -c -o $@ $<
 clean :
 	rm -f rhine parser.ml parser.mli lexer.ml *.cmo *.cmi *.cmx
 
