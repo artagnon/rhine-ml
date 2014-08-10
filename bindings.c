@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 struct value_t {
+	int type;
 	long int_val;
 	int bool_val:1;
 	char *string_val;

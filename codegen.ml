@@ -54,7 +54,7 @@ let box_value llval =
   let value_ptr = build_alloca value_t "value" builder in
   let match_pointer ty = match element_type ty with
       ty when ty = i8_type ->
-      let ptr = build_in_bounds_gep value_ptr (idx 2) "boxptr" builder in
+      let ptr = build_in_bounds_gep value_ptr (idx 3) "boxptr" builder in
       let str_ptr = build_in_bounds_gep ptr [| const_int i32_type 0 |]
                                         "strptr" builder in
       let new_str = build_alloca (rhstring_type 10) "str" builder in
@@ -62,7 +62,7 @@ let box_value llval =
       ignore (build_store new_str_ptr str_ptr builder);
       (ptr, llval)
     | ty when ty = rharray_type 10 ->
-       let ptr = build_in_bounds_gep value_ptr (idx 3) "boxptr" builder in
+       let ptr = build_in_bounds_gep value_ptr (idx 4) "boxptr" builder in
        let llval = build_in_bounds_gep llval (idx 0) "llval" builder in
        (ptr, llval)
     | ty -> raise (Error "Don't know how to box type") in
@@ -71,22 +71,22 @@ let box_value llval =
     | _ -> raise (Error "Don't know how to box type") in
   let (dst, llval) = match type_of llval with
       ty when ty = i64_type ->
-      (build_in_bounds_gep value_ptr (idx 0) "boxptr" builder, llval)
+      (build_in_bounds_gep value_ptr (idx 1) "boxptr" builder, llval)
     | ty when ty = i1_type ->
-       (build_in_bounds_gep value_ptr (idx 1) "boxptr" builder, llval)
+       (build_in_bounds_gep value_ptr (idx 2) "boxptr" builder, llval)
     | ty -> match_composite ty
   in ignore (build_store llval dst builder); value_ptr
 
 let unbox_int llval =
-  let dst = build_in_bounds_gep llval (idx 0) "boxptr" builder in
-  build_load dst "load" builder
-
-let unbox_bool llval =
   let dst = build_in_bounds_gep llval (idx 1) "boxptr" builder in
   build_load dst "load" builder
 
+let unbox_bool llval =
+  let dst = build_in_bounds_gep llval (idx 2) "boxptr" builder in
+  build_load dst "load" builder
+
 let unbox_str llval =
-  let ptr = build_in_bounds_gep llval (idx 2) "boxptr" builder in
+  let ptr = build_in_bounds_gep llval (idx 3) "boxptr" builder in
   let el = build_load ptr "el" builder in
   let rhstring_type size = pointer_type (array_type i8_type size) in
   let str n = build_bitcast el (rhstring_type n) "strptr" builder in
@@ -94,7 +94,7 @@ let unbox_str llval =
   strload 10
 
 let unbox_vec llval =
-  let ptr = build_in_bounds_gep llval (idx 3) "boxptr" builder in
+  let ptr = build_in_bounds_gep llval (idx 4) "boxptr" builder in
   let el = build_load ptr "el" builder in
   let rhvector_type size = pointer_type (vector_type i64_type size) in
   let vec n = build_bitcast el (rhvector_type n) "vecptr" builder in
@@ -106,7 +106,7 @@ let unbox_ar llval =
       Some t -> t
     | None -> raise (Error "Could not look up value_t")
   in
-  let ptr = build_in_bounds_gep llval (idx 3) "boxptr" builder in
+  let ptr = build_in_bounds_gep llval (idx 4) "boxptr" builder in
   let el = build_load ptr "el" builder in
   let rharray_type size = pointer_type (array_type
                                           (pointer_type value_t) size) in
@@ -167,7 +167,7 @@ and codegen_array_op op args =
     let ar = unbox_ar arg in
     build_extractvalue ar 0 "extract" builder
   | "rest" ->
-     let ptr = build_in_bounds_gep arg (idx 3) "boxptr" builder in
+     let ptr = build_in_bounds_gep arg (idx 4) "boxptr" builder in
      let el = build_load ptr "el" builder in
      let rharray_type size = pointer_type (array_type
                                              (pointer_type value_t) size) in

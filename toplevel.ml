@@ -69,7 +69,8 @@ let main_loop ss =
 
   (* Declare global variables/ types *)
   let llvalue_t = named_struct_type context "value_t" in
-  let value_t_elts = [| i64_type;                 (* integer *)
+  let value_t_elts = [| i32_type;                 (* type *)
+                        i64_type;                 (* integer *)
                         i1_type;                  (* bool *)
                         (pointer_type i8_type);   (* string *)
                         (pointer_type (pointer_type llvalue_t)); (* array *)
