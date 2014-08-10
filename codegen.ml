@@ -129,8 +129,11 @@ let codegen_atom atom =
     | Ast.Double n -> const_float double_type n
     | Ast.Nil -> const_null i1_type
     | Ast.String s -> build_global_stringptr s "string" builder
-    | Ast.Symbol n -> try Hashtbl.find named_values n with
-                        Not_found -> raise (Error "Symbol not bound")
+    | Ast.Symbol n -> match lookup_global n the_module with
+                        Some v -> v
+                      | None ->
+                         try Hashtbl.find named_values n with
+                           Not_found -> raise (Error "Symbol not bound")
   in match atom with
        Ast.Symbol n -> unboxed_value
      | _ -> box_value unboxed_value

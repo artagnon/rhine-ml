@@ -27,10 +27,32 @@ let parse_defn_form sexpr = match sexpr with
     (sym, extract_strings v, body)
   | _ -> raise (Error "Unparseable defn form")
 
-let sexpr_matcher sexpr = match sexpr with
-  | Ast.DottedPair(Ast.Atom(Ast.Symbol("defn")), s2) ->
-        let (sym, args, body) = parse_defn_form s2 in
-        codegen_func(Ast.Function(Ast.Prototype(sym, args), body))
+let parse_def_form sexpr = match sexpr with
+    Ast.DottedPair(Ast.Atom(Ast.Symbol(sym)),
+                   Ast.DottedPair(expr, Ast.Atom(Ast.Nil))) -> (sym, expr)
+  | _ -> raise (Error "Unparseable def form")
+
+let sexpr_matcher sexpr =
+  let value_t = match type_by_name the_module "value_t" with
+      Some t -> t
+    | None -> raise (Error "Could not look up value_t") in
+  match sexpr with
+    Ast.DottedPair(Ast.Atom(Ast.Symbol("defn")), s2) ->
+    let (sym, args, body) = parse_defn_form s2 in
+    codegen_func(Ast.Function(Ast.Prototype(sym, args), body))
+  | Ast.DottedPair(Ast.Atom(Ast.Symbol("def")), s2) ->
+     let (sym, expr) = parse_def_form s2 in
+     let llexpr = codegen_sexpr expr in
+     let global = define_global sym (const_null (pointer_type value_t))
+                                the_module in
+
+     (* Emit initializer function *)
+     let the_function = codegen_proto (Ast.Prototype("", [||])) in 
+     let bb = append_block context "entry" the_function in
+     position_at_end bb builder;
+     ignore (build_store llexpr global builder);
+     ignore (build_ret (codegen_atom (Ast.Int(0))) builder);
+     the_function
   | _ -> emit_anonymous_f sexpr
 
 let print_and_jit se =
