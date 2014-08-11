@@ -101,9 +101,31 @@ let main_loop ss =
   struct_set_body llvalue_t value_t_elts false;
 
   (* Declare external functions *)
-  let f2 = codegen_proto (Ast.Prototype("print", Array.make 1 "v")) in
-  dump_value f2;
   let f = codegen_proto (Ast.Prototype("println", Array.make 1 "v")) in
   dump_value f;
+  let f2 = codegen_proto (Ast.Prototype("print", Array.make 1 "v")) in
+  dump_value f2;
+  let f3 = codegen_proto (Ast.Prototype("cadd", Array.make 2 "v")) in
+  dump_value f3;
+  let f4 = codegen_proto (Ast.Prototype("cdiv", Array.make 2 "v")) in
+  dump_value f4;
+  let f5 = codegen_proto (Ast.Prototype("csub", Array.make 2 "v")) in
+  dump_value f5;
+  let f6 = codegen_proto (Ast.Prototype("cmul", Array.make 2 "v")) in
+  dump_value f6;
+  let f7 = codegen_proto (Ast.Prototype("clt", Array.make 2 "v")) in
+  dump_value f7;
+  let f8 = codegen_proto (Ast.Prototype("cgt", Array.make 2 "v")) in
+  dump_value f8;
+  let f9 = codegen_proto (Ast.Prototype("clte", Array.make 2 "v")) in
+  dump_value f9;
+  let f10 = codegen_proto (Ast.Prototype("cgte", Array.make 2 "v")) in
+  dump_value f10;
+  let f11 = codegen_proto (Ast.Prototype("cequ", Array.make 2 "v")) in
+  dump_value f11;
+  
+  
+  
+  
 
   List.iter (fun se -> print_and_jit se) ss

@@ -24,7 +24,7 @@ let (--) i j =
 
 let arith_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
-                               [ "+"; "-"; "*"; "/"; "<"; ">"; "<="; ">="; "=" ]
+                               [ "+"; "-"; "*"; "/"; "/."; "<"; ">"; "<="; ">="; "=" ]
 
 let array_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
@@ -113,6 +113,10 @@ let box_value llval =
   ignore (build_store llval dst builder);
   value_ptr
 
+let get_type llval =
+  let type_num = build_in_bounds_gep llval (idx 0) "boxptr" builder in
+  build_load type_num "load" builder
+
 let unbox_dbl llval =
   let dst = build_in_bounds_gep llval (idx 6) "boxptr" builder in
   build_load dst "load" builder
@@ -179,23 +183,21 @@ let rec extract_args s = match s with
   | _ -> raise (Error "Expected sexp")
 
 and codegen_arith_op op args =
-  let hd = unbox_int (List.hd args) in
-  let dhd = unbox_dbl (List.hd args) in
-  let snd = unbox_int (List.nth args 1) in
-  let tl = List.tl args in
-  if tl == [] then box_value hd else
-    let unboxed_value = match op with
-        "+" -> build_add hd (unbox_int (codegen_arith_op op tl)) "add" builder
-      | "-" -> build_sub hd (unbox_int (codegen_arith_op op tl)) "sub" builder
-      | "*" -> build_mul hd (unbox_int (codegen_arith_op op tl)) "mul" builder
-      | "/" -> build_fdiv dhd (unbox_dbl (List.nth args 1)) "div" builder
-      | "<" -> build_icmp Icmp.Slt hd snd "cmplt" builder
-      | ">" -> build_icmp Icmp.Sgt hd snd "cmpgt" builder
-      | "<=" -> build_icmp Icmp.Sle hd snd "cmplte" builder
-      | ">=" -> build_icmp Icmp.Sge hd snd "cmpgte" builder
-      | "=" -> build_icmp Icmp.Eq hd snd "cmp" builder
+    let hd = List.hd args in
+    let snd = List.nth args 1 in
+    let tl = List.tl args in
+    if tl == [] then hd else
+    match op with
+        "+" -> codegen_call_op "cadd" [hd;(codegen_arith_op op tl)]
+      | "-" -> codegen_call_op "csub" [hd;(codegen_arith_op op tl)]
+      | "/" -> codegen_call_op "cdiv" args
+      | "*" -> codegen_call_op "cmul" [hd;(codegen_arith_op op tl)]
+      | "<" -> codegen_call_op "clt" [hd;snd]
+      | ">" -> codegen_call_op "cgt" [hd;snd]
+      | "<=" -> codegen_call_op "clte" [hd;snd]
+      | ">=" -> codegen_call_op "cgte" [hd;snd]
+      | "=" -> codegen_call_op "cequ" [hd;snd]
       | _ -> raise (Error "Unknown arithmetic operator")
-    in box_value unboxed_value
 
 and codegen_array_op op args =
   let arg = List.hd args in
