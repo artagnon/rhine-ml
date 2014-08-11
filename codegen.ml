@@ -181,7 +181,9 @@ let rec extract_args s = match s with
 and codegen_arith_op op args =
   let hd = unbox_int (List.hd args) in
   let dhd = unbox_dbl (List.hd args) in
-  let snd = unbox_int (List.nth args 1) in
+  let snd = if List.length args > 1
+            then unbox_int (List.nth args 1)
+            else const_int i64_type 0 in
   let tl = List.tl args in
   if tl == [] then box_value hd else
     let unboxed_value = match op with
