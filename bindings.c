@@ -8,6 +8,7 @@ struct value_t {
 	char *string_val;
 	struct value_t **array_val;
 	int array_len;
+	double dbl_val;
 };
 
 void print_atom(struct value_t *v) {
@@ -30,6 +31,9 @@ void print_atom(struct value_t *v) {
 			printf(";");
 		}
 		printf("]");
+		break;
+	case 6:
+		printf("(double) %f", v->dbl_val);
 		break;
 	default:
 		printf("Don't know how to print type %d", v->type_tag);

@@ -5,7 +5,7 @@
 
 let digit = ['0'-'9']
 let characters = ['a'-'z' 'A'-'Z']
-let symbol_characters = ['a'-'z' 'A'-'Z' '-' '?' '+' '*' '/' '<' '>' '=']
+let symbol_characters = ['a'-'z' 'A'-'Z' '?' '-' '+' '*' '/' '<' '>' '=']
 
 rule token = parse
  | [' ' '\t' '\r' '\n'] { token lexbuf }

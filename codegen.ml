@@ -84,9 +84,11 @@ let box_value llval =
     | _ -> raise (Error "Don't know how to box type") in
   let (type_tag, llval) = match type_of llval with
       ty when ty = i64_type ->
-      (1, llval)
+       (1, llval)
     | ty when ty = i1_type ->
        (2, llval)
+    | ty when ty = double_type ->
+       (6, llval)
     | ty -> match_composite ty
   in
   let type_dst = build_in_bounds_gep value_ptr (idx 0) "boxptr" builder in
@@ -95,6 +97,10 @@ let box_value llval =
   ignore (build_store lltype_tag type_dst builder);
   ignore (build_store llval dst builder);
   value_ptr
+
+let unbox_dbl llval =
+  let dst = build_in_bounds_gep llval (idx 6) "boxptr" builder in
+  build_load dst "load" builder
 
 let unbox_int llval =
   let dst = build_in_bounds_gep llval (idx 1) "boxptr" builder in
@@ -159,18 +165,19 @@ let rec extract_args s = match s with
 
 and codegen_arith_op op args =
   let hd = unbox_int (List.hd args) in
+  let dhd = unbox_dbl (List.hd args) in
   let tl = List.tl args in
   if tl == [] then box_value hd else
     let unboxed_value = match op with
         "+" -> build_add hd (unbox_int (codegen_arith_op op tl)) "add" builder
       | "-" -> build_sub hd (unbox_int (codegen_arith_op op tl)) "sub" builder
       | "*" -> build_mul hd (unbox_int (codegen_arith_op op tl)) "mul" builder
-      | "/" -> build_fdiv hd (codegen_arith_op op tl) "div" builder
-      | "<" -> build_icmp Icmp.Slt (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmp" builder
-      | ">" -> build_icmp Icmp.Sgt (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmp" builder
-      | ">=" -> build_icmp Icmp.Sge (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmp" builder
-      | "<=" -> build_icmp Icmp.Sle (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmp" builder
-      | "=" -> build_icmp Icmp.Eq (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmp" builder
+      | "/" -> build_fdiv dhd (unbox_dbl (List.nth args 1)) "div" builder
+      | "<" -> build_icmp Icmp.Slt (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmplt" builder
+      | ">" -> build_icmp Icmp.Sgt (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmpgt" builder
+      | ">=" -> build_icmp Icmp.Sge (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmpgte" builder
+      | "<=" -> build_icmp Icmp.Sle (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmplte" builder
+      | "=" -> build_icmp Icmp.Eq (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmpe" builder
       | _ -> raise (Error "Unknown arithmetic operator")
     in box_value unboxed_value
 
