@@ -17,7 +17,7 @@ rule token = parse
  | "nil" { NIL }
  | "true" { TRUE }
  | "false" { FALSE }
- | digit+ as s { INTEGER(int_of_string s) }
+ | ['-''+']?digit+ as s { INTEGER(int_of_string s) }
  | digit* '.' digit+  as s { DOUBLE(float_of_string s) }
  | symbol_characters+ as s { SYMBOL(s) }
  | '"' { let b = Buffer.create 1024 in read_string b lexbuf }
