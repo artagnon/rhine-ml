@@ -191,9 +191,9 @@ let rec extract_args s = match s with
 
 and codegen_arith_op op args =
     let hd = List.hd args in
-    let snd = List.nth args 1 in
     let tl = List.tl args in
     if tl == [] then hd else
+    let snd = List.nth args 1 in
     match op with
         "+" -> codegen_call_op "cadd" [hd;(codegen_arith_op op tl)]
       | "-" -> codegen_call_op "csub" [hd;(codegen_arith_op op tl)]
