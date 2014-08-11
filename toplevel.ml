@@ -101,8 +101,11 @@ let main_loop ss =
   struct_set_body llvalue_t value_t_elts false;
 
   (* Declare external functions *)
-  let f2 = codegen_proto (Ast.Prototype("print", Array.make 1 "v")) in
-  dump_value f2;
+  let ft = function_type (pointer_type i8_type) [| i64_type |] in
+  let f = declare_function "malloc" ft the_module in
+  dump_value f;
+  let f = codegen_proto (Ast.Prototype("print", Array.make 1 "v")) in
+  dump_value f;
   let f = codegen_proto (Ast.Prototype("println", Array.make 1 "v")) in
   dump_value f;
 

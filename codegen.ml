@@ -50,6 +50,13 @@ let create_entry_block_alloca the_function var_name =
   let builder = builder_at context (instr_begin (entry_block the_function)) in
   build_alloca value_t var_name builder
 
+let build_malloc llt id builder =
+  let callee = match lookup_function "malloc" the_module with
+      Some callee -> callee
+    | None -> raise (Error "Unknown function referenced") in
+  let raw_ptr = build_call callee [| size_of llt |] id builder in
+  build_bitcast raw_ptr (pointer_type llt) "malloc_value" builder
+
 let idx n = [| const_int i32_type 0; const_int i32_type n |]
 
 let undef_vec len =
@@ -61,7 +68,7 @@ let box_llar llval lllen =
       Some t -> t
     | None -> raise (Error "Could not look up value_t")
   in
-  let value_ptr = build_alloca value_t "value" builder in
+  let value_ptr = build_malloc value_t "value" builder in
   let type_dst = build_in_bounds_gep value_ptr (idx 0) "boxptr" builder in
   let lenptr = build_in_bounds_gep value_ptr (idx 5) "lenptr" builder in
   let dst = build_in_bounds_gep value_ptr (idx 4) "boxptr" builder in
@@ -78,7 +85,7 @@ let box_value llval =
   in
   let rhstring_type size = array_type i8_type size in
   let rharray_type size = array_type (pointer_type value_t) size in
-  let value_ptr = build_alloca value_t "value" builder in
+  let value_ptr = build_malloc value_t "value" builder in
   let match_pointer ty = match element_type ty with
       ty when ty = i8_type ->
       let ptr = build_in_bounds_gep value_ptr (idx 3) "boxptr" builder in
