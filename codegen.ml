@@ -56,6 +56,21 @@ let undef_vec len =
   let undef_list = List.map (fun i -> undef i64_type) (0--(len - 1)) in
   const_vector (Array.of_list undef_list)
 
+let box_llar llval lllen =
+  let value_t = match type_by_name the_module "value_t" with
+      Some t -> t
+    | None -> raise (Error "Could not look up value_t")
+  in
+  let value_ptr = build_alloca value_t "value" builder in
+  let type_dst = build_in_bounds_gep value_ptr (idx 0) "boxptr" builder in
+  let lenptr = build_in_bounds_gep value_ptr (idx 5) "lenptr" builder in
+  let dst = build_in_bounds_gep value_ptr (idx 4) "boxptr" builder in
+  let lltype_tag = const_int i32_type 4 in
+  ignore (build_store lltype_tag type_dst builder);
+  ignore (build_store lllen lenptr builder);
+  ignore (build_store llval dst builder);
+  value_ptr
+
 let box_value llval =
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
@@ -166,26 +181,23 @@ let rec extract_args s = match s with
 and codegen_arith_op op args =
   let hd = unbox_int (List.hd args) in
   let dhd = unbox_dbl (List.hd args) in
+  let snd = unbox_int (List.nth args 1) in
   let tl = List.tl args in
   if tl == [] then box_value hd else
     let unboxed_value = match op with
         "+" -> build_add hd (unbox_int (codegen_arith_op op tl)) "add" builder
       | "-" -> build_sub hd (unbox_int (codegen_arith_op op tl)) "sub" builder
       | "*" -> build_mul hd (unbox_int (codegen_arith_op op tl)) "mul" builder
-      | "/" -> build_fdiv dhd (unbox_dbl (List.nth args 1)) "div" builder
-      | "<" -> build_icmp Icmp.Slt (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmplt" builder
-      | ">" -> build_icmp Icmp.Sgt (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmpgt" builder
-      | ">=" -> build_icmp Icmp.Sge (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmpgte" builder
-      | "<=" -> build_icmp Icmp.Sle (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmplte" builder
-      | "=" -> build_icmp Icmp.Eq (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmpe" builder
+      | "/" -> build_fdiv hd (codegen_arith_op op tl) "div" builder
+      | "<" -> build_icmp Icmp.Slt hd snd "cmp" builder
+      | ">" -> build_icmp Icmp.Sgt hd snd "cmp" builder
+      | ">=" -> build_icmp Icmp.Sge hd snd "cmp" builder
+      | "<=" -> build_icmp Icmp.Sle hd snd "cmp" builder
+      | "=" -> build_icmp Icmp.Eq hd snd "cmp" builder
       | _ -> raise (Error "Unknown arithmetic operator")
     in box_value unboxed_value
 
 and codegen_array_op op args =
-  let value_t = match type_by_name the_module "value_t" with
-      Some t -> t
-    | None -> raise (Error "Could not look up value_t")
-  in
   let arg = List.hd args in
   match op with
     "first" ->
@@ -193,13 +205,13 @@ and codegen_array_op op args =
     build_extractvalue ar 0 "extract" builder
   | "rest" ->
      let ptr = build_in_bounds_gep arg (idx 4) "boxptr" builder in
+     let lenptr = build_in_bounds_gep arg (idx 5) "boxptr" builder in
+     let len = build_load lenptr "load" builder in
      let el = build_load ptr "el" builder in
-     let rharray_type size = pointer_type (array_type
-                                             (pointer_type value_t) size) in
-     let ar = build_bitcast el (rharray_type 10) "arptr" builder in
-     let new_ptr = build_in_bounds_gep ar (idx 1) "rest" builder in
-     let new_ar = build_bitcast new_ptr (rharray_type 10) "newar" builder in
-     box_value new_ar
+     let newptr = build_in_bounds_gep el [| const_int i32_type 1 |]
+                                      "rest" builder in
+     let newlen = build_sub len (const_int i32_type 1) "restsub" builder in
+     box_llar newptr newlen
   | _ -> raise (Error "Unknown array operator")
 
 and codegen_string_op op s2 =
@@ -226,8 +238,6 @@ and codegen_string_op op s2 =
       let new_array = build_alloca (rharray_type 10) "ar" builder in
       let ptr n = build_in_bounds_gep new_array (idx n) "arptr" builder in
       List.iteri (fun i m ->
-                  dump_type (type_of m);
-                  dump_type (type_of (ptr i));
                   ignore (build_store m (ptr i) builder)) splits;
       new_array
     | _ -> raise (Error "Unknown string operator")
@@ -286,7 +296,6 @@ and codegen_binding_op f s2 =
       let lla = build_load llaptr "load" builder in
       let the_function = block_parent (insertion_block builder) in
       let alloca = create_entry_block_alloca the_function s in
-      dump_type (type_of alloca);
       ignore (build_store lla alloca builder);
       begin try let old_value = Hashtbl.find named_values s in
                 old_bindings := (s, old_value) :: !old_bindings;
