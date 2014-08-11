@@ -188,11 +188,11 @@ and codegen_arith_op op args =
         "+" -> build_add hd (unbox_int (codegen_arith_op op tl)) "add" builder
       | "-" -> build_sub hd (unbox_int (codegen_arith_op op tl)) "sub" builder
       | "*" -> build_mul hd (unbox_int (codegen_arith_op op tl)) "mul" builder
-      | "/" -> build_fdiv hd (codegen_arith_op op tl) "div" builder
-      | "<" -> build_icmp Icmp.Slt hd snd "cmp" builder
-      | ">" -> build_icmp Icmp.Sgt hd snd "cmp" builder
-      | ">=" -> build_icmp Icmp.Sge hd snd "cmp" builder
-      | "<=" -> build_icmp Icmp.Sle hd snd "cmp" builder
+      | "/" -> build_fdiv dhd (unbox_dbl (List.nth args 1)) "div" builder
+      | "<" -> build_icmp Icmp.Slt hd snd "cmplt" builder
+      | ">" -> build_icmp Icmp.Sgt hd snd "cmpgt" builder
+      | "<=" -> build_icmp Icmp.Sle hd snd "cmplte" builder
+      | ">=" -> build_icmp Icmp.Sge hd snd "cmpgte" builder
       | "=" -> build_icmp Icmp.Eq hd snd "cmp" builder
       | _ -> raise (Error "Unknown arithmetic operator")
     in box_value unboxed_value
