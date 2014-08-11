@@ -174,6 +174,7 @@ let rec extract_args s = match s with
 
 and codegen_arith_op op args =
   let hd = unbox_int (List.hd args) in
+  let snd = unbox_int (List.nth args 1) in
   let tl = List.tl args in
   if tl == [] then box_value hd else
     let unboxed_value = match op with
@@ -181,11 +182,11 @@ and codegen_arith_op op args =
       | "-" -> build_sub hd (unbox_int (codegen_arith_op op tl)) "sub" builder
       | "*" -> build_mul hd (unbox_int (codegen_arith_op op tl)) "mul" builder
       | "/" -> build_fdiv hd (codegen_arith_op op tl) "div" builder
-      | "<" -> build_icmp Icmp.Slt (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmp" builder
-      | ">" -> build_icmp Icmp.Sgt (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmp" builder
-      | ">=" -> build_icmp Icmp.Sge (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmp" builder
-      | "<=" -> build_icmp Icmp.Sle (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmp" builder
-      | "=" -> build_icmp Icmp.Eq (unbox_int (List.hd args)) (unbox_int (List.nth args 1)) "cmp" builder
+      | "<" -> build_icmp Icmp.Slt hd snd "cmp" builder
+      | ">" -> build_icmp Icmp.Sgt hd snd "cmp" builder
+      | ">=" -> build_icmp Icmp.Sge hd snd "cmp" builder
+      | "<=" -> build_icmp Icmp.Sle hd snd "cmp" builder
+      | "=" -> build_icmp Icmp.Eq hd snd "cmp" builder
       | _ -> raise (Error "Unknown arithmetic operator")
     in box_value unboxed_value
 
