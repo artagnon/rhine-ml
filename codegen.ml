@@ -56,6 +56,21 @@ let undef_vec len =
   let undef_list = List.map (fun i -> undef i64_type) (0--(len - 1)) in
   const_vector (Array.of_list undef_list)
 
+let box_llar llval lllen =
+  let value_t = match type_by_name the_module "value_t" with
+      Some t -> t
+    | None -> raise (Error "Could not look up value_t")
+  in
+  let value_ptr = build_alloca value_t "value" builder in
+  let type_dst = build_in_bounds_gep value_ptr (idx 0) "boxptr" builder in
+  let lenptr = build_in_bounds_gep value_ptr (idx 5) "lenptr" builder in
+  let dst = build_in_bounds_gep value_ptr (idx 4) "boxptr" builder in
+  let lltype_tag = const_int i32_type 4 in
+  ignore (build_store lltype_tag type_dst builder);
+  ignore (build_store lllen lenptr builder);
+  ignore (build_store llval dst builder);
+  value_ptr
+
 let box_value llval =
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
@@ -175,10 +190,6 @@ and codegen_arith_op op args =
     in box_value unboxed_value
 
 and codegen_array_op op args =
-  let value_t = match type_by_name the_module "value_t" with
-      Some t -> t
-    | None -> raise (Error "Could not look up value_t")
-  in
   let arg = List.hd args in
   match op with
     "first" ->
@@ -186,13 +197,13 @@ and codegen_array_op op args =
     build_extractvalue ar 0 "extract" builder
   | "rest" ->
      let ptr = build_in_bounds_gep arg (idx 4) "boxptr" builder in
+     let lenptr = build_in_bounds_gep arg (idx 5) "boxptr" builder in
+     let len = build_load lenptr "load" builder in
      let el = build_load ptr "el" builder in
-     let rharray_type size = pointer_type (array_type
-                                             (pointer_type value_t) size) in
-     let ar = build_bitcast el (rharray_type 10) "arptr" builder in
-     let new_ptr = build_in_bounds_gep ar (idx 1) "rest" builder in
-     let new_ar = build_bitcast new_ptr (rharray_type 10) "newar" builder in
-     box_value new_ar
+     let newptr = build_in_bounds_gep el [| const_int i32_type 1 |]
+                                      "rest" builder in
+     let newlen = build_sub len (const_int i32_type 1) "restsub" builder in
+     box_llar newptr newlen
   | _ -> raise (Error "Unknown array operator")
 
 and codegen_string_op op s2 =
