@@ -230,8 +230,6 @@ and codegen_string_op op s2 =
       let new_array = build_alloca (rharray_type 10) "ar" builder in
       let ptr n = build_in_bounds_gep new_array (idx n) "arptr" builder in
       List.iteri (fun i m ->
-                  dump_type (type_of m);
-                  dump_type (type_of (ptr i));
                   ignore (build_store m (ptr i) builder)) splits;
       new_array
     | _ -> raise (Error "Unknown string operator")
@@ -290,7 +288,6 @@ and codegen_binding_op f s2 =
       let lla = build_load llaptr "load" builder in
       let the_function = block_parent (insertion_block builder) in
       let alloca = create_entry_block_alloca the_function s in
-      dump_type (type_of alloca);
       ignore (build_store lla alloca builder);
       begin try let old_value = Hashtbl.find named_values s in
                 old_bindings := (s, old_value) :: !old_bindings;
