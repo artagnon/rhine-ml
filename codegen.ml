@@ -50,11 +50,11 @@ let create_entry_block_alloca the_function var_name =
   let builder = builder_at context (instr_begin (entry_block the_function)) in
   build_alloca value_t var_name builder
 
-let build_malloc llt id builder =
+let build_malloc llsize llt id builder =
   let callee = match lookup_function "malloc" the_module with
       Some callee -> callee
     | None -> raise (Error "Unknown function referenced") in
-  let raw_ptr = build_call callee [| size_of llt |] id builder in
+  let raw_ptr = build_call callee [| llsize |] id builder in
   build_bitcast raw_ptr (pointer_type llt) "malloc_value" builder
 
 let build_strlen llv =
@@ -63,6 +63,15 @@ let build_strlen llv =
     | None -> raise (Error "Unknown function referenced") in
   let size = build_call callee [| llv |] "strlen" builder in
   build_trunc size i32_type "trunc" builder
+
+let build_memcpy src dst llsize =
+  let callee = match lookup_function "llvm.memcpy.p0i8.p0i8.i64" the_module with
+      Some callee -> callee
+    | None -> raise (Error "Unknown function referenced") in
+  build_call callee [| dst; src; llsize;
+                       const_int i32_type 0;
+                       const_int i1_type 0 |] "memcpy" builder
+
 
 let idx n = [| const_int i32_type 0; const_int i32_type n |]
 
@@ -75,7 +84,7 @@ let box_llar llval lllen =
       Some t -> t
     | None -> raise (Error "Could not look up value_t")
   in
-  let value_ptr = build_malloc value_t "value" builder in
+  let value_ptr = build_malloc (size_of value_t) value_t "value" builder in
   let type_dst = build_in_bounds_gep value_ptr (idx 0) "boxptr" builder in
   let lenptr = build_in_bounds_gep value_ptr (idx 5) "lenptr" builder in
   let dst = build_in_bounds_gep value_ptr (idx 4) "boxptr" builder in
@@ -91,7 +100,7 @@ let box_value llval =
     | None -> raise (Error "Could not look up value_t")
   in
   let rharray_type size = array_type (pointer_type value_t) size in
-  let value_ptr = build_malloc value_t "value" builder in
+  let value_ptr = build_malloc (size_of value_t) value_t "value" builder in
   let match_pointer ty = match element_type ty with
       ty when ty = i8_type ->
       let len = build_strlen llval in
@@ -213,6 +222,9 @@ and codegen_arith_op op args =
       | _ -> raise (Error "Unknown arithmetic operator")
 
 and codegen_array_op op args =
+  let value_t = match type_by_name the_module "value_t" with
+      Some t -> t
+    | None -> raise (Error "Could not look up value_t") in
   let arg = List.hd args in
   match op with
     "first" ->
@@ -227,11 +239,33 @@ and codegen_array_op op args =
                                       "rest" builder in
      let newlen = build_sub len (const_int i64_type 1) "restsub" builder in
      box_llar newptr newlen
-  | "cons" ->
-      List.nth args 1 
   | "length" ->
       let dst = build_in_bounds_gep arg (idx 5) "arrlenptr" builder in
       box_value(build_load dst "load" builder)
+  | "cons" ->
+     let tail = List.nth args 1 in
+     let lenptr = build_in_bounds_gep tail (idx 5) "boxptr" builder in
+     let len_32 = build_load lenptr "lenptr" builder in
+     let len = build_zext len_32 i64_type "len_64" builder in
+     let sizeof = size_of value_t in
+     let size = build_mul len sizeof "size" builder in
+     let newlen = build_add len (const_int i64_type 1) "conslen" builder in
+     let newsize = build_mul newlen sizeof "newsize" builder in
+     let ptr = build_malloc newsize (pointer_type value_t) "malloc" builder in
+     let ptrhead = build_in_bounds_gep ptr [| const_int i32_type 0 |]
+                                       "ptrhead" builder in
+     let ptrrest = build_in_bounds_gep ptr [| const_int i32_type 1 |]
+                                       "ptrrest" builder in
+     let tailptr = build_in_bounds_gep tail (idx 4) "ptrhead" builder in
+     let tailel = build_load tailptr "tailptr" builder in
+     let rawsrc = build_bitcast tailel (pointer_type i8_type)
+                                "rawsrc" builder in
+     let rawdst = build_bitcast ptrrest (pointer_type i8_type)
+                                "rawdst" builder in
+     ignore (build_store arg ptrhead builder);
+     ignore (build_memcpy rawsrc rawdst size);
+     let newlen = build_trunc newlen i32_type "trunc" builder in
+     box_llar ptr newlen
   | _ -> raise (Error "Unknown array operator")
 
 and codegen_string_op op s2 =
