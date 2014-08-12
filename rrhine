@@ -1,0 +1,93 @@
+#!/usr/bin/env python
+
+from os import walk
+from subprocess import Popen, PIPE
+import sys
+
+class colors:
+    HEADER = '\033[95m'
+    OK = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    END = '\033[0m'
+
+def run():
+    pasting = False
+    i = ""
+    last_llvm = ""
+    last_io = ""
+    current_input = ""
+    total_input = ""
+    total_output = ""
+    total_failed_input = ""
+    while i not in ["quit", "exit", "q"]:
+        if pasting:
+            sys.stdout.write(colors.HEADER)
+        else:
+            sys.stdout.write(colors.END)
+        try:
+            i = raw_input('> ')
+            i = i.strip()
+            if pasting:
+                ci += i + "\n"
+                continue
+            else:
+                ci = i
+        except KeyboardInterrupt:
+            if pasting:
+                pasting = False
+                sys.stdout.write(colors.HEADER)
+                print "\nPASTED:"
+                print ci
+            else:
+                continue
+        except EOFError:
+            sys.stdout.write(colors.WARNING)
+            print "\n\nThanks for using Rhine! :)"
+            exit(1)
+
+        if ci == "":
+            continue
+        elif ci in ["paste", "p"]:
+            sys.stdout.write(colors.HEADER)
+            pasting = True
+            ci = ""
+            print "\n\nNow in paste mode..."
+            continue
+        elif ci in ["llvm", "ll"]:
+            print last_llvm
+            continue
+        elif ci in ["total"]:
+            print total_input
+            continue
+        elif ci in ["last"]:
+            print last_io
+            continue
+
+        p = Popen(["./rhine", "-"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        output = ""
+        stdout, stderr = p.communicate(total_input+"\n"+ci)
+
+        if stderr.find("error") >= 0:
+            sys.stdout.write(colors.FAIL)
+            print stderr.strip()
+            continue
+        else:
+            total_input += "\n"+ci
+            for line in stdout.split("\n"):
+                if line.startswith("Evaluated to ") or line.strip() == "":
+                    continue
+                output += line+"\n"
+
+            print output[:-1][len(total_output):]
+            total_output = output
+
+            last_io = ci+"\n\n"+output[:-1][len(total_output):]
+            last_llvm = stderr
+
+
+if __name__ == "__main__":
+    run()
+
+
+
