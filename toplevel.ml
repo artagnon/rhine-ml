@@ -95,7 +95,7 @@ let main_loop ss =
                         i1_type;                  (* bool *)
                         (pointer_type i8_type);   (* string *)
                         (pointer_type (pointer_type llvalue_t));  (* array *)
-                        i32_type; (* array length *)
+                        i64_type; (* array length *)
                         double_type; (* double *)
                        |] in
   struct_set_body llvalue_t value_t_elts false;

@@ -28,7 +28,7 @@ let arith_ops = List.fold_left (fun s k -> StringSet.add k s)
 
 let array_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
-                               [ "first"; "rest" ]
+                               [ "first"; "rest"; "cons"; "length" ]
 
 let string_ops = List.fold_left (fun s k -> StringSet.add k s)
                                 StringSet.empty
@@ -96,7 +96,7 @@ let box_value llval =
       ignore (build_store new_str_ptr str_ptr builder);
       (3, llval)
     | ty when ty = rharray_type (array_length ty) ->
-       let len = const_int i32_type (array_length ty) in
+       let len = const_int i64_type (array_length ty) in
        let lenptr = build_in_bounds_gep value_ptr (idx 5) "lenptr" builder in
        ignore (build_store len lenptr builder);
        (4, build_in_bounds_gep llval (idx 0) "llval" builder)
@@ -159,7 +159,7 @@ let unbox_ar llval =
 
 let codegen_atom atom =
   let unboxed_value = match atom with
-      Ast.Int n -> const_int i64_type n (*i32*)
+      Ast.Int n -> const_int i64_type n
     | Ast.Bool n -> const_int i1_type (int_of_bool n)
     | Ast.Double n -> const_float double_type n
     | Ast.Nil -> const_null i1_type
@@ -220,10 +220,15 @@ and codegen_array_op op args =
      let lenptr = build_in_bounds_gep arg (idx 5) "boxptr" builder in
      let len = build_load lenptr "load" builder in
      let el = build_load ptr "el" builder in
-     let newptr = build_in_bounds_gep el [| const_int i32_type 1 |]
+     let newptr = build_in_bounds_gep el [| const_int i64_type 1 |]
                                       "rest" builder in
-     let newlen = build_sub len (const_int i32_type 1) "restsub" builder in
+     let newlen = build_sub len (const_int i64_type 1) "restsub" builder in
      box_llar newptr newlen
+  (* | "cons" ->*)
+
+  | "length" ->
+      let dst = build_in_bounds_gep arg (idx 5) "arrlenptr" builder in
+      box_value(build_load dst "load" builder)
   | _ -> raise (Error "Unknown array operator")
 
 and codegen_string_op op s2 =
