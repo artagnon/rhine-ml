@@ -199,7 +199,7 @@ extern struct value_t *cor(struct value_t *v, struct value_t *v2) {
 extern struct value_t *cnot(struct value_t *v) {
     int ret_type = 0;
     struct value_t *ret;
-    if (v->bool_val == 1) {
+    if (!(!v->bool_val)) {
         ret = save_value(0.0, 2);
     } else {
         ret = save_value(1.0, 2);
