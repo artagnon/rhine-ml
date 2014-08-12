@@ -257,8 +257,8 @@ and codegen_string_op op s2 =
 
 and codegen_cf_op op s2 =
   let cond_val = unbox_bool (List.hd s2) in
-  let true_val = List.hd (List.tl s2) in
-  let false_val = List.hd (List.tl (List.tl s2)) in
+  let true_val = List.nth s2 1 in
+  let false_val = List.nth s2 2 in
   let start_bb = insertion_block builder in
   let the_function = block_parent start_bb in
   let truebb = append_block context "then" the_function in
