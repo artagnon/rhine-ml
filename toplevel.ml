@@ -102,36 +102,22 @@ let main_loop ss =
 
   (* Declare external functions *)
   let ft = function_type (pointer_type i8_type) [| i64_type |] in
-  let f = declare_function "malloc" ft the_module in
-  dump_value f;
-  let f = codegen_proto (Ast.Prototype("println", Array.make 1 "v")) in
-  dump_value f;
-  let f = codegen_proto (Ast.Prototype("print", Array.make 1 "v")) in
-  dump_value f;
-  let f = codegen_proto (Ast.Prototype("cadd", Array.make 2 "v")) in
-  dump_value f;
-  let f = codegen_proto (Ast.Prototype("cdiv", Array.make 2 "v")) in
-  dump_value f;
-  let f = codegen_proto (Ast.Prototype("csub", Array.make 2 "v")) in
-  dump_value f;
-  let f = codegen_proto (Ast.Prototype("cmul", Array.make 2 "v")) in
-  dump_value f;
-  let f = codegen_proto (Ast.Prototype("clt", Array.make 2 "v")) in
-  dump_value f;
-  let f = codegen_proto (Ast.Prototype("cgt", Array.make 2 "v")) in
-  dump_value f;
-  let f = codegen_proto (Ast.Prototype("clte", Array.make 2 "v")) in
-  dump_value f;
-  let f = codegen_proto (Ast.Prototype("cgte", Array.make 2 "v")) in
-  dump_value f;
-  let f = codegen_proto (Ast.Prototype("cequ", Array.make 2 "v")) in
-  dump_value f;
-  let f = codegen_proto (Ast.Prototype("cand", Array.make 2 "v")) in
-  dump_value f;
-  let f = codegen_proto (Ast.Prototype("cor", Array.make 2 "v")) in
-  dump_value f;
-  let f = codegen_proto (Ast.Prototype("cnot", Array.make 2 "v")) in
-  dump_value f;
-  
+  ignore (declare_function "malloc" ft the_module);
+  let ft = function_type i64_type [| pointer_type i8_type |] in
+  ignore (declare_function "strlen" ft the_module);
+  ignore (codegen_proto (Ast.Prototype("println", Array.make 1 "v")));
+  ignore (codegen_proto (Ast.Prototype("print", Array.make 1 "v")));
+  ignore (codegen_proto (Ast.Prototype("cadd", Array.make 2 "v")));
+  ignore (codegen_proto (Ast.Prototype("cdiv", Array.make 2 "v")));
+  ignore (codegen_proto (Ast.Prototype("csub", Array.make 2 "v")));
+  ignore (codegen_proto (Ast.Prototype("cmul", Array.make 2 "v")));
+  ignore (codegen_proto (Ast.Prototype("clt", Array.make 2 "v")));
+  ignore (codegen_proto (Ast.Prototype("cgt", Array.make 2 "v")));
+  ignore (codegen_proto (Ast.Prototype("clte", Array.make 2 "v")));
+  ignore (codegen_proto (Ast.Prototype("cgte", Array.make 2 "v")));
+  ignore (codegen_proto (Ast.Prototype("cequ", Array.make 2 "v")));
+  ignore (codegen_proto (Ast.Prototype("cand", Array.make 2 "v")));
+  ignore (codegen_proto (Ast.Prototype("cor", Array.make 2 "v")));
+  ignore (codegen_proto (Ast.Prototype("cnot", Array.make 2 "v")));
 
   List.iter (fun se -> print_and_jit se) ss
