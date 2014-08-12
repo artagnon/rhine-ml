@@ -126,5 +126,12 @@ let main_loop ss =
   dump_value f;
   let f = codegen_proto (Ast.Prototype("cequ", Array.make 2 "v")) in
   dump_value f;
+  let f = codegen_proto (Ast.Prototype("cand", Array.make 2 "v")) in
+  dump_value f;
+  let f = codegen_proto (Ast.Prototype("cor", Array.make 2 "v")) in
+  dump_value f;
+  let f = codegen_proto (Ast.Prototype("cnot", Array.make 2 "v")) in
+  dump_value f;
+  
 
   List.iter (fun se -> print_and_jit se) ss

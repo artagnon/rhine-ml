@@ -173,6 +173,44 @@ extern struct value_t *cequ(struct value_t *v, struct value_t *v2) {
     return ret;
 }
 
+extern struct value_t *cand(struct value_t *v, struct value_t *v2) {
+    int ret_type = 0;
+    struct value_t *ret;
+    print_atom(v);
+    print_atom(v2);
+    if (!(!v->bool_val) && !(!v2->bool_val)) {
+        ret = save_value(1.0, 2);
+    } else {
+        ret = save_value(0.0, 2);
+    }
+    return ret;
+}
+
+extern struct value_t *cor(struct value_t *v, struct value_t *v2) {
+    int ret_type = 0;
+    struct value_t *ret;
+    if (v->bool_val == 1 || v2->bool_val == 1) {
+        ret = save_value(1.0, 2);
+    } else {
+        ret = save_value(0.0, 2);
+    }
+    return ret;
+
+}
+
+extern struct value_t *cnot(struct value_t *v) {
+    int ret_type = 0;
+    struct value_t *ret;
+    if (v->bool_val == 1) {
+        ret = save_value(0.0, 2);
+    } else {
+        ret = save_value(1.0, 2);
+    }
+    return ret;
+
+}
+
+
 
 
 

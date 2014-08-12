@@ -24,7 +24,7 @@ let (--) i j =
 
 let arith_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
-                               [ "+"; "-"; "*"; "/"; "/."; "<"; ">"; "<="; ">="; "=" ]
+                               [ "+"; "-"; "*"; "/"; "/."; "<"; ">"; "<="; ">="; "="; "and"; "or"; "not" ]
 
 let array_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
@@ -204,6 +204,9 @@ and codegen_arith_op op args =
       | "<=" -> codegen_call_op "clte" [hd;snd]
       | ">=" -> codegen_call_op "cgte" [hd;snd]
       | "=" -> codegen_call_op "cequ" [hd;snd]
+      | "and" -> codegen_call_op "cand" [hd;snd]
+      | "or" -> codegen_call_op "cor" [hd;snd]
+      | "not" -> codegen_call_op "cnot" [hd]
       | _ -> raise (Error "Unknown arithmetic operator")
 
 and codegen_array_op op args =
