@@ -12,6 +12,7 @@ class colors:
     END = '\033[0m'
 
 def run():
+    stdlib = open("stdlib.rh").read()
     pasting = False
     i = ""
     last_llvm = ""
@@ -66,7 +67,7 @@ def run():
 
         p = Popen(["./rhine", "-"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
         output = ""
-        stdout, stderr = p.communicate(total_input+"\n"+ci)
+        stdout, stderr = p.communicate(stdlib+"\n"+total_input+"\n"+ci)
 
         if stderr.find("error") >= 0:
             sys.stdout.write(colors.FAIL)
