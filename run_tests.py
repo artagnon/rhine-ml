@@ -29,7 +29,7 @@ def run():
 
 
     for filename in tests:
-        if not filename.endswith(".rht"):
+        if filename.startswith("output.") or not filename.endswith(".rht"):
             no_tests -= 1
             continue
         contents = open("tests/"+filename).read().split("---")

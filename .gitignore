@@ -3,6 +3,7 @@ lexer.ml
 parser.ml
 parser.mli
 bindings.o
+tests/output.*
 *~
 *.cmi
 *.cmo
