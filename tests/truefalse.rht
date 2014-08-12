@@ -1,0 +1,9 @@
+(println (= true true))
+(println (= false true))
+(println (= false false))
+(println (= true false))
+---
+(bool) true
+(bool) false
+(bool) true
+(bool) false

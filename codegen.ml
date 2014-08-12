@@ -204,9 +204,9 @@ and codegen_arith_op op args =
       | "<=" -> codegen_call_op "clte" [hd;snd]
       | ">=" -> codegen_call_op "cgte" [hd;snd]
       | "=" -> codegen_call_op "cequ" [hd;snd]
+      | "not" -> codegen_call_op "cnot" [hd]
       | "and" -> codegen_call_op "cand" [hd;snd]
       | "or" -> codegen_call_op "cor" [hd;snd]
-      | "not" -> codegen_call_op "cnot" [hd]
       | _ -> raise (Error "Unknown arithmetic operator")
 
 and codegen_array_op op args =
@@ -224,8 +224,8 @@ and codegen_array_op op args =
                                       "rest" builder in
      let newlen = build_sub len (const_int i64_type 1) "restsub" builder in
      box_llar newptr newlen
-  (* | "cons" ->*)
-
+  | "cons" ->
+      List.nth args 1 
   | "length" ->
       let dst = build_in_bounds_gep arg (idx 5) "arrlenptr" builder in
       box_value(build_load dst "load" builder)

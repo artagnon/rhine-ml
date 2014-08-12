@@ -164,11 +164,22 @@ extern struct value_t *cgte(struct value_t *v, struct value_t *v2) {
 extern struct value_t *cequ(struct value_t *v, struct value_t *v2) {
     int ret_type = 0;
     struct value_t *ret;
-    // only makes sense for integers currently
-    if (v->int_val == v2->int_val) {
-        ret = save_value(1.0, 2);
-    } else {
-        ret = save_value(0.0, 2);
+    // only makes sense for integers and bools currently
+    switch(v->type_tag) {
+    case 1:
+        if (v->int_val == v2->int_val) {
+            ret = save_value(1.0, 2);
+        } else {
+            ret = save_value(0.0, 2);
+        }
+        break;
+    case 2:
+        if (!v->bool_val == !v2->bool_val) {
+            ret = save_value(1.0, 2);
+        } else {
+            ret = save_value(0.0, 2);
+        }
+        break;
     }
     return ret;
 }
@@ -197,8 +208,11 @@ extern struct value_t *cor(struct value_t *v, struct value_t *v2) {
 }
 
 extern struct value_t *cnot(struct value_t *v) {
+    printf("HELLO\n\n");
     int ret_type = 0;
     struct value_t *ret;
+    print_atom(v);
+    printf("HEzzLLO");
     if (!(!v->bool_val)) {
         ret = save_value(0.0, 2);
     } else {

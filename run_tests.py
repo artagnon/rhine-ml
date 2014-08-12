@@ -38,12 +38,17 @@ def run():
 
         p = Popen(["./rhine", "-"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
         stdout, stderr = p.communicate(test_input)
+        stdout = stdout.lower()
+        stderr = stderr.lower()
 
-        if stderr.find(expected_output) > 0 or stdout.find(expected_output) > 0:
+        if stderr.find(expected_output) >= 0 or stdout.find(expected_output) >= 0:
             no_successes += 1
             print "%s %s: SUCCESS%s" % (colors.OK, filename, colors.END)
         else:
-            print "%s %s: FAILED" % (colors.FAIL, filename)
+            f = open('tests/output.'+filename,'w')
+            f.write(stdout+stderr)
+            f.close()
+            print "%s %s: FAILED (output written to tests/)" % (colors.FAIL, filename)
 
     if no_successes == no_tests:
         print colors.OK

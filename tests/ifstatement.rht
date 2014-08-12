@@ -1,0 +1,7 @@
+(println (= false true))
+(println (if (= false true) false 99))
+(println (if false false 99))
+---
+(bool) false
+(int) 99
+(int) 99

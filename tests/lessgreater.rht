@@ -1,0 +1,23 @@
+(println (< 2 4))
+(println (> 1 6))
+(println (<= 3 4))
+(println (<= 4 5))
+(println (>= 5 4))
+(println (>= 4 4))
+(println (= 4 4))
+(println (= 2 4))
+(println (< 1.0 4))
+(println (> 1.0 4.0))
+(println (> (* 2 2.0) (* 5 5)))
+---
+(bool) true
+(bool) false
+(bool) true
+(bool) true
+(bool) true
+(bool) true
+(bool) true
+(bool) false
+(bool) true
+(bool) false
+(bool) false
