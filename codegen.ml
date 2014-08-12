@@ -57,6 +57,13 @@ let build_malloc llt id builder =
   let raw_ptr = build_call callee [| size_of llt |] id builder in
   build_bitcast raw_ptr (pointer_type llt) "malloc_value" builder
 
+let build_strlen llv =
+  let callee = match lookup_function "strlen" the_module with
+      Some callee -> callee
+    | None -> raise (Error "Unknown function referenced") in
+  let size = build_call callee [| llv |] "strlen" builder in
+  build_trunc size i32_type "trunc" builder
+
 let idx n = [| const_int i32_type 0; const_int i32_type n |]
 
 let undef_vec len =
@@ -83,17 +90,13 @@ let box_value llval =
       Some t -> t
     | None -> raise (Error "Could not look up value_t")
   in
-  let rhstring_type size = array_type i8_type size in
   let rharray_type size = array_type (pointer_type value_t) size in
   let value_ptr = build_malloc value_t "value" builder in
   let match_pointer ty = match element_type ty with
       ty when ty = i8_type ->
-      let ptr = build_in_bounds_gep value_ptr (idx 3) "boxptr" builder in
-      let str_ptr = build_in_bounds_gep ptr [| const_int i32_type 0 |]
-                                        "strptr" builder in
-      let new_str = build_alloca (rhstring_type 10) "str" builder in
-      let new_str_ptr = build_in_bounds_gep new_str (idx 0) "strptr" builder in
-      ignore (build_store new_str_ptr str_ptr builder);
+      let len = build_strlen llval in
+      let lenptr = build_in_bounds_gep value_ptr (idx 5) "lenptr" builder in
+      ignore (build_store len lenptr builder);
       (3, llval)
     | ty when ty = rharray_type (array_length ty) ->
        let len = const_int i64_type (array_length ty) in
@@ -262,8 +265,8 @@ and codegen_string_op op s2 =
 
 and codegen_cf_op op s2 =
   let cond_val = unbox_bool (List.hd s2) in
-  let true_val = List.hd (List.tl s2) in
-  let false_val = List.hd (List.tl (List.tl s2)) in
+  let true_val = List.nth s2 1 in
+  let false_val = List.nth s2 2 in
   let start_bb = insertion_block builder in
   let the_function = block_parent start_bb in
   let truebb = append_block context "then" the_function in
