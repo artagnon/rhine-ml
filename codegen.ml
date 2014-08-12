@@ -24,7 +24,8 @@ let (--) i j =
 
 let arith_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
-                               [ "+"; "-"; "*"; "/"; "/."; "<"; ">"; "<="; ">="; "="; "and"; "or"; "not" ]
+                               [ "+"; "-"; "*"; "/"; "/."; "<"; ">";
+                                 "<="; ">="; "="; "and"; "or"; "not" ]
 
 let array_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
@@ -241,7 +242,7 @@ and codegen_array_op op args =
      box_llar newptr newlen
   | "length" ->
       let dst = build_in_bounds_gep arg (idx 5) "arrlenptr" builder in
-      box_value(build_load dst "load" builder)
+      box_value (build_load dst "load" builder)
   | "cons" ->
      let tail = List.nth args 1 in
      let lenptr = build_in_bounds_gep tail (idx 5) "boxptr" builder in
