@@ -202,6 +202,22 @@ let rec extract_args s = match s with
     end
   | _ -> raise (Error "Expected sexp")
 
+and codegen_one_arg s = match s with
+    Ast.DottedPair(s1, s2) ->
+    begin match (s1, s2) with
+            (Ast.Atom m, Ast.DottedPair(_, _)) ->
+            codegen_atom m
+          | (Ast.Atom m, Ast.Atom(Ast.Nil)) -> codegen_atom m
+          | (Ast.DottedPair(_, _), Ast.DottedPair(_, _)) ->
+             codegen_sexpr s1
+          | (Ast.DottedPair(_, _), Ast.Atom(Ast.Nil)) -> codegen_sexpr s1
+          | (Ast.Vector(qs), Ast.DottedPair(_, _)) ->
+             codegen_array qs
+          | (Ast.Vector(qs), Ast.Atom(Ast.Nil)) -> codegen_array qs
+          | _ -> raise (Error "Malformed sexp")
+    end
+  | _ -> raise (Error "Expected sexp")
+
 and codegen_arith_op op args =
     let hd = List.hd args in
     let tl = List.tl args in
@@ -303,16 +319,22 @@ and codegen_string_op op s2 =
   in box_value unboxed_value
 
 and codegen_cf_op op s2 =
-  let cond_val = unbox_bool (List.hd s2) in
-  let true_val = List.nth s2 1 in
-  let false_val = List.nth s2 2 in
+  let truese = match s2 with
+      Ast.DottedPair(_, next) -> next
+    | _ -> raise (Error "Malformed if expression") in
+  let falsese = match truese with
+      Ast.DottedPair(_, next) -> next
+    | _ -> raise (Error "Malformed if expression") in
+  let cond_val = unbox_bool (codegen_one_arg s2) in
   let start_bb = insertion_block builder in
   let the_function = block_parent start_bb in
   let truebb = append_block context "then" the_function in
   position_at_end truebb builder;
+  let true_val = codegen_one_arg truese in
   let new_truebb = insertion_block builder in
   let falsebb = append_block context "else" the_function in
   position_at_end falsebb builder;
+  let false_val = codegen_one_arg falsese in
   let new_falsebb = insertion_block builder in
   let mergebb = append_block context "ifcont" the_function in
   position_at_end mergebb builder;
@@ -378,6 +400,8 @@ and codegen_sexpr s = match s with
              Ast.Atom(Ast.Symbol s) ->
              if StringSet.mem s binding_ops then
                codegen_binding_op s s2
+             else if StringSet.mem s cf_ops then
+               codegen_cf_op s s2
              else
                let args = extract_args s2 in
                if StringSet.mem s arith_ops then
@@ -386,8 +410,6 @@ and codegen_sexpr s = match s with
                  codegen_array_op s args
                else if StringSet.mem s string_ops then
                  codegen_string_op s args
-               else if StringSet.mem s cf_ops then
-                 codegen_cf_op s args
                else
                  codegen_call_op s args
            | _ -> raise (Error "Expected function call");
