@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 struct value_t {
 	int type_tag;
 	long int_val;
-	int bool_val:1;
+	bool bool_val;
 	char *string_val;
 	struct value_t **array_val;
 	long array_len;
@@ -73,7 +74,7 @@ struct value_t *save_value(double val, int ret_type) {
 		ret->dbl_val = val;
 		ret->type_tag = 6;
 	} else if (ret_type == 2) {
-		ret->bool_val = (int)val;
+		ret->bool_val = (bool) val;
 		ret->type_tag = 2;
 	} else {
 		ret->int_val = (int) val;
