@@ -117,7 +117,7 @@ extern struct value_t *clt(struct value_t *v, struct value_t *v2) {
     int ret_type = 0;
     struct value_t *ret;
     if (get_value(v, &ret_type) < get_value(v2, &ret_type)) {
-        ret = save_value(-1.0, 2);
+        ret = save_value(1.0, 2);
     } else {
         ret = save_value(0.0, 2);
     }
@@ -128,7 +128,7 @@ extern struct value_t *cgt(struct value_t *v, struct value_t *v2) {
     int ret_type = 0;
     struct value_t *ret;
     if (get_value(v, &ret_type) > get_value(v2, &ret_type)) {
-        ret = save_value(-1.0, 2);
+        ret = save_value(1.0, 2);
     } else {
         ret = save_value(0.0, 2);
     }
@@ -139,7 +139,7 @@ extern struct value_t *clte(struct value_t *v, struct value_t *v2) {
     int ret_type = 0;
     struct value_t *ret;
     if (get_value(v, &ret_type) <= get_value(v2, &ret_type)) {
-        ret = save_value(-1.0, 2);
+        ret = save_value(1.0, 2);
     } else {
         ret = save_value(0.0, 2);
     }
@@ -150,7 +150,7 @@ extern struct value_t *cgte(struct value_t *v, struct value_t *v2) {
     int ret_type = 0;
     struct value_t *ret;
     if (get_value(v, &ret_type) >= get_value(v2, &ret_type)) {
-        ret = save_value(-1.0, 2);
+        ret = save_value(1.0, 2);
     } else {
         ret = save_value(0.0, 2);
     }
@@ -164,14 +164,14 @@ extern struct value_t *cequ(struct value_t *v, struct value_t *v2) {
     switch(v->type_tag) {
     case 1:
         if (v->int_val == v2->int_val) {
-            ret = save_value(-1.0, 2);
+            ret = save_value(1.0, 2);
         } else {
             ret = save_value(0.0, 2);
         }
         break;
     case 2:
         if (!v->bool_val == !v2->bool_val) {
-            ret = save_value(-1.0, 2);
+            ret = save_value(1.0, 2);
         } else {
             ret = save_value(0.0, 2);
         }
@@ -184,7 +184,7 @@ extern struct value_t *cand(struct value_t *v, struct value_t *v2) {
     int ret_type = 0;
     struct value_t *ret;
     if (!(!v->bool_val) && !(!v2->bool_val)) {
-        ret = save_value(-1.0, 2);
+        ret = save_value(1.0, 2);
     } else {
         ret = save_value(0.0, 2);
     }
@@ -195,7 +195,7 @@ extern struct value_t *cor(struct value_t *v, struct value_t *v2) {
     int ret_type = 0;
     struct value_t *ret;
     if (!(!v->bool_val) || !(!v2->bool_val)) {
-        ret = save_value(-1.0, 2);
+        ret = save_value(1.0, 2);
     } else {
         ret = save_value(0.0, 2);
     }
@@ -209,7 +209,7 @@ extern struct value_t *cnot(struct value_t *v) {
     if (!(!v->bool_val)) {
         ret = save_value(0.0, 2);
     } else {
-        ret = save_value(-1.0, 2);
+        ret = save_value(1.0, 2);
     }
     return ret;
 
