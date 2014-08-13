@@ -282,7 +282,6 @@ and codegen_array_op op args =
                                 "rawdst" builder in
      ignore (build_store arg ptrhead builder);
      ignore (build_memcpy rawsrc rawdst size);
-     let newlen = build_trunc newlen i32_type "trunc" builder in
      box_llar ptr newlen
   | _ -> raise (Error "Unknown array operator")
 
