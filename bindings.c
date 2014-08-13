@@ -7,7 +7,7 @@ struct value_t {
 	int bool_val:1;
 	char *string_val;
 	struct value_t **array_val;
-	int array_len;
+	long array_len;
 	double dbl_val;
 };
 
