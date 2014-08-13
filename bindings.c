@@ -24,7 +24,7 @@ void print_atom(struct value_t *v) {
 		printf("(string) %s", v->string_val);
 		break;
 	case 4:
-		printf("(array len %d) [", v->array_len);
+		printf("(array len %ld) [", v->array_len);
 		for (i = 0; i < v->array_len; i++) {
 			struct value_t *el = (v->array_val)[i];
 			print_atom(el);
