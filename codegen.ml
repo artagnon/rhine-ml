@@ -221,22 +221,24 @@ and codegen_one_arg s = match s with
 and codegen_arith_op op args =
     let hd = List.hd args in
     let tl = List.tl args in
-    if tl == [] then hd else
-    let snd = List.nth args 1 in
     match op with
-        "+" -> codegen_call_op "cadd" [hd;(codegen_arith_op op tl)]
-      | "-" -> codegen_call_op "csub" [hd;(codegen_arith_op op tl)]
-      | "/" -> codegen_call_op "cdiv" args
-      | "*" -> codegen_call_op "cmul" [hd;(codegen_arith_op op tl)]
-      | "<" -> codegen_call_op "clt" [hd;snd]
-      | ">" -> codegen_call_op "cgt" [hd;snd]
-      | "<=" -> codegen_call_op "clte" [hd;snd]
-      | ">=" -> codegen_call_op "cgte" [hd;snd]
-      | "=" -> codegen_call_op "cequ" [hd;snd]
-      | "not" -> codegen_call_op "cnot" [hd]
-      | "and" -> codegen_call_op "cand" [hd;snd]
-      | "or" -> codegen_call_op "cor" [hd;snd]
-      | _ -> raise (Error "Unknown arithmetic operator")
+      "not" -> codegen_call_op "cnot" [hd]
+    | _ ->
+       if tl == [] then hd else
+         let snd = List.nth args 1 in
+         match op with
+           "+" -> codegen_call_op "cadd" [hd;(codegen_arith_op op tl)]
+         | "-" -> codegen_call_op "csub" [hd;(codegen_arith_op op tl)]
+         | "/" -> codegen_call_op "cdiv" args
+         | "*" -> codegen_call_op "cmul" [hd;(codegen_arith_op op tl)]
+         | "<" -> codegen_call_op "clt" [hd;snd]
+         | ">" -> codegen_call_op "cgt" [hd;snd]
+         | "<=" -> codegen_call_op "clte" [hd;snd]
+         | ">=" -> codegen_call_op "cgte" [hd;snd]
+         | "=" -> codegen_call_op "cequ" [hd;snd]
+         | "and" -> codegen_call_op "cand" [hd;snd]
+         | "or" -> codegen_call_op "cor" [hd;snd]
+         | _ -> raise (Error "Unknown arithmetic operator")
 
 and codegen_array_op op args =
   let value_t = match type_by_name the_module "value_t" with

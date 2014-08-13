@@ -208,11 +208,8 @@ extern struct value_t *cor(struct value_t *v, struct value_t *v2) {
 }
 
 extern struct value_t *cnot(struct value_t *v) {
-    printf("HELLO\n\n");
     int ret_type = 0;
     struct value_t *ret;
-    print_atom(v);
-    printf("HEzzLLO");
     if (!(!v->bool_val)) {
         ret = save_value(0.0, 2);
     } else {
