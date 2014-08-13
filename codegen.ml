@@ -62,8 +62,7 @@ let build_strlen llv =
   let callee = match lookup_function "strlen" the_module with
       Some callee -> callee
     | None -> raise (Error "Unknown function referenced") in
-  let size = build_call callee [| llv |] "strlen" builder in
-  build_trunc size i32_type "trunc" builder
+  build_call callee [| llv |] "strlen" builder
 
 let build_memcpy src dst llsize =
   let callee = match lookup_function "llvm.memcpy.p0i8.p0i8.i64" the_module with
