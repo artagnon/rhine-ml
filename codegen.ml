@@ -164,6 +164,9 @@ let unbox_str llval =
   let str n = build_bitcast el (rhstring_type n) "strptr" builder in
   let strload n = build_load (str n) "load" builder in
   strload 10
+let unbox_length llval =
+  let dst = build_in_bounds_gep llval (idx 5) "boxptr" builder in
+  build_load dst "load" builder
 
 let unbox_ar llval =
   let value_t = match type_by_name the_module "value_t" with
@@ -270,8 +273,7 @@ and codegen_array_op op args =
      let newlen = build_sub len (const_int i64_type 1) "restsub" builder in
      box_llar newptr newlen
   | "length" ->
-      let dst = build_in_bounds_gep arg (idx 5) "arrlenptr" builder in
-      box_value (build_load dst "load" builder)
+     box_value (unbox_length arg)
   | "cons" ->
      let tail = List.nth args 1 in
      let lenptr = build_in_bounds_gep tail (idx 5) "boxptr" builder in
@@ -324,8 +326,7 @@ and codegen_string_op op s2 =
                   ignore (build_store m (ptr i) builder)) splits;
       new_array
     | "str-length" ->
-       let dst = build_in_bounds_gep (List.hd s2) (idx 5) "strlenptr" builder in
-       build_load dst "load" builder
+       unbox_length (List.hd s2)
     | _ -> raise (Error "Unknown string operator")
   in box_value unboxed_value
 
