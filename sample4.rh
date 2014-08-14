@@ -1,3 +1,11 @@
-(defn idfunc [f] (f 12))
+(defn map
+  [f coll]
+  (if (not (= [] coll))
+    (cons (f (first coll))
+          (map f (rest coll)))
+    []))
 
-(idfunc println)
+(defn plus2 [a]
+  (+ a 2))
+
+(println (map plus2 [1 2 3 4]))
