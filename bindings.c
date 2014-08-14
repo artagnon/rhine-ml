@@ -45,7 +45,7 @@ extern struct value_t *print(struct value_t *v) {
 	struct value_t *ret;
 	print_atom(v);
 	ret = malloc(sizeof(struct value_t));
-	ret->int_val = 5;
+	ret->int_val = 0;
 	ret->type_tag = 1;
 	return ret;
 }
