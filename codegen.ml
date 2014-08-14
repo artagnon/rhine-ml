@@ -389,8 +389,7 @@ and codegen_cf_op op s2 =
      phi
   | "dotimes" ->
      let qs, body = match s2 with
-         Ast.DottedPair(Ast.Vector(qs),
-                        Ast.DottedPair(body, Ast.Atom(Ast.Nil))) -> qs, body
+         Ast.DottedPair(Ast.Vector(qs), body) -> qs, body
        | _ -> raise (Error "Malformed dotimes expression") in
      let var_name = match qs.(0) with
          Ast.Atom(Ast.Symbol(s)) -> s
