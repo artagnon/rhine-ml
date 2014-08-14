@@ -18,7 +18,7 @@ toplevel.cmo: toplevel.ml
 %.o   : %.c
 	cc -c -o $@ $<
 clean :
-	rm -f rhine parser.ml parser.mli lexer.ml *.cmo *.cmi *.cmx
+	rm -f rhine parser.ml parser.mli lexer.ml *.o *.cmo *.cmi *.cmx
 
 codegen.cmo : ast.cmi
 codegen.cmx : ast.cmi

@@ -62,8 +62,7 @@ let build_strlen llv =
   let callee = match lookup_function "strlen" the_module with
       Some callee -> callee
     | None -> raise (Error "Unknown function referenced") in
-  let size = build_call callee [| llv |] "strlen" builder in
-  build_trunc size i32_type "trunc" builder
+  build_call callee [| llv |] "strlen" builder
 
 let build_memcpy src dst llsize =
   let callee = match lookup_function "llvm.memcpy.p0i8.p0i8.i64" the_module with
@@ -221,26 +220,24 @@ and codegen_one_arg s = match s with
 and codegen_arith_op op args =
     let hd = List.hd args in
     let tl = List.tl args in
-    if tl == [] then
-      match op with
-       "not" -> codegen_call_op "cnot" [hd]
-      | _ -> hd
-    else
-      let snd = List.nth args 1 in
-      match op with
-        "+" -> codegen_call_op "cadd" [hd;(codegen_arith_op op tl)]
-      | "-" -> codegen_call_op "csub" [hd;(codegen_arith_op op tl)]
-      | "/" -> codegen_call_op "cdiv" args
-      | "*" -> codegen_call_op "cmul" [hd;(codegen_arith_op op tl)]
-      | "<" -> codegen_call_op "clt" [hd;snd]
-      | ">" -> codegen_call_op "cgt" [hd;snd]
-      | "<=" -> codegen_call_op "clte" [hd;snd]
-      | ">=" -> codegen_call_op "cgte" [hd;snd]
-      | "=" -> codegen_call_op "cequ" [hd;snd]
-      | "not" -> codegen_call_op "cnot" [hd]
-      | "and" -> codegen_call_op "cand" [hd;snd]
-      | "or" -> codegen_call_op "cor" [hd;snd]
-      | _ -> raise (Error "Unknown arithmetic operator")
+    match op with
+      "not" -> codegen_call_op "cnot" [hd]
+    | _ ->
+       if tl == [] then hd else
+         let snd = List.nth args 1 in
+         match op with
+           "+" -> codegen_call_op "cadd" [hd;(codegen_arith_op op tl)]
+         | "-" -> codegen_call_op "csub" [hd;(codegen_arith_op op tl)]
+         | "/" -> codegen_call_op "cdiv" args
+         | "*" -> codegen_call_op "cmul" [hd;(codegen_arith_op op tl)]
+         | "<" -> codegen_call_op "clt" [hd;snd]
+         | ">" -> codegen_call_op "cgt" [hd;snd]
+         | "<=" -> codegen_call_op "clte" [hd;snd]
+         | ">=" -> codegen_call_op "cgte" [hd;snd]
+         | "=" -> codegen_call_op "cequ" [hd;snd]
+         | "and" -> codegen_call_op "cand" [hd;snd]
+         | "or" -> codegen_call_op "cor" [hd;snd]
+         | _ -> raise (Error "Unknown arithmetic operator")
 
 and codegen_array_op op args =
   let value_t = match type_by_name the_module "value_t" with
@@ -285,7 +282,6 @@ and codegen_array_op op args =
                                 "rawdst" builder in
      ignore (build_store arg ptrhead builder);
      ignore (build_memcpy rawsrc rawdst size);
-     let newlen = build_trunc newlen i32_type "trunc" builder in
      box_llar ptr newlen
   | _ -> raise (Error "Unknown array operator")
 
