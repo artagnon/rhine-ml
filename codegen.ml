@@ -389,8 +389,7 @@ and codegen_cf_op op s2 =
      phi
   | "dotimes" ->
      let qs, body = match s2 with
-         Ast.DottedPair(Ast.Vector(qs),
-                        Ast.DottedPair(body, Ast.Atom(Ast.Nil))) -> qs, body
+         Ast.DottedPair(Ast.Vector(qs), body) -> qs, body
        | _ -> raise (Error "Malformed dotimes expression") in
      let var_name = match qs.(0) with
          Ast.Atom(Ast.Symbol(s)) -> s
@@ -441,8 +440,7 @@ and codegen_binding_op f s2 =
   match f with
     "let" ->
     let bindlist, body = match s2 with
-        Ast.DottedPair(Ast.Vector(qs),
-                       Ast.DottedPair(next, Ast.Atom(Ast.Nil))) -> qs, next
+        Ast.DottedPair(Ast.Vector(qs), next) -> qs, next
       | _ -> raise (Error "Malformed let") in
     let len = Array.length bindlist in
     if len mod 2 != 0 then
@@ -471,25 +469,37 @@ and codegen_binding_op f s2 =
     llbody
     | _ -> raise (Error "Unknown binding operator")
 
+and match_action s s2 =
+  if StringSet.mem s binding_ops then
+    codegen_binding_op s s2
+  else if StringSet.mem s cf_ops then
+    codegen_cf_op s s2
+  else
+    let args = extract_args s2 in
+    if StringSet.mem s arith_ops then
+      codegen_arith_op s args
+    else if StringSet.mem s array_ops then
+      codegen_array_op s args
+    else if StringSet.mem s string_ops then
+      codegen_string_op s args
+    else
+      codegen_call_op s args
+
 and codegen_sexpr s = match s with
     Ast.Atom n -> codegen_atom n
+  | Ast.DottedPair(Ast.Atom n, Ast.Atom Ast.Nil) -> codegen_atom n
   | Ast.DottedPair(s1, s2) ->
-     begin match s1 with
-             Ast.Atom(Ast.Symbol s) ->
-             if StringSet.mem s binding_ops then
-               codegen_binding_op s s2
-             else if StringSet.mem s cf_ops then
-               codegen_cf_op s s2
-             else
-               let args = extract_args s2 in
-               if StringSet.mem s arith_ops then
-                 codegen_arith_op s args
-               else if StringSet.mem s array_ops then
-                 codegen_array_op s args
-               else if StringSet.mem s string_ops then
-                 codegen_string_op s args
-               else
-                 codegen_call_op s args
+     begin match s1, s2 with
+             (Ast.Atom(Ast.Symbol s), _) -> (* single sexpr *)
+             match_action s s2
+           | (Ast.DottedPair(Ast.Atom(Ast.Symbol ss1), ss2), _) ->
+              begin match s2 with
+                    Ast.DottedPair(_, _) ->
+                    let _ = match_action ss1 ss2 in
+                    codegen_sexpr s2
+                    | Ast.Atom(Ast.Nil) -> match_action ss1 ss2
+                    | _ -> raise (Error "Sexpr parse error");
+              end
            | _ -> raise (Error "Expected function call");
      end
   | Ast.Vector(qs) -> codegen_array qs
