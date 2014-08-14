@@ -174,7 +174,15 @@ extern struct value_t *cequ(struct value_t *v, struct value_t *v2) {
 			ret = save_value(0.0, 2);
 		}
 		break;
-	}
+    case 4:
+        //only compares length currently
+        if (v->array_len == v2->array_len) {
+            ret = save_value(1.0, 2);
+        } else {
+            ret = save_value(0.0, 2);
+        }
+        break;
+    }
 	return ret;
 }
 
