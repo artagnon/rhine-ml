@@ -1,0 +1,5 @@
+(print "testing" ;; comments
+)
+(println "hello")
+---
+(string) testing(string) hello

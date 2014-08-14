@@ -1,0 +1,15 @@
+(println "this is a string")
+(println "this
+is
+a
+string")
+(println "this is a \"string\" with a \"")
+(print "the end")
+---
+(string) this is a string
+(string) this
+is
+a
+string
+(string) this is a "string" with a "
+(string) the end
