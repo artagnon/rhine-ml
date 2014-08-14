@@ -489,6 +489,7 @@ and match_action s s2 =
 
 and codegen_sexpr s = match s with
     Ast.Atom n -> codegen_atom n
+  | Ast.DottedPair(Ast.Atom n, Ast.Atom Ast.Nil) -> codegen_atom n
   | Ast.DottedPair(s1, s2) ->
      begin match s1, s2 with
              (Ast.Atom(Ast.Symbol s), _) -> (* single sexpr *)
