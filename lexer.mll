@@ -32,6 +32,6 @@ and comment = parse
  | _ { comment lexbuf }
 
 and read_string b = parse
- "\\\"" { Buffer.add_string b (Lexing.lexeme lexbuf); read_string b lexbuf }
+ "\\\"" { Buffer.add_string b "\""; read_string b lexbuf }
  | '"' { STRING(Buffer.contents b) }
  | [^'"'] { Buffer.add_string b (Lexing.lexeme lexbuf); read_string b lexbuf }
