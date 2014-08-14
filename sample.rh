@@ -1,2 +1,5 @@
-(defn id [list] (rest list))
-(print (id ["foo" 7 "moo"]))
+(defn foo [a b]
+  (+ a 2)
+  (+ b 2))
+
+(foo 7 6)

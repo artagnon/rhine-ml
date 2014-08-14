@@ -21,9 +21,7 @@ let extract_strings args = Array.map (fun i ->
 
 let parse_defn_form sexpr = match sexpr with
     Ast.DottedPair(Ast.Atom(Ast.Symbol(sym)),
-                   Ast.DottedPair(Ast.Vector(v),
-                                  Ast.DottedPair(body,
-                                                 Ast.Atom(Ast.Nil)))) ->
+                   Ast.DottedPair(Ast.Vector(v), body)) ->
     (sym, extract_strings v, body)
   | _ -> raise (Error "Unparseable defn form")
 
