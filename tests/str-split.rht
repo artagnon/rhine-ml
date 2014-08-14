@@ -1,0 +1,3 @@
+(println (str-split "foo"))
+---
+(array len 4) [(string) f;(string) o;(string) o;(string) ;]

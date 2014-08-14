@@ -22,7 +22,7 @@ void print_atom(struct value_t *v) {
 		printf("(bool) %s", !v->bool_val ? "false" : "true");
 		break;
 	case 3:
-		printf("(string) %s", v->string_val);
+		printf("(string len %ld) %s", v->array_len, v->string_val);
 		break;
 	case 4:
 		printf("(array len %ld) [", v->array_len);
@@ -45,7 +45,7 @@ extern struct value_t *print(struct value_t *v) {
 	struct value_t *ret;
 	print_atom(v);
 	ret = malloc(sizeof(struct value_t));
-	ret->int_val = 5;
+	ret->int_val = 0;
 	ret->type_tag = 1;
 	return ret;
 }

@@ -7,7 +7,7 @@
 (print [1 2.0])
 (println true)
 ---
-(string) hello(int) 83(double) 2.000000(double) 3.000000
+(string len 5) hello(int) 83(double) 2.000000(double) 3.000000
 (int) 2
 (array len 3) [(int) 1;(int) 2;(int) 3;]
 (array len 2) [(int) 1;(double) 2.000000;](bool) true

@@ -33,7 +33,7 @@ let array_ops = List.fold_left (fun s k -> StringSet.add k s)
 
 let string_ops = List.fold_left (fun s k -> StringSet.add k s)
                                 StringSet.empty
-                                [ "str-split"; "str-join" ]
+                                [ "str-split"; "str-join"; "str-length" ]
 
 let cf_ops = List.fold_left (fun s k -> StringSet.add k s)
                             StringSet.empty
@@ -323,6 +323,9 @@ and codegen_string_op op s2 =
       List.iteri (fun i m ->
                   ignore (build_store m (ptr i) builder)) splits;
       new_array
+    | "str-length" ->
+       let dst = build_in_bounds_gep (List.hd s2) (idx 5) "strlenptr" builder in
+       build_load dst "load" builder
     | _ -> raise (Error "Unknown string operator")
   in box_value unboxed_value
 
