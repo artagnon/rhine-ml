@@ -17,5 +17,38 @@
     )
 )
 
+;; Decrement number by 1
+(defn dec [n] (- n 1))
+
+;; Increment number by 1
+
+
+;; Return first n items of coll
+(defn take [n coll]
+    (if
+       (and (> n 0) (not (= [] coll)))
+       (cons (first coll) (take (- n 1) (rest coll)))
+       []
+    )
+)
+
+;; Drop the first n items of coll
+(defn drop [n coll]
+   (if
+       (and (> n 0) (not (= [] coll)))
+       (drop (dec n) (rest coll))
+       coll
+   )
+)
+
+;; Returns the result of applying f to each element of coll
+;;(defn map [f coll]
+;;    (if
+;;        (not (= [] coll))
+;;        (cons (first (first coll)) (map f (rest coll)))
+;;        []
+;;    )
+;;)
+
 
 
