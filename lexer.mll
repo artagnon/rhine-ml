@@ -5,7 +5,7 @@
 
 let digit = ['0'-'9']
 let characters = ['a'-'z' 'A'-'Z']
-let symbol_characters = ['a'-'z' 'A'-'Z' '?' '-' '+' '*' '/' '<' '>' '=' '.']
+let symbol_chars = ['a'-'z' 'A'-'Z' '?' '-' '+' '*' '/' '<' '>' '=' '.']
 let e = ['E''e']['-''+']?['0'-'9']+
 
 rule token = parse
@@ -21,9 +21,8 @@ rule token = parse
  | (['0'-'9']*)'.'['0'-'9']+e? as s { DOUBLE(float_of_string s) }
  | (['0'-'9']+)'.'['0'-'9']*e? as s { DOUBLE(float_of_string s) }
  | (['0'-'9']+)e as s { DOUBLE(float_of_string s) }
-
  | ['-''+']?digit+ as s { INTEGER(int_of_string s) }
- | symbol_characters+ as s { SYMBOL(s) }
+ | (symbol_chars (digit|symbol_chars)*) as s { SYMBOL(s) }
  | '"' { let b = Buffer.create 1024 in read_string b lexbuf }
  | eof { EOF }
 
