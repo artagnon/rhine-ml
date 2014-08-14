@@ -315,33 +315,75 @@ and codegen_string_op op s2 =
   in box_value unboxed_value
 
 and codegen_cf_op op s2 =
-  let truese = match s2 with
-      Ast.DottedPair(_, next) -> next
-    | _ -> raise (Error "Malformed if expression") in
-  let falsese = match truese with
-      Ast.DottedPair(_, next) -> next
-    | _ -> raise (Error "Malformed if expression") in
-  let cond_val = unbox_bool (codegen_one_arg s2) in
-  let start_bb = insertion_block builder in
-  let the_function = block_parent start_bb in
-  let truebb = append_block context "then" the_function in
-  position_at_end truebb builder;
-  let true_val = codegen_one_arg truese in
-  let new_truebb = insertion_block builder in
-  let falsebb = append_block context "else" the_function in
-  position_at_end falsebb builder;
-  let false_val = codegen_one_arg falsese in
-  let new_falsebb = insertion_block builder in
-  let mergebb = append_block context "ifcont" the_function in
-  position_at_end mergebb builder;
-  let incoming = [(true_val, new_truebb); (false_val, new_falsebb)] in
-  let phi = build_phi incoming "iftmp" builder in
-  position_at_end start_bb builder;
-  ignore (build_cond_br cond_val truebb falsebb builder);
-  position_at_end new_truebb builder; ignore (build_br mergebb builder);
-  position_at_end new_falsebb builder; ignore (build_br mergebb builder);
-  position_at_end mergebb builder;
-  phi
+  let value_t = match type_by_name the_module "value_t" with
+      Some t -> t
+    | None -> raise (Error "Could not look up value_t") in
+  match op with
+    "if" ->
+    let truese = match s2 with
+        Ast.DottedPair(_, next) -> next
+      | _ -> raise (Error "Malformed if expression") in
+    let falsese = match truese with
+        Ast.DottedPair(_, next) -> next
+      | _ -> raise (Error "Malformed if expression") in
+    let cond_val = unbox_bool (codegen_one_arg s2) in
+    let start_bb = insertion_block builder in
+    let the_function = block_parent start_bb in
+    let truebb = append_block context "then" the_function in
+    position_at_end truebb builder;
+    let true_val = codegen_one_arg truese in
+    let new_truebb = insertion_block builder in
+    let falsebb = append_block context "else" the_function in
+    position_at_end falsebb builder;
+    let false_val = codegen_one_arg falsese in
+    let new_falsebb = insertion_block builder in
+    let mergebb = append_block context "ifcont" the_function in
+    position_at_end mergebb builder;
+    let incoming = [(true_val, new_truebb); (false_val, new_falsebb)] in
+    let phi = build_phi incoming "iftmp" builder in
+    position_at_end start_bb builder;
+    ignore (build_cond_br cond_val truebb falsebb builder);
+    position_at_end new_truebb builder; ignore (build_br mergebb builder);
+    position_at_end new_falsebb builder; ignore (build_br mergebb builder);
+    position_at_end mergebb builder;
+    phi
+  | "dotimes" ->
+     let qs, body = match s2 with
+         Ast.DottedPair(Ast.Vector(qs),
+                        Ast.DottedPair(body, Ast.Atom(Ast.Nil))) -> qs, body
+       | _ -> raise (Error "Malformed dotimes expression") in
+     let var_name = match qs.(0) with
+         Ast.Atom(Ast.Symbol(s)) -> s
+       | _ -> raise (Error "Expected symbol in dotimes") in
+     let loop_lim = codegen_sexpr qs.(1) in
+     let start_bb = insertion_block builder in
+     let the_function = block_parent start_bb in
+     let loop_bb = append_block context "loop" the_function in
+     ignore (build_br loop_bb builder);
+     position_at_end loop_bb builder;
+     let start_val = codegen_sexpr (Ast.Atom(Ast.Int(0))) in
+     let variable = build_phi [(start_val, start_bb)] var_name builder in
+     let old_val =
+       try Some (Hashtbl.find named_values var_name) with Not_found -> None
+     in
+     Hashtbl.add named_values var_name variable;
+     ignore (codegen_sexpr body);
+     let next_var = build_add (unbox_int variable)
+                              (const_int i64_type 1) "nextvar" builder in
+     let next_var = box_value next_var in
+     let end_cond = build_icmp Icmp.Slt (unbox_int next_var)
+                               (unbox_int loop_lim) "end_cond" builder in
+     let loop_end_bb = insertion_block builder in
+     let after_bb = append_block context "after_loop" the_function in
+     ignore (build_cond_br end_cond loop_bb after_bb builder);
+     position_at_end after_bb builder;
+     add_incoming (next_var, loop_end_bb) variable;
+     begin match old_val with
+             Some old_val -> Hashtbl.add named_values var_name old_val
+           | None -> ()
+     end;
+     const_null (pointer_type value_t)
+  | _ -> raise (Error "Unknown control flow operation")
 
 and codegen_call_op f args =
   let callee =
