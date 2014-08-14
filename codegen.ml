@@ -37,7 +37,7 @@ let string_ops = List.fold_left (fun s k -> StringSet.add k s)
 
 let cf_ops = List.fold_left (fun s k -> StringSet.add k s)
                             StringSet.empty
-                            [ "if"; "dotimes" ]
+                            [ "if"; "when"; "dotimes" ]
 
 let binding_ops = List.fold_left (fun s k -> StringSet.add k s)
                                  StringSet.empty
@@ -362,6 +362,31 @@ and codegen_cf_op op s2 =
     position_at_end new_falsebb builder; ignore (build_br mergebb builder);
     position_at_end mergebb builder;
     phi
+  | "when" ->
+     let truese = match s2 with
+         Ast.DottedPair(_, next) -> next
+       | _ -> raise (Error "Malformed when expression") in
+     let cond_val = unbox_bool (codegen_one_arg s2) in
+     let start_bb = insertion_block builder in
+     let the_function = block_parent start_bb in
+     let truebb = append_block context "then" the_function in
+     position_at_end truebb builder;
+     let true_val = codegen_one_arg truese in
+     let new_truebb = insertion_block builder in
+     let falsebb = append_block context "else" the_function in
+     position_at_end falsebb builder;
+     let false_val = const_null (pointer_type value_t) in
+     let new_falsebb = insertion_block builder in
+     let mergebb = append_block context "ifcont" the_function in
+     position_at_end mergebb builder;
+     let incoming = [(true_val, new_truebb); (false_val, new_falsebb)] in
+     let phi = build_phi incoming "iftmp" builder in
+     position_at_end start_bb builder;
+     ignore (build_cond_br cond_val truebb falsebb builder);
+     position_at_end new_truebb builder; ignore (build_br mergebb builder);
+     position_at_end new_falsebb builder; ignore (build_br mergebb builder);
+     position_at_end mergebb builder;
+     phi
   | "dotimes" ->
      let qs, body = match s2 with
          Ast.DottedPair(Ast.Vector(qs),
