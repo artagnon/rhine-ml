@@ -17,6 +17,7 @@ def get_test_files():
     return filelist
 
 def run():
+    stdlib = open("stdlib.rh").read()
     tests = get_test_files()
     no_tests = len(tests)
     no_successes = 0
@@ -37,7 +38,7 @@ def run():
         expected_output = "---".join(contents[1:]).strip()
 
         p = Popen(["./rhine", "-"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        stdout, stderr = p.communicate(test_input)
+        stdout, stderr = p.communicate(stdlib+"\n"+test_input)
         stdout = stdout.lower()
         stderr = stderr.lower()
 
