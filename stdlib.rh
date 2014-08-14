@@ -1,5 +1,21 @@
+;; Absolute value of number
 (defn abs [n] (if (< n 0) (* n -1) n))
 
+;; Concats two strings
+(defn concat [a b]
+    (if (not (= [] a))
+      (cons (first a) (concat (rest a) b))
+      b 
+    )
+)
+
+;; Factorial
+(defn factorial [n]
+    (if (< n 2)
+       n
+       (* n (factorial (- n 1)))
+    )
+)
 
 
 
