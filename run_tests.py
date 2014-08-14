@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from os import walk
+from os import walk, unlink
 from subprocess import Popen, PIPE
 
 class colors:
@@ -44,6 +44,10 @@ def run():
 
         if stderr.find(expected_output) >= 0 or stdout.find(expected_output) >= 0:
             no_successes += 1
+            try:
+                unlink('tests/output.'+filename)
+            except OSError:
+                pass
             print "%s %s: SUCCESS%s" % (colors.OK, filename, colors.END)
         else:
             f = open('tests/output.'+filename,'w')
