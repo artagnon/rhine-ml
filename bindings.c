@@ -38,7 +38,6 @@ void print_atom(struct value_t *v) {
 		break;
 	default:
 		printf("Don't know how to print type %d", v->type_tag);
-		exit(1);
 	}
 }
 
