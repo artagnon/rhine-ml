@@ -1,0 +1,3 @@
+(str-length "foom")
+---
+Evaluated to 4
