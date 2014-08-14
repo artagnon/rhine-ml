@@ -41,6 +41,10 @@
    )
 )
 
+;; Return the nth element of coll
+(defn nth [n coll] (first (drop (dec n) coll)))
+
+
 ;; Returns the result of applying f to each element of coll
 ;;(defn map [f coll]
 ;;    (if
