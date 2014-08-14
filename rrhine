@@ -58,8 +58,11 @@ def run():
         elif ci in ["llvm", "ll"]:
             print last_llvm
             continue
-        elif ci in ["total"]:
+        elif ci in ["i", "input"]:
             print total_input
+            continue
+        elif ci in ["o", "output"]:
+            print total_output
             continue
         elif ci in ["last"]:
             print last_io
@@ -81,7 +84,10 @@ def run():
                 output += line.strip()+"\n"
 
 
-            print output[:-1][(len(total_output)-1):]
+            from_idx = len(total_output)-1
+            if from_idx < 0:
+                from_idx = 0
+            print output[:-1][from_idx:]
             total_output = output
 
             last_io = ci+"\n\n"+output[:-1][len(total_output):]
