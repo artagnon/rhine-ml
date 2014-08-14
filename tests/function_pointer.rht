@@ -1,0 +1,7 @@
+(defn foo [f] (println 5))
+(defn bar [f] (f 5))
+(foo println)
+(bar println)
+---
+(int) 5
+(int) 5
