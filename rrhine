@@ -19,7 +19,7 @@ def run():
     last_io = ""
     current_input = ""
     total_input = ""
-    total_output = ""
+    total_output = " "
     total_failed_input = ""
     while i not in ["quit", "exit", "q"]:
         if pasting:
@@ -78,9 +78,10 @@ def run():
             for line in stdout.split("\n"):
                 if line.startswith("Evaluated to ") or line.strip() == "":
                     continue
-                output += line+"\n"
+                output += line.strip()+"\n"
 
-            print output[:-1][len(total_output):]
+
+            print output[:-1][(len(total_output)-1):]
             total_output = output
 
             last_io = ci+"\n\n"+output[:-1][len(total_output):]
