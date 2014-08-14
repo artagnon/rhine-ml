@@ -2,8 +2,11 @@
 (let [a "string" b 2.30 c 3.0] (println (+ b c)))
 (let [a 1 b a] (println b))
 (let [a 1] (let [b a c b] (println c)))
+(println (let [b 1 c 2] (+ b 2) (+ c 2)))
+
 ---
 (int) 6
 (double) 5.300000
 (int) 1
 (int) 1
+(int) 4

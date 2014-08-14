@@ -441,8 +441,7 @@ and codegen_binding_op f s2 =
   match f with
     "let" ->
     let bindlist, body = match s2 with
-        Ast.DottedPair(Ast.Vector(qs),
-                       Ast.DottedPair(next, Ast.Atom(Ast.Nil))) -> qs, next
+        Ast.DottedPair(Ast.Vector(qs), next) -> qs, next
       | _ -> raise (Error "Malformed let") in
     let len = Array.length bindlist in
     if len mod 2 != 0 then
