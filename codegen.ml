@@ -101,18 +101,23 @@ let box_value llval =
   in
   let rharray_type size = array_type (pointer_type value_t) size in
   let value_ptr = build_malloc (size_of value_t) value_t "value" builder in
-  let match_pointer ty = match element_type ty with
-      ty when ty = i8_type ->
-      let len = build_strlen llval in
-      let lenptr = build_in_bounds_gep value_ptr (idx 5) "lenptr" builder in
-      ignore (build_store len lenptr builder);
-      (3, llval)
-    | ty when ty = rharray_type (array_length ty) ->
-       let len = const_int i64_type (array_length ty) in
-       let lenptr = build_in_bounds_gep value_ptr (idx 5) "lenptr" builder in
-       ignore (build_store len lenptr builder);
-       (4, build_in_bounds_gep llval (idx 0) "llval" builder)
-    | ty -> raise (Error "Don't know how to box type") in
+  let match_pointer ty = match ty with
+    | ty when ty = pointer_type (function_type (pointer_type value_t)
+                                               [| (pointer_type value_t) |]) ->
+       (7, llval)
+    | _ ->
+       match element_type ty with
+         ty when ty = i8_type ->
+         let len = build_strlen llval in
+         let lenptr = build_in_bounds_gep value_ptr (idx 5) "lenptr" builder in
+         ignore (build_store len lenptr builder);
+         (3, llval)
+       | ty when ty = rharray_type (array_length ty) ->
+          let len = const_int i64_type (array_length ty) in
+          let lenptr = build_in_bounds_gep value_ptr (idx 5) "lenptr" builder in
+          ignore (build_store len lenptr builder);
+          (4, build_in_bounds_gep llval (idx 0) "llval" builder)
+       | ty -> raise (Error "Don't know how to box type") in
   let match_composite ty = match classify_type ty with
       TypeKind.Pointer -> match_pointer ty
     | _ -> raise (Error "Don't know how to box type") in
@@ -148,6 +153,10 @@ let unbox_bool llval =
   let dst = build_in_bounds_gep llval (idx 2) "boxptr" builder in
   build_load dst "load" builder
 
+let unbox_function llval =
+  let dst = build_in_bounds_gep llval (idx 7) "boxptr" builder in
+  build_load dst "load" builder
+
 let unbox_str llval =
   let ptr = build_in_bounds_gep llval (idx 3) "boxptr" builder in
   let el = build_load ptr "el" builder in
@@ -179,8 +188,11 @@ let codegen_atom atom =
     | Ast.Symbol n -> match lookup_global n the_module with
                         Some v -> v
                       | None ->
-                         try Hashtbl.find named_values n with
-                           Not_found -> raise (Error "Symbol not bound")
+                         match lookup_function n the_module with
+                           Some f -> box_value f
+                         | None ->
+                            try Hashtbl.find named_values n with
+                              Not_found -> raise (Error "Symbol not bound")
   in match atom with
        Ast.Symbol n -> unboxed_value
      | _ -> box_value unboxed_value
@@ -386,13 +398,13 @@ and codegen_cf_op op s2 =
   | _ -> raise (Error "Unknown control flow operation")
 
 and codegen_call_op f args =
-  let callee =
-    match lookup_function f the_module with
-    | Some callee -> callee
-    | None -> raise (Error "Unknown function referenced")
+  let callee = match lookup_function f the_module with
+      Some callee -> callee
+    | None ->
+       let v = try Hashtbl.find named_values f with
+                 Not_found -> raise (Error ("Unknown function: " ^ f)) in
+       unbox_function v
   in
-  if Array.length (params callee) != List.length args then
-    raise (Error "Incorrect # arguments passed");
   let args = Array.of_list args in
   build_call callee args "call" builder;
 

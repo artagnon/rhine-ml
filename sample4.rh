@@ -1,2 +1,3 @@
-(println (cons 1 [2 3 4]))
+(defn idfunc [f] (f 12))
 
+(idfunc println)
