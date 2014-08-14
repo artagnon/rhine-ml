@@ -2,4 +2,4 @@
 )
 (println "hello")
 ---
-(string) testing(string) hello
+(string len 7) testing(string len 5) hello

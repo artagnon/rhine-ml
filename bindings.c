@@ -22,7 +22,7 @@ void print_atom(struct value_t *v) {
 		printf("(bool) %s", !v->bool_val ? "false" : "true");
 		break;
 	case 3:
-		printf("(string) %s", v->string_val);
+		printf("(string len %ld) %s", v->array_len, v->string_val);
 		break;
 	case 4:
 		printf("(array len %ld) [", v->array_len);

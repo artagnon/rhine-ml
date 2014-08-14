@@ -6,4 +6,4 @@
 (print (nth 4 [1.0 "string" [1 2 3] 4 5 6]))
 (print (length [ 1 2 3 4]))
 ---
-(string) ok!(string) ok!(double) 1.000000(string) string(array len 3) [(int) 1;(int) 2;(int) 3;](int) 4(int) 4
+(string len 3) ok!(string len 3) ok!(double) 1.000000(string len 6) string(array len 3) [(int) 1;(int) 2;(int) 3;](int) 4(int) 4
