@@ -79,7 +79,7 @@ struct value_t *save_value(double val, int ret_type) {
         ret->type_tag = 6;
     }
     else if (ret_type == 2) {
-        ret->bool_val = (int)val;
+        ret->bool_val = (int) val;
         ret->type_tag = 2;
     }
     else {
