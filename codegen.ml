@@ -153,6 +153,10 @@ let unbox_bool llval =
   let dst = build_in_bounds_gep llval (idx 2) "boxptr" builder in
   build_load dst "load" builder
 
+let unbox_function llval =
+  let dst = build_in_bounds_gep llval (idx 7) "boxptr" builder in
+  build_load dst "load" builder
+
 let unbox_str llval =
   let ptr = build_in_bounds_gep llval (idx 3) "boxptr" builder in
   let el = build_load ptr "el" builder in
@@ -394,13 +398,13 @@ and codegen_cf_op op s2 =
   | _ -> raise (Error "Unknown control flow operation")
 
 and codegen_call_op f args =
-  let callee =
-    match lookup_function f the_module with
-    | Some callee -> callee
-    | None -> raise (Error ("Unknown function referenced: " ^ f))
+  let callee = match lookup_function f the_module with
+      Some callee -> callee
+    | None ->
+       let v = try Hashtbl.find named_values f with
+                 Not_found -> raise (Error ("Unknown function: " ^ f)) in
+       unbox_function v
   in
-  if Array.length (params callee) != List.length args then
-    raise (Error "Incorrect # arguments passed");
   let args = Array.of_list args in
   build_call callee args "call" builder;
 

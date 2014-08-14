@@ -1,3 +1,3 @@
-(defn idfunc [f] f)
+(defn idfunc [f] (f 12))
 
 (idfunc println)
