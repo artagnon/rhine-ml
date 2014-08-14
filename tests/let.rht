@@ -1,0 +1,4 @@
+(let [a 1 b 2 c 3] (print (+ a b c)))
+(let [a "string" b 2.30 c 3.0] (print (+ b c)))
+---
+(int) 6(double) 5.300000

@@ -1,0 +1,8 @@
+(defn test1 [b] b)
+(defn test2 [a b] (+ a b))
+(defn test3 [a b c] (if true (* a b c) []))
+(print (test1 55))
+(print (test2 55 66))
+(print (test3 55 66 22))
+---
+(int) 55(int) 121(int) 79860
