@@ -158,12 +158,12 @@ let unbox_function llval =
   build_load dst "load" builder
 
 let unbox_str llval =
-  let ptr = build_in_bounds_gep llval (idx 3) "boxptr" builder in
-  let el = build_load ptr "el" builder in
-  let rhstring_type size = pointer_type (array_type i8_type size) in
-  let str n = build_bitcast el (rhstring_type n) "strptr" builder in
-  let strload n = build_load (str n) "load" builder in
-  strload 10
+  let dst = build_in_bounds_gep llval (idx 3) "boxptr" builder in
+  build_load dst "load" builder
+
+let unbox_length llval =
+  let dst = build_in_bounds_gep llval (idx 5) "boxptr" builder in
+  build_load dst "load" builder
 
 let unbox_ar llval =
   let value_t = match type_by_name the_module "value_t" with
@@ -179,11 +179,15 @@ let unbox_ar llval =
   arload 10
 
 let codegen_atom atom =
+  let value_t = match type_by_name the_module "value_t" with
+      Some t -> t
+    | None -> raise (Error "Could not look up value_t")
+  in
   let unboxed_value = match atom with
       Ast.Int n -> const_int i64_type n
     | Ast.Bool n -> const_int i1_type (int_of_bool n)
     | Ast.Double n -> const_float double_type n
-    | Ast.Nil -> const_null i1_type
+    | Ast.Nil -> const_null (pointer_type value_t)
     | Ast.String s -> build_global_stringptr s "string" builder
     | Ast.Symbol n -> match lookup_global n the_module with
                         Some v -> v
@@ -195,6 +199,7 @@ let codegen_atom atom =
                               Not_found -> raise (Error "Symbol not bound")
   in match atom with
        Ast.Symbol n -> unboxed_value
+     | Ast.Nil -> unboxed_value
      | _ -> box_value unboxed_value
 
 let rec extract_args s = match s with
@@ -270,8 +275,7 @@ and codegen_array_op op args =
      let newlen = build_sub len (const_int i64_type 1) "restsub" builder in
      box_llar newptr newlen
   | "length" ->
-      let dst = build_in_bounds_gep arg (idx 5) "arrlenptr" builder in
-      box_value (build_load dst "load" builder)
+     box_value (unbox_length arg)
   | "cons" ->
      let tail = List.nth args 1 in
      let lenptr = build_in_bounds_gep tail (idx 5) "boxptr" builder in
@@ -301,33 +305,62 @@ and codegen_string_op op s2 =
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
     | None -> raise (Error "Could not look up value_t") in
-  let rharray_type size = array_type (pointer_type value_t) size in
+  let rharel_type = pointer_type value_t in
   let rhstring_type size = array_type i8_type size in
   let nullterm = const_int i8_type 0 in
-  let unboxed_value = match op with
-      "str-split" ->
-      let str = unbox_str (List.hd s2) in
-      let len = array_length (type_of str) in
-      let l = List.map (fun i -> build_extractvalue
-                                   str i "extract" builder) (0--(len - 1)) in
-      let store_char c =
-        let strseg = build_alloca (rhstring_type 2) "strseg" builder in
-        let strseg0 = build_in_bounds_gep strseg (idx 0) "strseg0" builder in
-        let strseg1 = build_in_bounds_gep strseg (idx 1) "strseg1" builder in
-        ignore (build_store c strseg0 builder);
-        ignore (build_store nullterm strseg1 builder);
-        box_value strseg0 in
-      let splits = List.map store_char l in
-      let new_array = build_alloca (rharray_type 10) "ar" builder in
-      let ptr n = build_in_bounds_gep new_array (idx n) "arptr" builder in
-      List.iteri (fun i m ->
-                  ignore (build_store m (ptr i) builder)) splits;
-      new_array
-    | "str-length" ->
-       let dst = build_in_bounds_gep (List.hd s2) (idx 5) "strlenptr" builder in
-       build_load dst "load" builder
-    | _ -> raise (Error "Unknown string operator")
-  in box_value unboxed_value
+  match op with
+    "str-split" ->
+    let arg = List.hd s2 in
+    let str = unbox_str arg in
+    let len = unbox_length arg in
+    let size = build_mul (size_of rharel_type)
+                         len "size" builder in
+    let newar = build_malloc size rharel_type "newar" builder in
+
+    let var_name = "i" in
+    let loop_lim = box_value len in
+    let start_val = codegen_sexpr (Ast.Atom(Ast.Int(0))) in
+    let start_bb = insertion_block builder in
+    let the_function = block_parent start_bb in
+    let loop_bb = append_block context "loop" the_function in
+    ignore (build_br loop_bb builder);
+    position_at_end loop_bb builder;
+    let variable = build_phi [(start_val, start_bb)] var_name builder in
+    let old_val =
+      try Some (Hashtbl.find named_values var_name) with Not_found -> None
+    in
+    Hashtbl.add named_values var_name variable;
+    (* start body *)
+    let loopidx = unbox_int variable in
+    let ptr = build_in_bounds_gep str [| loopidx |]
+                                  "extract" builder in
+    let el = build_load ptr "extractload" builder in
+    let strseg = build_alloca (rhstring_type 2) "strseg" builder in
+    let strseg0 = build_in_bounds_gep strseg (idx 0) "strseg0" builder in
+    let strseg1 = build_in_bounds_gep strseg (idx 1) "strseg1" builder in
+    ignore (build_store el strseg0 builder);
+    ignore (build_store nullterm strseg1 builder);
+    let newptr = build_in_bounds_gep newar [| loopidx |] "arptr" builder in
+    ignore (build_store (box_value strseg0) newptr builder);
+    (* end body *)
+    let next_var = build_add (unbox_int variable)
+                             (const_int i64_type 1) "nextvar" builder in
+    let next_var = box_value next_var in
+    let end_cond = build_icmp Icmp.Slt (unbox_int next_var)
+                              (unbox_int loop_lim) "end_cond" builder in
+    let loop_end_bb = insertion_block builder in
+    let after_bb = append_block context "after_loop" the_function in
+    ignore (build_cond_br end_cond loop_bb after_bb builder);
+    position_at_end after_bb builder;
+    add_incoming (next_var, loop_end_bb) variable;
+    begin match old_val with
+            Some old_val -> Hashtbl.add named_values var_name old_val
+          | None -> ()
+    end;
+    box_llar newar len
+  | "str-length" ->
+     box_value (unbox_length (List.hd s2))
+  | _ -> raise (Error "Unknown string operator")
 
 and codegen_cf_op op s2 =
   let value_t = match type_by_name the_module "value_t" with
@@ -395,12 +428,12 @@ and codegen_cf_op op s2 =
          Ast.Atom(Ast.Symbol(s)) -> s
        | _ -> raise (Error "Expected symbol in dotimes") in
      let loop_lim = codegen_sexpr qs.(1) in
+     let start_val = codegen_sexpr (Ast.Atom(Ast.Int(0))) in
      let start_bb = insertion_block builder in
      let the_function = block_parent start_bb in
      let loop_bb = append_block context "loop" the_function in
      ignore (build_br loop_bb builder);
      position_at_end loop_bb builder;
-     let start_val = codegen_sexpr (Ast.Atom(Ast.Int(0))) in
      let variable = build_phi [(start_val, start_bb)] var_name builder in
      let old_val =
        try Some (Hashtbl.find named_values var_name) with Not_found -> None
@@ -421,7 +454,7 @@ and codegen_cf_op op s2 =
              Some old_val -> Hashtbl.add named_values var_name old_val
            | None -> ()
      end;
-     const_null (pointer_type value_t)
+     box_value (const_int i64_type 0)
   | _ -> raise (Error "Unknown control flow operation")
 
 and codegen_call_op f args =

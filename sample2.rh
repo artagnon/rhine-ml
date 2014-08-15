@@ -1,1 +1,1 @@
-(dotimes [n 5] (println n))
+(println (str-split "foom"))
