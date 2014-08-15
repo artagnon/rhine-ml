@@ -358,6 +358,23 @@ and codegen_string_op op s2 =
           | None -> ()
     end;
     box_llar newar len
+  | "str-join" ->
+     let args = s2 in
+     let lengths = List.map unbox_length args in
+     let len_to_size l = build_mul l (size_of i8_type) "mul" builder in
+     let sizes = List.map len_to_size lengths in
+     let add_lllengths l1 l2 = build_add l1 l2 "fold_len" builder in
+     let total_len = List.fold_left add_lllengths
+                                    (const_int i64_type 0) lengths in
+     let alloc_len = build_add total_len (const_int i64_type 1) "add" builder in
+     let alloc_size = len_to_size alloc_len in
+     let newstr = build_malloc alloc_size i8_type "newstr" builder in
+     let rawsrc = build_in_bounds_gep newstr [| total_len |]
+                                      "termptr" builder in
+     ignore (build_store nullterm rawsrc builder);
+     let rawsrc = unbox_str (List.hd args) in
+     ignore (build_memcpy rawsrc newstr (List.hd sizes));
+     box_value newstr
   | "str-length" ->
      box_value (unbox_length (List.hd s2))
   | _ -> raise (Error "Unknown string operator")
