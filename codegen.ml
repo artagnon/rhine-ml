@@ -570,14 +570,10 @@ let codegen_func = function
 
       try
         let ret_val =
-          let llval = codegen_sexpr body in
           if Array.length (params the_function) == 0 then
-            if not (is_null llval) then
-               unbox_int llval
-            else
-              const_int i64_type 0
+            unbox_int (codegen_sexpr body)
           else
-            llval in
+            codegen_sexpr body in
 
         (* Finish off the function. *)
         let _ = build_ret ret_val builder in
