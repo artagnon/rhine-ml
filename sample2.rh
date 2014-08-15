@@ -1,1 +1,1 @@
-(if (= true false) true nil)
+(str-split "foom")
