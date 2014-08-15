@@ -1,1 +1,1 @@
-(str-split "foom")
+(println (str-split "foom"))
