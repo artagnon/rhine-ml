@@ -182,11 +182,15 @@ let unbox_ar llval =
   arload 10
 
 let codegen_atom atom =
+  let value_t = match type_by_name the_module "value_t" with
+      Some t -> t
+    | None -> raise (Error "Could not look up value_t")
+  in
   let unboxed_value = match atom with
       Ast.Int n -> const_int i64_type n
     | Ast.Bool n -> const_int i1_type (int_of_bool n)
     | Ast.Double n -> const_float double_type n
-    | Ast.Nil -> const_null i1_type
+    | Ast.Nil -> const_null (pointer_type value_t)
     | Ast.String s -> build_global_stringptr s "string" builder
     | Ast.Symbol n -> match lookup_global n the_module with
                         Some v -> v
@@ -198,6 +202,7 @@ let codegen_atom atom =
                               Not_found -> raise (Error "Symbol not bound")
   in match atom with
        Ast.Symbol n -> unboxed_value
+     | Ast.Nil -> unboxed_value
      | _ -> box_value unboxed_value
 
 let rec extract_args s = match s with
@@ -565,10 +570,14 @@ let codegen_func = function
 
       try
         let ret_val =
+          let llval = codegen_sexpr body in
           if Array.length (params the_function) == 0 then
-            unbox_int (codegen_sexpr body)
+            if not (is_null llval) then
+               unbox_int llval
+            else
+              const_int i64_type 0
           else
-            codegen_sexpr body in
+            llval in
 
         (* Finish off the function. *)
         let _ = build_ret ret_val builder in

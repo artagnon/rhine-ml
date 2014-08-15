@@ -14,6 +14,10 @@ struct value_t {
 
 void print_atom(struct value_t *v) {
 	int i;
+	if (!v) {
+		printf("(nil)");
+		return;
+	}
 	switch(v->type_tag) {
 	case 1:
 		printf("(int) %ld", v->int_val);
