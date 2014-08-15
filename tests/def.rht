@@ -1,0 +1,5 @@
+(def test 5.0)
+(print test)
+---
+(double) 5.000000
+
