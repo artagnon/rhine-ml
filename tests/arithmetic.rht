@@ -1,0 +1,31 @@
+(println (+ 2 (- 1 5)))
+(println (+ (+ 2 (- 1 5)) 10))
+(println (- (+ 2 (- 1 5)) 10))
+(println (* 2 (/ 1 5)))
+(println (* 2 4))
+(println (* 6 5))
+(println (* .2 (/ 2.0 5)))
+(println (+ .2 (- 2.0 5)))
+(println (+ 1e2 (- 2.0 5)))
+(println (% 5 4))
+(println (% 23 4))
+(println (% 5 4))
+(println (% 5 4))
+(println (^ 2 4))
+(println (^ 3 5.0))
+---
+(int) -2
+(int) 8
+(int) -12
+(double) 0.400000
+(int) 8
+(int) 30
+(double) 0.080000
+(double) -2.800000
+(double) 97.000000
+(int) 1
+(int) 3
+(int) 1
+(int) 1
+(int) 16
+(double) 243.000000

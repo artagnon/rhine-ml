@@ -1,0 +1,27 @@
+(println 5)
+(println 5999999)
+(println 2.7)
+(println 2e-5)
+(println .2)
+(println 2.)
+(println "hello")
+(println nil)
+(println true)
+(println false)
+(println [])
+(println [1 2 3])
+(println ["a" "b" "c"])
+---
+(int) 5
+(int) 5999999
+(double) 2.700000
+(double) 0.000020
+(double) 0.200000
+(double) 2.000000
+(string len 5) hello
+(nil)
+(bool) true
+(bool) false
+(array len 0) []
+(array len 3) [(int) 1;(int) 2;(int) 3;]
+(array len 3) [(string len 1) a;(string len 1) b;(string len 1) c;]

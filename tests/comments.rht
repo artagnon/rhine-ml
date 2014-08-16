@@ -1,5 +1,6 @@
 (print "testing" ;; comments
 )
+;; comments
 (println "hello")
 ---
 (string len 7) testing(string len 5) hello

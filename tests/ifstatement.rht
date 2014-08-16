@@ -1,7 +1,18 @@
 (println (= false true))
-(println (if (= false true) false 99))
-(println (if false false 99))
+(println (= true true))
+(println (if (= false true) 88 99))
+(println (if (= 0 1) 88 99))
+(println (if (= 1 1) 88 99))
+(println (if (= true true) 88 99))
+(println (if false "hello" "hmm"))
+(if (not false) (println "hey!") (println "no"))
 ---
 (bool) false
+(bool) true
 (int) 99
 (int) 99
+(int) 88
+(int) 88
+(string len 3) hmm
+(string len 4) hey!
+
