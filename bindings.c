@@ -222,3 +222,21 @@ extern struct value_t *cnot(struct value_t *v) {
 	}
 	return ret;
 }
+
+extern struct value_t *cstrjoin(struct value_t *v) {
+    struct value_t *ret;
+    int i = 0;
+    ret = malloc(sizeof(struct value_t));
+    ret->string_val = malloc(sizeof(char) * (v->array_len+1));
+    ret->type_tag = 3;
+    ret->array_len = v->array_len;
+    while (i < v->array_len) {
+        ret->string_val[i] = *((v->array_val)[i]->string_val);
+        i++;
+    }
+    *(ret->string_val+i) = '\0';
+
+
+    return ret;
+}
+

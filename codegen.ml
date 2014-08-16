@@ -309,55 +309,58 @@ and codegen_string_op op s2 =
   let rhstring_type size = array_type i8_type size in
   let nullterm = const_int i8_type 0 in
   match op with
-    "str-split" ->
-    let arg = List.hd s2 in
-    let str = unbox_str arg in
-    let len = unbox_length arg in
-    let size = build_mul (size_of rharel_type)
+    "str-join" ->
+      let arg = List.hd s2 in
+        codegen_call_op "cstrjoin" [arg]
+    | "str-split" ->
+      let arg = List.hd s2 in
+      let str = unbox_str arg in
+      let len = unbox_length arg in
+      let size = build_mul (size_of rharel_type)
                          len "size" builder in
-    let newar = build_malloc size rharel_type "newar" builder in
+      let newar = build_malloc size rharel_type "newar" builder in
 
-    let var_name = "i" in
-    let loop_lim = box_value len in
-    let start_val = codegen_sexpr (Ast.Atom(Ast.Int(0))) in
-    let start_bb = insertion_block builder in
-    let the_function = block_parent start_bb in
-    let loop_bb = append_block context "loop" the_function in
-    ignore (build_br loop_bb builder);
-    position_at_end loop_bb builder;
-    let variable = build_phi [(start_val, start_bb)] var_name builder in
-    let old_val =
-      try Some (Hashtbl.find named_values var_name) with Not_found -> None
-    in
-    Hashtbl.add named_values var_name variable;
-    (* start body *)
-    let loopidx = unbox_int variable in
-    let ptr = build_in_bounds_gep str [| loopidx |]
-                                  "extract" builder in
-    let el = build_load ptr "extractload" builder in
-    let strseg = build_alloca (rhstring_type 2) "strseg" builder in
-    let strseg0 = build_in_bounds_gep strseg (idx 0) "strseg0" builder in
-    let strseg1 = build_in_bounds_gep strseg (idx 1) "strseg1" builder in
-    ignore (build_store el strseg0 builder);
-    ignore (build_store nullterm strseg1 builder);
-    let newptr = build_in_bounds_gep newar [| loopidx |] "arptr" builder in
-    ignore (build_store (box_value strseg0) newptr builder);
-    (* end body *)
-    let next_var = build_add (unbox_int variable)
+      let var_name = "i" in
+      let loop_lim = box_value len in
+      let start_val = codegen_sexpr (Ast.Atom(Ast.Int(0))) in
+      let start_bb = insertion_block builder in
+      let the_function = block_parent start_bb in
+      let loop_bb = append_block context "loop" the_function in
+      ignore (build_br loop_bb builder);
+      position_at_end loop_bb builder;
+      let variable = build_phi [(start_val, start_bb)] var_name builder in
+      let old_val =
+        try Some (Hashtbl.find named_values var_name) with Not_found -> None
+      in
+      Hashtbl.add named_values var_name variable;
+      (* start body *)
+      let loopidx = unbox_int variable in
+      let ptr = build_in_bounds_gep str [| loopidx |]
+                                    "extract" builder in
+      let el = build_load ptr "extractload" builder in
+      let strseg = build_alloca (rhstring_type 2) "strseg" builder in
+      let strseg0 = build_in_bounds_gep strseg (idx 0) "strseg0" builder in
+      let strseg1 = build_in_bounds_gep strseg (idx 1) "strseg1" builder in
+      ignore (build_store el strseg0 builder);
+      ignore (build_store nullterm strseg1 builder);
+      let newptr = build_in_bounds_gep newar [| loopidx |] "arptr" builder in
+      ignore (build_store (box_value strseg0) newptr builder);
+      (* end body *)
+      let next_var = build_add (unbox_int variable)
                              (const_int i64_type 1) "nextvar" builder in
-    let next_var = box_value next_var in
-    let end_cond = build_icmp Icmp.Slt (unbox_int next_var)
+      let next_var = box_value next_var in
+      let end_cond = build_icmp Icmp.Slt (unbox_int next_var)
                               (unbox_int loop_lim) "end_cond" builder in
-    let loop_end_bb = insertion_block builder in
-    let after_bb = append_block context "after_loop" the_function in
-    ignore (build_cond_br end_cond loop_bb after_bb builder);
-    position_at_end after_bb builder;
-    add_incoming (next_var, loop_end_bb) variable;
-    begin match old_val with
+      let loop_end_bb = insertion_block builder in
+      let after_bb = append_block context "after_loop" the_function in
+      ignore (build_cond_br end_cond loop_bb after_bb builder);
+      position_at_end after_bb builder;
+      add_incoming (next_var, loop_end_bb) variable;
+      begin match old_val with
             Some old_val -> Hashtbl.add named_values var_name old_val
           | None -> ()
-    end;
-    box_llar newar len
+      end;
+      box_llar newar len
   | "str-length" ->
      box_value (unbox_length (List.hd s2))
   | _ -> raise (Error "Unknown string operator")

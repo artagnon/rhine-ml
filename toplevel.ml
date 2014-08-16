@@ -124,5 +124,6 @@ let main_loop ss =
   ignore (codegen_proto (Ast.Prototype("cand", Array.make 2 "v")));
   ignore (codegen_proto (Ast.Prototype("cor", Array.make 2 "v")));
   ignore (codegen_proto (Ast.Prototype("cnot", Array.make 1 "v")));
+  ignore (codegen_proto (Ast.Prototype("cstrjoin", Array.make 1 "v")));
 
   List.iter (fun se -> print_and_jit se) ss
