@@ -1,0 +1,6 @@
+(dotimes [x 10] (print "hello world!"))
+(dotimes [x 4] (print (* x (+ x 5))))
+---
+(string len 12) hello world!(string len 12) hello world!(string len 12) hello world!(string len 12) hello world!(string len 12) hello world!(string len 12) hello world!(string len 12) hello world!(string len 12) hello world!(string len 12) hello world!(string len 12) hello world!(int) 0(int) 6(int) 14(int) 24
+
+

@@ -244,11 +244,11 @@ and codegen_arith_op op args =
          let snd = List.nth args 1 in
          match op with
            "+" -> codegen_call_op "cadd" [hd;(codegen_arith_op op tl)]
-         | "-" -> codegen_call_op "csub" [hd;(codegen_arith_op op tl)]
-         | "/" -> codegen_call_op "cdiv" args
+         | "-" -> codegen_call_op "csub" [hd;snd]
+         | "/" -> codegen_call_op "cdiv" [hd;snd]
          | "*" -> codegen_call_op "cmul" [hd;(codegen_arith_op op tl)]
-         | "%" -> codegen_call_op "cmod" [hd;(codegen_arith_op op tl)]
-         | "^" -> codegen_call_op "cexponent" [hd;(codegen_arith_op op tl)]
+         | "%" -> codegen_call_op "cmod" [hd;snd]
+         | "^" -> codegen_call_op "cexponent" [hd;snd]
          | "<" -> codegen_call_op "clt" [hd;snd]
          | ">" -> codegen_call_op "cgt" [hd;snd]
          | "<=" -> codegen_call_op "clte" [hd;snd]

@@ -1,3 +1,8 @@
-(println (first [ 66 2 4 5 6]))
+(println (first [66 2 4 5 6]))
+(println (first ["asd" "ad" "ll"]))
+(println (first [2.0 4.0]))
 ---
 (int) 66
+(string len 3) asd
+(double) 2.000000
+

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <math.h>
+#include <string.h>
 
 struct value_t {
 	int type_tag;
@@ -179,8 +180,14 @@ extern struct value_t *cequ(struct value_t *v, struct value_t *v2) {
 		}
 		break;
     case 4:
-        //only compares length currently
         if (v->array_len == v2->array_len) {
+            ret = save_value(1.0, 2);
+        } else {
+            ret = save_value(0.0, 2);
+        }
+        break;
+    case 3:
+        if (v->array_len == v2->array_len && memcmp(v->array_val, v2->array_val, sizeof(char)*v->array_len) == 0) {
             ret = save_value(1.0, 2);
         } else {
             ret = save_value(0.0, 2);

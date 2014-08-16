@@ -1,4 +1,6 @@
 (println (+ 2 (- 1 5)))
+(println (+ 2 5 10 60))
+(println (* 2 5 10 60))
 (println (+ (+ 2 (- 1 5)) 10))
 (println (- (+ 2 (- 1 5)) 10))
 (println (* 2 (/ 1 5)))
@@ -15,6 +17,8 @@
 (println (^ 3 5.0))
 ---
 (int) -2
+(int) 77
+(int) 6000
 (int) 8
 (int) -12
 (double) 0.400000
@@ -29,3 +33,4 @@
 (int) 1
 (int) 16
 (double) 243.000000
+
