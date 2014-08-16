@@ -116,6 +116,8 @@ let main_loop ss =
   ignore (codegen_proto (Ast.Prototype("cdiv", Array.make 2 "v")));
   ignore (codegen_proto (Ast.Prototype("csub", Array.make 2 "v")));
   ignore (codegen_proto (Ast.Prototype("cmul", Array.make 2 "v")));
+  ignore (codegen_proto (Ast.Prototype("cmod", Array.make 2 "v")));
+  ignore (codegen_proto (Ast.Prototype("cexponent", Array.make 2 "v")));
   ignore (codegen_proto (Ast.Prototype("clt", Array.make 2 "v")));
   ignore (codegen_proto (Ast.Prototype("cgt", Array.make 2 "v")));
   ignore (codegen_proto (Ast.Prototype("clte", Array.make 2 "v")));
