@@ -5,7 +5,7 @@
 
 let digit = ['0'-'9']
 let characters = ['a'-'z' 'A'-'Z']
-let symbol_chars = ['a'-'z' 'A'-'Z' '?' '-' '+' '*' '/' '<' '>' '=' '.']
+let symbol_chars = ['a'-'z' 'A'-'Z' '?' '-' '+' '*' '/' '<' '>' '=' '.' '%' '^']
 let e = ['E''e']['-''+']?['0'-'9']+
 
 rule token = parse

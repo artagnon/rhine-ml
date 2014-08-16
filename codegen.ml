@@ -24,7 +24,7 @@ let (--) i j =
 
 let arith_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
-                               [ "+"; "-"; "*"; "/"; "/."; "<"; ">";
+                               [ "+"; "-"; "*"; "/"; "/."; "<"; ">"; "%"; "^";
                                  "<="; ">="; "="; "and"; "or"; "not" ]
 
 let array_ops = List.fold_left (fun s k -> StringSet.add k s)
@@ -247,6 +247,8 @@ and codegen_arith_op op args =
          | "-" -> codegen_call_op "csub" [hd;(codegen_arith_op op tl)]
          | "/" -> codegen_call_op "cdiv" args
          | "*" -> codegen_call_op "cmul" [hd;(codegen_arith_op op tl)]
+         | "%" -> codegen_call_op "cmod" [hd;(codegen_arith_op op tl)]
+         | "^" -> codegen_call_op "cexponent" [hd;(codegen_arith_op op tl)]
          | "<" -> codegen_call_op "clt" [hd;snd]
          | ">" -> codegen_call_op "cgt" [hd;snd]
          | "<=" -> codegen_call_op "clte" [hd;snd]

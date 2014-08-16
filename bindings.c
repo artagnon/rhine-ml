@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <math.h>
 
 struct value_t {
 	int type_tag;
@@ -222,6 +223,22 @@ extern struct value_t *cnot(struct value_t *v) {
 	}
 	return ret;
 }
+
+extern struct value_t *cmod(struct value_t *v, struct value_t *v2) {
+	int ret_type = 1;
+	int val = v->int_val % v2->int_val;
+	struct value_t *ret = save_value(val, ret_type);
+	return ret;
+
+}
+
+extern struct value_t *cexponent(struct value_t *v, struct value_t *v2) {
+	int ret_type = 0;
+	double val = pow(get_value(v, &ret_type),get_value(v2, &ret_type));
+	struct value_t *ret = save_value(val, ret_type);
+	return ret;
+}
+
 
 extern struct value_t *cstrjoin(struct value_t *v) {
     struct value_t *ret;
