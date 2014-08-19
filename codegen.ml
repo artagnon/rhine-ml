@@ -397,8 +397,8 @@ and codegen_cf_op op s2 =
   | "dotimes" ->
      let qs, body = match s2 with
          Ast.List(l) ->
-         begin match List.hd l, List.tl l with
-                 Ast.Vector(qs), body -> qs, Ast.List body
+         begin match l with
+                 Ast.Vector(qs)::body -> qs, Ast.List body
                | _ -> raise (Error "Malformed dotimes expression")
          end
        | _ -> raise (Error "Malformed dotimes expression") in
@@ -452,8 +452,8 @@ and codegen_binding_op f s2 =
     "let" ->
     let bindlist, body = match s2 with
         Ast.List(l) ->
-        begin match List.hd l, List.tl l with
-                Ast.Vector(qs), next -> qs, Ast.List next
+        begin match l with
+                Ast.Vector(qs)::next -> qs, Ast.List next
               | _ -> raise (Error "Malformed let")
         end
       | _ -> raise (Error "Malformed let") in
@@ -504,10 +504,10 @@ and codegen_sexpr s = match s with
     Ast.Atom n -> codegen_atom n
   | Ast.List([Ast.Atom(n)]) -> codegen_atom n
   | Ast.List(l) ->
-     begin match List.hd l, List.tl l with
-             (Ast.Atom(Ast.Symbol s), s2) -> (* single sexpr *)
+     begin match l with
+             Ast.Atom(Ast.Symbol s)::s2 -> (* single sexpr *)
              match_action s (Ast.List s2)
-           | (Ast.List(_), _) ->
+           | Ast.List(_)::_ ->
               let r = List.map (fun se ->
                                 match se with
                                   Ast.List(l2) ->
