@@ -13,26 +13,20 @@ let ppatom p = match p with
   | Nil -> print_string "nil"
 
 (* pretty print S-expressions *)
-let rec ppsexpr p islist = match p with
+let rec ppsexpr p = match p with
     Atom(a) -> ppatom a
-  | DottedPair(se1,se2) -> if islist then () else 
-                             print_string "( ";
-                           (match se1 with
-                              Atom(a) -> ppatom a
-                             |_ -> ppsexpr se1 false);
-                           print_char ' ';
-                           (match se2 with
-                              Atom(Nil) -> print_char ')'
-                             |Atom(_ as a) -> print_string ". ";
-                                              ppatom a;
-                                              print_string " )"
-                             |_ -> ppsexpr se2 true)
+  | List(sel) -> print_string "( ";
+                 List.iter (fun i -> match i with
+                                       Atom(a) -> ppatom a;
+                                                  print_char ' '
+                                     | _ -> ppsexpr i) sel;
+                 print_string " )"
   | Vector(qs) -> print_string "[ ";
-                    Array.iter (fun i -> ppsexpr i false;
+                    Array.iter (fun i -> ppsexpr i;
                                          print_char ' ') qs;
                     print_char ']'
 (* pretty print the program *)
 let pprint p = match p with
-    Prog(ss) -> List.iter (fun i -> ppsexpr i false;
+    Prog(ss) -> List.iter (fun i -> ppsexpr i;
                                     print_newline ();
                                     print_newline ()) ss

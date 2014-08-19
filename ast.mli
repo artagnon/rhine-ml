@@ -8,7 +8,7 @@ type atom =
 
 type sexpr =
     Atom of atom
-  | DottedPair of sexpr * sexpr
+  | List of sexpr list
   | Vector of sexpr array
 
 type prog =

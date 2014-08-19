@@ -27,12 +27,7 @@ atom:
 
 sexpr:
    atom { Atom($1) }
- | LPAREN sexprs RPAREN {
-       let rec buildDP = function
-            [] -> Atom(Nil)
-          | h::t -> DottedPair(h, buildDP t)
-       in buildDP($2)
-   }
+ | LPAREN sexprs RPAREN { List($2) }
 
 qsexpr:
     LSQBR sexprs RSQBR { Vector(Array.of_list $2) }

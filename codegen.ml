@@ -196,43 +196,15 @@ let codegen_atom atom =
                            Some f -> box_value f
                          | None ->
                             try Hashtbl.find named_values n with
-                              Not_found -> raise (Error "Symbol not bound")
+                              Not_found -> raise (Error ("Symbol unbound:" ^ n))
   in match atom with
        Ast.Symbol n -> unboxed_value
      | Ast.Nil -> unboxed_value
      | _ -> box_value unboxed_value
 
 let rec extract_args s = match s with
-    Ast.DottedPair(s1, s2) ->
-    begin match (s1, s2) with
-            (Ast.Atom m, Ast.DottedPair(_, _)) ->
-            (codegen_atom m)::(extract_args s2)
-          | (Ast.Atom m, Ast.Atom(Ast.Nil)) -> [codegen_atom m]
-          | (Ast.DottedPair(_, _), Ast.DottedPair(_, _)) ->
-             (codegen_sexpr s1)::(extract_args s2)
-          | (Ast.DottedPair(_, _), Ast.Atom(Ast.Nil)) -> [codegen_sexpr s1]
-          | (Ast.Vector(qs), Ast.DottedPair(_, _)) ->
-             (codegen_array qs)::(extract_args s2)
-          | (Ast.Vector(qs), Ast.Atom(Ast.Nil)) -> [codegen_array qs]
-          | _ -> raise (Error "Malformed sexp")
-    end
-  | _ -> raise (Error "Expected sexp")
-
-and codegen_one_arg s = match s with
-    Ast.DottedPair(s1, s2) ->
-    begin match (s1, s2) with
-            (Ast.Atom m, Ast.DottedPair(_, _)) ->
-            codegen_atom m
-          | (Ast.Atom m, Ast.Atom(Ast.Nil)) -> codegen_atom m
-          | (Ast.DottedPair(_, _), Ast.DottedPair(_, _)) ->
-             codegen_sexpr s1
-          | (Ast.DottedPair(_, _), Ast.Atom(Ast.Nil)) -> codegen_sexpr s1
-          | (Ast.Vector(qs), Ast.DottedPair(_, _)) ->
-             codegen_array qs
-          | (Ast.Vector(qs), Ast.Atom(Ast.Nil)) -> codegen_array qs
-          | _ -> raise (Error "Malformed sexp")
-    end
-  | _ -> raise (Error "Expected sexp")
+    Ast.List(se) -> List.map codegen_sexpr se
+  | _ -> raise (Error "Expected list")
 
 and codegen_arith_op op args =
     let hd = List.hd args in
@@ -373,22 +345,19 @@ and codegen_cf_op op s2 =
     | None -> raise (Error "Could not look up value_t") in
   match op with
     "if" ->
-    let truese = match s2 with
-        Ast.DottedPair(_, next) -> next
+    let condse, truese, falsese = match s2 with
+        Ast.List([c; t; f]) -> c, t, f
       | _ -> raise (Error "Malformed if expression") in
-    let falsese = match truese with
-        Ast.DottedPair(_, next) -> next
-      | _ -> raise (Error "Malformed if expression") in
-    let cond_val = unbox_bool (codegen_one_arg s2) in
+    let cond_val = unbox_bool (codegen_sexpr condse) in
     let start_bb = insertion_block builder in
     let the_function = block_parent start_bb in
     let truebb = append_block context "then" the_function in
     position_at_end truebb builder;
-    let true_val = codegen_one_arg truese in
+    let true_val = codegen_sexpr truese in
     let new_truebb = insertion_block builder in
     let falsebb = append_block context "else" the_function in
     position_at_end falsebb builder;
-    let false_val = codegen_one_arg falsese in
+    let false_val = codegen_sexpr falsese in
     let new_falsebb = insertion_block builder in
     let mergebb = append_block context "ifcont" the_function in
     position_at_end mergebb builder;
@@ -401,15 +370,15 @@ and codegen_cf_op op s2 =
     position_at_end mergebb builder;
     phi
   | "when" ->
-     let truese = match s2 with
-         Ast.DottedPair(_, next) -> next
+     let condse, truese = match s2 with
+         Ast.List([c; t]) -> c, t
        | _ -> raise (Error "Malformed when expression") in
-     let cond_val = unbox_bool (codegen_one_arg s2) in
+     let cond_val = unbox_bool (codegen_sexpr condse) in
      let start_bb = insertion_block builder in
      let the_function = block_parent start_bb in
      let truebb = append_block context "then" the_function in
      position_at_end truebb builder;
-     let true_val = codegen_one_arg truese in
+     let true_val = codegen_sexpr truese in
      let new_truebb = insertion_block builder in
      let falsebb = append_block context "else" the_function in
      position_at_end falsebb builder;
@@ -427,7 +396,11 @@ and codegen_cf_op op s2 =
      phi
   | "dotimes" ->
      let qs, body = match s2 with
-         Ast.DottedPair(Ast.Vector(qs), body) -> qs, body
+         Ast.List(l) ->
+         begin match List.hd l, List.tl l with
+                 Ast.Vector(qs), body -> qs, Ast.List body
+               | _ -> raise (Error "Malformed dotimes expression")
+         end
        | _ -> raise (Error "Malformed dotimes expression") in
      let var_name = match qs.(0) with
          Ast.Atom(Ast.Symbol(s)) -> s
@@ -478,7 +451,11 @@ and codegen_binding_op f s2 =
   match f with
     "let" ->
     let bindlist, body = match s2 with
-        Ast.DottedPair(Ast.Vector(qs), next) -> qs, next
+        Ast.List(l) ->
+        begin match List.hd l, List.tl l with
+                Ast.Vector(qs), next -> qs, Ast.List next
+              | _ -> raise (Error "Malformed let")
+        end
       | _ -> raise (Error "Malformed let") in
     let len = Array.length bindlist in
     if len mod 2 != 0 then
@@ -525,20 +502,23 @@ and match_action s s2 =
 
 and codegen_sexpr s = match s with
     Ast.Atom n -> codegen_atom n
-  | Ast.DottedPair(Ast.Atom n, Ast.Atom Ast.Nil) -> codegen_atom n
-  | Ast.DottedPair(s1, s2) ->
-     begin match s1, s2 with
-             (Ast.Atom(Ast.Symbol s), _) -> (* single sexpr *)
-             match_action s s2
-           | (Ast.DottedPair(Ast.Atom(Ast.Symbol ss1), ss2), _) ->
-              begin match s2 with
-                    Ast.DottedPair(_, _) ->
-                    let _ = match_action ss1 ss2 in
-                    codegen_sexpr s2
-                    | Ast.Atom(Ast.Nil) -> match_action ss1 ss2
-                    | _ -> raise (Error "Sexpr parse error");
-              end
-           | _ -> raise (Error "Expected function call");
+  | Ast.List([Ast.Atom(n)]) -> codegen_atom n
+  | Ast.List(l) ->
+     begin match List.hd l, List.tl l with
+             (Ast.Atom(Ast.Symbol s), s2) -> (* single sexpr *)
+             match_action s (Ast.List s2)
+           | (Ast.List(_), _) ->
+              let r = List.map (fun se ->
+                                match se with
+                                  Ast.List(l2) ->
+                                  begin match List.hd l2 with
+                                          Ast.Atom(Ast.Symbol s) ->
+                                          codegen_sexpr se
+                                        | _ -> raise (Error "Expected symbol")
+                                  end
+                                | _ -> raise (Error "Expected list")) l in
+              List.hd (List.rev r)
+           | _ -> raise (Error "Expected symbol or list");
      end
   | Ast.Vector(qs) -> codegen_array qs
 
@@ -593,23 +573,24 @@ let codegen_proto p =
     f
 
 let codegen_func = function
-  | Ast.Function (proto, body) ->
-      Hashtbl.clear named_values;
-      let the_function = codegen_proto proto in 
-      (* Create a new basic block to start insertion into. *)
-      let bb = append_block context "entry" the_function in
-      position_at_end bb builder;
+   Ast.Function (proto, body) ->
+   Hashtbl.clear named_values;
 
-      try
-        let ret_val =
-          if Array.length (params the_function) == 0 then
-            unbox_int (codegen_sexpr body)
-          else
-            codegen_sexpr body in
+   let the_function = codegen_proto proto in
+   (* Create a new basic block to start insertion into. *)
+   let bb = append_block context "entry" the_function in
+   position_at_end bb builder;
 
-        (* Finish off the function. *)
-        let _ = build_ret ret_val builder in
-        the_function
-      with e ->
-        delete_function the_function;
-        raise e
+   try
+     let ret_val =
+       if Array.length (params the_function) == 0 then
+         unbox_int (codegen_sexpr body)
+       else
+         codegen_sexpr body in
+
+     (* Finish off the function. *)
+     let _ = build_ret ret_val builder in
+     the_function
+   with e ->
+     delete_function the_function;
+     raise e
