@@ -22,6 +22,10 @@ let (--) i j =
       if n < i then acc else aux (n-1) (n :: acc)
     in aux j []
 
+let atom_ops = List.fold_left (fun s k -> StringSet.add k s)
+                               StringSet.empty
+                               [ "int?"; "dbl?" ]
+
 let arith_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
                                [ "+"; "-"; "*"; "/"; "/."; "<"; ">"; "%"; "^";
@@ -207,29 +211,38 @@ let rec extract_args s =
     Ast.List(se) -> List.map codegen_sexpr se
   | _ -> raise (Error "Expected list")
 
+and codegen_atom_op op args =
+  let hd = List.hd args in
+  let atype = get_type hd in
+  let unboxed_value = match op with
+      "int?" -> build_icmp Icmp.Eq atype (const_int i32_type 1) "int?" builder
+    | "dbl?" -> build_icmp Icmp.Eq atype (const_int i32_type 6) "dbl?" builder
+    | _ -> raise (Error "Unknown atom op") in
+  box_value unboxed_value
+
 and codegen_arith_op op args =
-    let hd = List.hd args in
-    let tl = List.tl args in
-    match op with
-      "not" -> codegen_call_op "cnot" [hd]
-    | _ ->
-       if tl == [] then hd else
-         let snd = List.nth args 1 in
-         match op with
-           "+" -> codegen_call_op "cadd" [hd;(codegen_arith_op op tl)]
-         | "-" -> codegen_call_op "csub" [hd;snd]
-         | "/" -> codegen_call_op "cdiv" [hd;snd]
-         | "*" -> codegen_call_op "cmul" [hd;(codegen_arith_op op tl)]
-         | "%" -> codegen_call_op "cmod" [hd;snd]
-         | "^" -> codegen_call_op "cexponent" [hd;snd]
-         | "<" -> codegen_call_op "clt" [hd;snd]
-         | ">" -> codegen_call_op "cgt" [hd;snd]
-         | "<=" -> codegen_call_op "clte" [hd;snd]
-         | ">=" -> codegen_call_op "cgte" [hd;snd]
-         | "=" -> codegen_call_op "cequ" [hd;snd]
-         | "and" -> codegen_call_op "cand" [hd;snd]
-         | "or" -> codegen_call_op "cor" [hd;snd]
-         | _ -> raise (Error "Unknown arithmetic operator")
+  let hd = List.hd args in
+  let tl = List.tl args in
+  match op with
+    "not" -> codegen_call_op "cnot" [hd]
+  | _ ->
+     if tl == [] then hd else
+       let snd = List.nth args 1 in
+       match op with
+         "+" -> codegen_call_op "cadd" [hd;(codegen_arith_op op tl)]
+       | "-" -> codegen_call_op "csub" [hd;snd]
+       | "/" -> codegen_call_op "cdiv" [hd;snd]
+       | "*" -> codegen_call_op "cmul" [hd;(codegen_arith_op op tl)]
+       | "%" -> codegen_call_op "cmod" [hd;snd]
+       | "^" -> codegen_call_op "cexponent" [hd;snd]
+       | "<" -> codegen_call_op "clt" [hd;snd]
+       | ">" -> codegen_call_op "cgt" [hd;snd]
+       | "<=" -> codegen_call_op "clte" [hd;snd]
+       | ">=" -> codegen_call_op "cgte" [hd;snd]
+       | "=" -> codegen_call_op "cequ" [hd;snd]
+       | "and" -> codegen_call_op "cand" [hd;snd]
+       | "or" -> codegen_call_op "cor" [hd;snd]
+       | _ -> raise (Error "Unknown arithmetic operator")
 
 and codegen_array_op op args =
   let value_t = match type_by_name the_module "value_t" with
@@ -492,7 +505,9 @@ and match_action s s2 =
     codegen_cf_op s s2
   else
     let args = extract_args s2 in
-    if StringSet.mem s arith_ops then
+    if StringSet.mem s atom_ops then
+      codegen_atom_op s args
+    else if StringSet.mem s arith_ops then
       codegen_arith_op s args
     else if StringSet.mem s array_ops then
       codegen_array_op s args
