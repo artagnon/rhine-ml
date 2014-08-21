@@ -19,9 +19,11 @@ let extract_strings args = Array.map (fun i ->
                                         | _ -> raise (Error "Bad argument")))
                                       args
 
-let parse_defn_form sexpr = match sexpr with
-    Ast.List(Ast.Atom(Ast.Symbol(sym))::Ast.Vector(v)::body) ->
-                                       (sym, extract_strings v, Ast.List(body))
+let parse_defn_form (sexpr : Ast.sexpr list) = match sexpr with
+    Ast.Atom(Ast.Symbol(sym))::Ast.Vector(v)::body ->
+    (sym, extract_strings v, body)
+  | Ast.Atom(Ast.Symbol(sym))::body ->
+     (sym, [||], body)
   | _ -> raise (Error "Unparseable defn form")
 
 let parse_def_form sexpr = match sexpr with
@@ -34,7 +36,7 @@ let sexpr_matcher sexpr =
     | None -> raise (Error "Could not look up value_t") in
   match sexpr with
     Ast.List(Ast.Atom(Ast.Symbol("defn"))::s2) ->
-    let (sym, args, body) = parse_defn_form (Ast.List s2) in
+    let (sym, args, body) = parse_defn_form s2 in
     codegen_func(Ast.Function(Ast.Prototype(sym, args), body))
   | Ast.List(Ast.Atom(Ast.Symbol("def"))::s2) ->
      (* Emit initializer function *)
@@ -48,7 +50,7 @@ let sexpr_matcher sexpr =
      ignore (build_store llexpr global builder);
      ignore (build_ret (const_int i64_type 0) builder);
      the_function
-  | _ -> emit_anonymous_f sexpr
+  | _ -> emit_anonymous_f [sexpr]
 
 let print_and_jit se =
   let f = sexpr_matcher se in

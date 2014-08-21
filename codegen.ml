@@ -202,7 +202,8 @@ let codegen_atom atom =
      | Ast.Nil -> unboxed_value
      | _ -> box_value unboxed_value
 
-let rec extract_args s = match s with
+let rec extract_args s =
+  match s with
     Ast.List(se) -> List.map codegen_sexpr se
   | _ -> raise (Error "Expected list")
 
@@ -398,7 +399,7 @@ and codegen_cf_op op s2 =
      let qs, body = match s2 with
          Ast.List(l) ->
          begin match l with
-                 Ast.Vector(qs)::body -> qs, Ast.List body
+                 Ast.Vector(qs)::body -> qs, body
                | _ -> raise (Error "Malformed dotimes expression")
          end
        | _ -> raise (Error "Malformed dotimes expression") in
@@ -417,7 +418,7 @@ and codegen_cf_op op s2 =
        try Some (Hashtbl.find named_values var_name) with Not_found -> None
      in
      Hashtbl.add named_values var_name variable;
-     ignore (codegen_sexpr body);
+     ignore (codegen_sexpr_list body);
      let next_var = build_add (unbox_int variable)
                               (const_int i64_type 1) "nextvar" builder in
      let next_var = box_value next_var in
@@ -453,7 +454,7 @@ and codegen_binding_op f s2 =
     let bindlist, body = match s2 with
         Ast.List(l) ->
         begin match l with
-                Ast.Vector(qs)::next -> qs, Ast.List next
+                Ast.Vector(qs)::next -> qs, next
               | _ -> raise (Error "Malformed let")
         end
       | _ -> raise (Error "Malformed let") in
@@ -477,7 +478,7 @@ and codegen_binding_op f s2 =
     Array.iteri (fun i m ->
                  if (i mod 2 == 0) then
                    bind m (bindlist.(i+1))) bindlist;
-    let llbody = codegen_sexpr body in
+    let llbody = codegen_sexpr_list body in
     List.iter (fun (s, old_value) ->
                Hashtbl.add named_values s old_value
               ) !old_bindings;
@@ -502,25 +503,23 @@ and match_action s s2 =
 
 and codegen_sexpr s = match s with
     Ast.Atom n -> codegen_atom n
-  | Ast.List([Ast.Atom(n)]) -> codegen_atom n
-  | Ast.List(l) ->
-     begin match l with
-             Ast.Atom(Ast.Symbol s)::s2 -> (* single sexpr *)
-             match_action s (Ast.List s2)
-           | Ast.List(_)::_ ->
-              let r = List.map (fun se ->
-                                match se with
-                                  Ast.List(l2) ->
-                                  begin match List.hd l2 with
-                                          Ast.Atom(Ast.Symbol s) ->
-                                          codegen_sexpr se
-                                        | _ -> raise (Error "Expected symbol")
-                                  end
-                                | _ -> raise (Error "Expected list")) l in
-              List.hd (List.rev r)
-           | _ -> raise (Error "Expected symbol or list");
-     end
   | Ast.Vector(qs) -> codegen_array qs
+  | Ast.List(Ast.Atom(Ast.Symbol s)::s2) ->
+     match_action s (Ast.List s2)
+  | _ -> raise (Error "Expected atom, vector, or function call")
+
+and codegen_sexpr_list sl =
+  let r = List.map (fun se ->
+                    match se with
+                      Ast.List(l2) ->
+                      begin match l2 with
+                              Ast.Atom(Ast.Symbol s)::s2 ->
+                              match_action s (Ast.List s2)
+                            | _ -> raise (Error "Expected symbol")
+                      end
+                    | Ast.Atom n -> codegen_atom n
+                    | Ast.Vector(qs) -> codegen_array qs) sl in
+  List.hd (List.rev r)
 
 and codegen_array qs =
   let value_t = match type_by_name the_module "value_t" with
@@ -584,9 +583,9 @@ let codegen_func = function
    try
      let ret_val =
        if Array.length (params the_function) == 0 then
-         unbox_int (codegen_sexpr body)
+         unbox_int (codegen_sexpr_list body)
        else
-         codegen_sexpr body in
+         codegen_sexpr_list body in
 
      (* Finish off the function. *)
      let _ = build_ret ret_val builder in

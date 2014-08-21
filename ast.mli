@@ -18,4 +18,4 @@ type proto =
     Prototype of string * string array
 
 type func =
-    Function of proto * sexpr
+    Function of proto * sexpr list
