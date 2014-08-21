@@ -11,7 +11,7 @@ let the_execution_engine = ExecutionEngine.create_jit the_module 1
 let the_fpm = PassManager.create_function the_module
 
 let emit_anonymous_f s =
-  codegen_func(Ast.Function(Ast.Prototype("", [||]), s))
+  codegen_func ~main_p:true (Ast.Function(Ast.Prototype("", [||]), s))
 
 let extract_strings args = Array.map (fun i ->
                                        (match i with
@@ -40,7 +40,7 @@ let sexpr_matcher sexpr =
     codegen_func(Ast.Function(Ast.Prototype(sym, args), body))
   | Ast.List(Ast.Atom(Ast.Symbol("def"))::s2) ->
      (* Emit initializer function *)
-     let the_function = codegen_proto (Ast.Prototype("", [||])) in 
+     let the_function = codegen_proto (Ast.Prototype("", [||])) ~main_p:true in
      let bb = append_block context "entry" the_function in
      position_at_end bb builder;
      let (sym, expr) = parse_def_form (Ast.List s2) in

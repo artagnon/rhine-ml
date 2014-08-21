@@ -533,7 +533,7 @@ and codegen_array qs =
   Array.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llqs;
   box_value new_array
 
-let codegen_proto p =
+let codegen_proto ?(main_p = false) p =
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
     | None -> raise (Error "Could not look up value_t")
@@ -542,7 +542,7 @@ let codegen_proto p =
     Ast.Prototype (name, args) ->
     let args_len = Array.length args in
     let argt = Array.make args_len (pointer_type value_t)  in
-    let ft = if args_len == 0 then
+    let ft = if main_p then
                function_type i64_type argt
              else
                function_type (pointer_type value_t) argt in
@@ -571,25 +571,25 @@ let codegen_proto p =
                 ) (params f);
     f
 
-let codegen_func = function
-   Ast.Function (proto, body) ->
-   Hashtbl.clear named_values;
+let codegen_func ?(main_p = false) f = match f with
+    Ast.Function (proto, body) ->
+    Hashtbl.clear named_values;
 
-   let the_function = codegen_proto proto in
-   (* Create a new basic block to start insertion into. *)
-   let bb = append_block context "entry" the_function in
-   position_at_end bb builder;
+    let the_function = codegen_proto ~main_p:main_p proto in
+    (* Create a new basic block to start insertion into. *)
+    let bb = append_block context "entry" the_function in
+    position_at_end bb builder;
 
-   try
-     let ret_val =
-       if Array.length (params the_function) == 0 then
-         unbox_int (codegen_sexpr_list body)
-       else
-         codegen_sexpr_list body in
+    try
+      let ret_val =
+        if main_p then
+          unbox_int (codegen_sexpr_list body)
+        else
+          codegen_sexpr_list body in
 
-     (* Finish off the function. *)
-     let _ = build_ret ret_val builder in
-     the_function
-   with e ->
-     delete_function the_function;
-     raise e
+      (* Finish off the function. *)
+      let _ = build_ret ret_val builder in
+      the_function
+    with e ->
+      delete_function the_function;
+      raise e
