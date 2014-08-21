@@ -8,6 +8,7 @@ let ppatom p = match p with
     Symbol(s) -> print_string ("sym:" ^ s)
   | String(s) -> print_string ("str:" ^ s)
   | Int(i) -> print_string "int:"; print_int i
+  | Char(i) -> print_string "char:"; print_char i
   | Bool(i) -> print_string "bool:"; print_bool i
   | Double(d) -> print_string "dbl:"; print_float d
   | Nil -> print_string "nil"

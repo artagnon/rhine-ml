@@ -12,6 +12,8 @@ struct value_t {
 	struct value_t **array_val;
 	long array_len;
 	double dbl_val;
+	struct value_t *(*function_val)(struct value_t *);
+	char char_val;
 };
 
 void print_atom(struct value_t *v) {
@@ -41,6 +43,9 @@ void print_atom(struct value_t *v) {
 		break;
 	case 6:
 		printf("(double) %f", v->dbl_val);
+		break;
+	case 8:
+		printf("(char) %c", v->char_val);
 		break;
 	default:
 		printf("Don't know how to print type %d", v->type_tag);

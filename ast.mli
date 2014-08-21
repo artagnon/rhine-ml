@@ -3,6 +3,7 @@ type atom =
   | Int of int
   | Bool of bool
   | Double of float
+  | Char of char
   | String of string
   | Nil
 

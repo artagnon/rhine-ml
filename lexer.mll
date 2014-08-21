@@ -23,6 +23,7 @@ rule token = parse
  | (['0'-'9']+)e as s { DOUBLE(float_of_string s) }
  | ['-''+']?digit+ as s { INTEGER(int_of_string s) }
  | (symbol_chars (digit|symbol_chars)*) as s { SYMBOL(s) }
+ | '\''[^'\'']'\'' as s { CHAR(s.[1]) }
  | '"' { let b = Buffer.create 1024 in read_string b lexbuf }
  | eof { EOF }
 

@@ -132,6 +132,8 @@ let box_value llval =
        (2, llval)
     | ty when ty = double_type ->
        (6, llval)
+    | ty when ty = i8_type ->
+       (8, llval)
     | ty -> match_composite ty
   in
   let type_dst = build_in_bounds_gep value_ptr (idx 0) "boxptr" builder in
@@ -191,6 +193,7 @@ let codegen_atom atom =
       Ast.Int n -> const_int i64_type n
     | Ast.Bool n -> const_int i1_type (int_of_bool n)
     | Ast.Double n -> const_float double_type n
+    | Ast.Char c -> const_int i8_type (int_of_char c)
     | Ast.Nil -> const_null (pointer_type value_t)
     | Ast.String s -> build_global_stringptr s "string" builder
     | Ast.Symbol n -> match lookup_global n the_module with
