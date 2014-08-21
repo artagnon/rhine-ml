@@ -353,6 +353,29 @@ and codegen_string_op op s2 =
      box_value (unbox_length (List.hd s2))
   | _ -> raise (Error "Unknown string operator")
 
+and codegen_if condf truef falsef =
+  let cond_val = condf () in
+  let start_bb = insertion_block builder in
+  let the_function = block_parent start_bb in
+  let truebb = append_block context "then" the_function in
+  position_at_end truebb builder;
+  let true_val = truef () in
+  let new_truebb = insertion_block builder in
+  let falsebb = append_block context "else" the_function in
+  position_at_end falsebb builder;
+  let false_val = falsef () in
+  let new_falsebb = insertion_block builder in
+  let mergebb = append_block context "ifcont" the_function in
+  position_at_end mergebb builder;
+  let incoming = [(true_val, new_truebb); (false_val, new_falsebb)] in
+  let phi = build_phi incoming "iftmp" builder in
+  position_at_end start_bb builder;
+  ignore (build_cond_br cond_val truebb falsebb builder);
+  position_at_end new_truebb builder; ignore (build_br mergebb builder);
+  position_at_end new_falsebb builder; ignore (build_br mergebb builder);
+  position_at_end mergebb builder;
+  phi
+
 and codegen_cf_op op s2 =
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
@@ -362,52 +385,18 @@ and codegen_cf_op op s2 =
     let condse, truese, falsese = match s2 with
         Ast.List([c; t; f]) -> c, t, f
       | _ -> raise (Error "Malformed if expression") in
-    let cond_val = unbox_bool (codegen_sexpr condse) in
-    let start_bb = insertion_block builder in
-    let the_function = block_parent start_bb in
-    let truebb = append_block context "then" the_function in
-    position_at_end truebb builder;
-    let true_val = codegen_sexpr truese in
-    let new_truebb = insertion_block builder in
-    let falsebb = append_block context "else" the_function in
-    position_at_end falsebb builder;
-    let false_val = codegen_sexpr falsese in
-    let new_falsebb = insertion_block builder in
-    let mergebb = append_block context "ifcont" the_function in
-    position_at_end mergebb builder;
-    let incoming = [(true_val, new_truebb); (false_val, new_falsebb)] in
-    let phi = build_phi incoming "iftmp" builder in
-    position_at_end start_bb builder;
-    ignore (build_cond_br cond_val truebb falsebb builder);
-    position_at_end new_truebb builder; ignore (build_br mergebb builder);
-    position_at_end new_falsebb builder; ignore (build_br mergebb builder);
-    position_at_end mergebb builder;
-    phi
+    let condf () = unbox_bool (codegen_sexpr condse) in
+    let truef () = codegen_sexpr truese in
+    let falsef () = codegen_sexpr falsese in
+    codegen_if condf truef falsef
   | "when" ->
      let condse, truese = match s2 with
          Ast.List([c; t]) -> c, t
        | _ -> raise (Error "Malformed when expression") in
-     let cond_val = unbox_bool (codegen_sexpr condse) in
-     let start_bb = insertion_block builder in
-     let the_function = block_parent start_bb in
-     let truebb = append_block context "then" the_function in
-     position_at_end truebb builder;
-     let true_val = codegen_sexpr truese in
-     let new_truebb = insertion_block builder in
-     let falsebb = append_block context "else" the_function in
-     position_at_end falsebb builder;
-     let false_val = const_null (pointer_type value_t) in
-     let new_falsebb = insertion_block builder in
-     let mergebb = append_block context "ifcont" the_function in
-     position_at_end mergebb builder;
-     let incoming = [(true_val, new_truebb); (false_val, new_falsebb)] in
-     let phi = build_phi incoming "iftmp" builder in
-     position_at_end start_bb builder;
-     ignore (build_cond_br cond_val truebb falsebb builder);
-     position_at_end new_truebb builder; ignore (build_br mergebb builder);
-     position_at_end new_falsebb builder; ignore (build_br mergebb builder);
-     position_at_end mergebb builder;
-     phi
+     let condf () = unbox_bool (codegen_sexpr condse) in
+     let truef () = codegen_sexpr truese in
+     let falsef () = const_null (pointer_type value_t) in
+     codegen_if condf truef falsef
   | "dotimes" ->
      let qs, body = match s2 with
          Ast.List(l) ->
