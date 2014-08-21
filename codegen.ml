@@ -399,11 +399,7 @@ and codegen_cf_op op s2 =
      codegen_if condf truef falsef
   | "dotimes" ->
      let qs, body = match s2 with
-         Ast.List(l) ->
-         begin match l with
-                 Ast.Vector(qs)::body -> qs, body
-               | _ -> raise (Error "Malformed dotimes expression")
-         end
+         Ast.List(Ast.Vector(qs)::body) -> qs, body
        | _ -> raise (Error "Malformed dotimes expression") in
      let var_name = match qs.(0) with
          Ast.Atom(Ast.Symbol(s)) -> s
