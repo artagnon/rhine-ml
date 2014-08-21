@@ -37,7 +37,7 @@ let sexpr_matcher sexpr =
   match sexpr with
     Ast.List(Ast.Atom(Ast.Symbol("defn"))::s2) ->
     let (sym, args, body) = parse_defn_form s2 in
-    codegen_func(Ast.Function(Ast.Prototype(sym, args), body))
+    codegen_func(Ast.Function(Ast.Prototype(sym, args), body)), false
   | Ast.List(Ast.Atom(Ast.Symbol("def"))::s2) ->
      (* Emit initializer function *)
      let the_function = codegen_proto (Ast.Prototype("", [||])) ~main_p:true in
@@ -49,11 +49,11 @@ let sexpr_matcher sexpr =
      let global = define_global sym (const_null value_t) the_module in
      ignore (build_store llexpr global builder);
      ignore (build_ret (const_int i64_type 0) builder);
-     the_function
-  | _ -> emit_anonymous_f [sexpr]
+     the_function, true
+  | _ -> emit_anonymous_f [sexpr], true
 
 let print_and_jit se =
-  let f = sexpr_matcher se in
+  let f, main_p = sexpr_matcher se in
 
   (* Validate the generated code, checking for consistency. *)
   (* Llvm_analysis.assert_valid_function f;*)
@@ -63,7 +63,7 @@ let print_and_jit se =
 
   dump_value f;
 
-  if Array.length (params f) == 0 then (
+  if main_p then (
     let result = ExecutionEngine.run_function f [||] the_execution_engine in
     print_string "Evaluated to ";
     print_int (GenericValue.as_int result);
