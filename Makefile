@@ -22,6 +22,8 @@ clean :
 
 codegen.cmo : ast.cmi
 codegen.cmx : ast.cmi
+cookast.cmo : pretty.cmo ast.cmi
+cookast.cmx : pretty.cmx ast.cmi
 lexer.cmo : parser.cmi
 lexer.cmx : parser.cmx
 main.cmo : toplevel.cmo pretty.cmo parser.cmi lexer.cmo ast.cmi
@@ -31,6 +33,6 @@ parser.cmx : ast.cmi parser.cmi
 pretty.cmo : ast.cmi
 pretty.cmx : ast.cmi
 toplevel.cmo : cookast.cmo codegen.cmo ast.cmi
-toplevel.cmx : cookast.cmx codegen.cmx ast.cmx
+toplevel.cmx : cookast.cmx codegen.cmx ast.cmi
 ast.cmi :
 parser.cmi : ast.cmi
