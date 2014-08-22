@@ -172,17 +172,8 @@ let unbox_length llval =
   build_load dst "load" builder
 
 let unbox_ar llval =
-  let value_t = match type_by_name the_module "value_t" with
-      Some t -> t
-    | None -> raise (Error "Could not look up value_t")
-  in
-  let ptr = build_in_bounds_gep llval (idx 4) "boxptr" builder in
-  let el = build_load ptr "el" builder in
-  let rharray_type size = pointer_type (array_type
-                                          (pointer_type value_t) size) in
-  let vec n = build_bitcast el (rharray_type n) "arptr" builder in
-  let arload n = build_load (vec n) "load" builder in
-  arload 10
+  let dst = build_in_bounds_gep llval (idx 4) "boxptr" builder in
+  build_load dst "load" builder
 
 let codegen_atom atom =
   let value_t = match type_by_name the_module "value_t" with
@@ -255,12 +246,10 @@ and codegen_array_op op args =
   match op with
     "first" ->
     let ar = unbox_ar arg in
-    build_extractvalue ar 0 "extract" builder
+    build_load ar "first" builder
   | "rest" ->
-     let ptr = build_in_bounds_gep arg (idx 4) "boxptr" builder in
-     let lenptr = build_in_bounds_gep arg (idx 5) "boxptr" builder in
-     let len = build_load lenptr "load" builder in
-     let el = build_load ptr "el" builder in
+     let len = unbox_length arg in
+     let el = unbox_ar arg in
      let newptr = build_in_bounds_gep el [| const_int i64_type 1 |]
                                       "rest" builder in
      let newlen = build_sub len (const_int i64_type 1) "restsub" builder in
