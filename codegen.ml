@@ -384,10 +384,10 @@ and codegen_cf_op op s2 =
      let qs, body = match s2 with
          Ast.List(Ast.Vector(qs)::body) -> qs, body
        | _ -> raise (Error "Malformed dotimes expression") in
-     let var_name = match qs.(0) with
+     let var_name = match List.hd qs with
          Ast.Atom(Ast.Symbol(s)) -> s
        | _ -> raise (Error "Expected symbol in dotimes") in
-     let loop_lim = codegen_sexpr qs.(1) in
+     let loop_lim = codegen_sexpr (List.nth qs 1) in
      let start_val = codegen_sexpr (Ast.Atom(Ast.Int(0))) in
      let start_bb = insertion_block builder in
      let the_function = block_parent start_bb in
@@ -439,7 +439,7 @@ and codegen_binding_op f s2 =
               | _ -> raise (Error "Malformed let")
         end
       | _ -> raise (Error "Malformed let") in
-    let len = Array.length bindlist in
+    let len = List.length bindlist in
     if len mod 2 != 0 then
       raise (Error "Malformed binding form in let");
     let bind n a =
@@ -456,9 +456,9 @@ and codegen_binding_op f s2 =
             with Not_found -> ()
       end;
       Hashtbl.add named_values s alloca in
-    Array.iteri (fun i m ->
+    List.iteri (fun i m ->
                  if (i mod 2 == 0) then
-                   bind m (bindlist.(i+1))) bindlist;
+                   bind m (List.nth bindlist (i+1))) bindlist;
     let llbody = codegen_sexpr_list body in
     List.iter (fun (s, old_value) ->
                Hashtbl.add named_values s old_value
@@ -501,20 +501,21 @@ and codegen_sexpr_list sl =
                             | _ -> raise (Error "Expected symbol")
                       end
                     | Ast.Atom n -> codegen_atom n
-                    | Ast.Vector(qs) -> codegen_array qs) sl in
+                    | Ast.Vector(qs) -> codegen_array qs
+                    | _ -> raise (Error ("Can't codegen that"))) sl in
   List.hd (List.rev r)
 
 and codegen_array qs =
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
     | None -> raise (Error "Could not look up value_t") in
-  let len = Array.length qs in
+  let len = List.length qs in
   let rharray_type size = array_type (pointer_type value_t) size in
   let new_array = build_alloca (rharray_type len) "ar" builder in
   let ptr n = build_in_bounds_gep new_array (idx n) "arptr" builder in
-  let llqs = Array.map codegen_sexpr qs in
+  let llqs = List.map codegen_sexpr qs in
   let lllen = const_int i64_type len in
-  Array.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llqs;
+  List.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llqs;
   box_value ~lllen:lllen (ptr 0)
 
 let codegen_proto ?(main_p = false) p =

@@ -32,8 +32,8 @@ sexpr:
  | LPAREN sexprs RPAREN { List($2) }
 
 qsexpr:
-    LSQBR sexprs RSQBR { Vector(Array.of_list $2) }
-  | LSQBR RSQBR { Vector([||]) }
+    LSQBR sexprs RSQBR { Vector($2) }
+  | LSQBR RSQBR { Vector([]) }
 
 sexprs:
    sexpr sexprs { $1::$2 }

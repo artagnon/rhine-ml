@@ -3,6 +3,7 @@ open Llvm_executionengine
 open Llvm_target
 open Llvm_scalar_opts
 open Codegen
+open Cookast
 
 exception Error of string
 
@@ -19,38 +20,27 @@ let extract_strings args = Array.map (fun i ->
                                         | _ -> raise (Error "Bad argument")))
                                       args
 
-let parse_defn_form (sexpr : Ast.sexpr list) = match sexpr with
-    Ast.Atom(Ast.Symbol(sym))::Ast.Vector(v)::body ->
-    (sym, extract_strings v, body)
-  | Ast.Atom(Ast.Symbol(sym))::body ->
-     (sym, [||], body)
-  | _ -> raise (Error "Unparseable defn form")
-
-let parse_def_form sexpr = match sexpr with
-    Ast.List([Ast.Atom(Ast.Symbol(sym)); expr]) -> (sym, expr)
-  | _ -> raise (Error "Unparseable def form")
-
 let sexpr_matcher sexpr =
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
     | None -> raise (Error "Could not look up value_t") in
   match sexpr with
-    Ast.List(Ast.Atom(Ast.Symbol("defn"))::s2) ->
-    let (sym, args, body) = parse_defn_form s2 in
-    codegen_func(Ast.Function(Ast.Prototype(sym, args), body)), false
-  | Ast.List(Ast.Atom(Ast.Symbol("def"))::s2) ->
+    Ast.Defn(sym, args, body) ->
+    codegen_func(Ast.Function(Ast.Prototype(sym, Array.of_list args),
+                              body)), false
+  | Ast.Def(sym, expr) ->
      (* Emit initializer function *)
      let the_function = codegen_proto (Ast.Prototype("", [||])) ~main_p:true in
      let bb = append_block context "entry" the_function in
      position_at_end bb builder;
-     let (sym, expr) = parse_def_form (Ast.List s2) in
      let llexpr = codegen_sexpr expr in
      let llexpr = build_load llexpr "llexpr" builder in
      let global = define_global sym (const_null value_t) the_module in
      ignore (build_store llexpr global builder);
      ignore (build_ret (const_int i64_type 0) builder);
      the_function, true
-  | _ -> emit_anonymous_f [sexpr], true
+  | Ast.AnonCall(body) -> emit_anonymous_f body, true
+  | _ -> raise (Error "Invalid toplevel form")
 
 let print_and_jit se =
   let f, main_p = sexpr_matcher se in
@@ -130,4 +120,4 @@ let main_loop ss =
   ignore (codegen_proto (Ast.Prototype("cnot", Array.make 1 "v")));
   ignore (codegen_proto (Ast.Prototype("cstrjoin", Array.make 1 "v")));
 
-  List.iter (fun se -> print_and_jit se) ss
+  List.iter (fun se -> print_and_jit (cook_toplevel se)) ss

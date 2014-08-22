@@ -10,7 +10,11 @@ type atom =
 type sexpr =
     Atom of atom
   | List of sexpr list
-  | Vector of sexpr array
+  | Vector of sexpr list
+  | Defn of string * string list * sexpr list
+  | Def of string * sexpr
+  | Call of string * sexpr list
+  | AnonCall of sexpr list
 
 type prog =
     Prog of sexpr list

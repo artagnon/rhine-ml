@@ -1,4 +1,4 @@
-OBJS = parser.cmo lexer.cmo pretty.cmo codegen.cmo toplevel.cmo main.cmo bindings.o
+OBJS = parser.cmo lexer.cmo pretty.cmo cookast.cmo codegen.cmo toplevel.cmo main.cmo bindings.o
 ocamlc = ocamlc -g -w @5@8@10@11@12@14@23@24@26@29@40
 
 rhine : $(OBJS)
@@ -30,7 +30,7 @@ parser.cmo : ast.cmi parser.cmi
 parser.cmx : ast.cmi parser.cmi
 pretty.cmo : ast.cmi
 pretty.cmx : ast.cmi
-toplevel.cmo : codegen.cmo ast.cmi
-toplevel.cmx : codegen.cmx ast.cmx
+toplevel.cmo : cookast.cmo codegen.cmo ast.cmi
+toplevel.cmx : cookast.cmx codegen.cmx ast.cmx
 ast.cmi :
 parser.cmi : ast.cmi

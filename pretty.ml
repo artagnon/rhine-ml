@@ -1,5 +1,7 @@
 open Ast
 
+exception Error of string
+
 let print_bool = function true -> print_string "true"
                         | false -> print_string "false"
 
@@ -23,9 +25,11 @@ let rec ppsexpr p = match p with
                                      | _ -> ppsexpr i) sel;
                  print_string " )"
   | Vector(qs) -> print_string "[ ";
-                    Array.iter (fun i -> ppsexpr i;
-                                         print_char ' ') qs;
+                    List.iter (fun i -> ppsexpr i;
+                                        print_char ' ') qs;
                     print_char ']'
+  | _ -> raise (Error "Don't know how to print cooked AST")
+
 (* pretty print the program *)
 let pprint p = match p with
     Prog(ss) -> List.iter (fun i -> ppsexpr i;
