@@ -284,8 +284,6 @@ and codegen_string_op op s2 =
       Some t -> t
     | None -> raise (Error "Could not look up value_t") in
   let rharel_type = pointer_type value_t in
-  let rhstring_type size = array_type i8_type size in
-  let nullterm = const_int i8_type 0 in
   match op with
     "str-join" ->
       let arg = List.hd s2 in
@@ -316,13 +314,8 @@ and codegen_string_op op s2 =
       let ptr = build_in_bounds_gep str [| loopidx |]
                                     "extract" builder in
       let el = build_load ptr "extractload" builder in
-      let strseg = build_alloca (rhstring_type 2) "strseg" builder in
-      let strseg0 = build_in_bounds_gep strseg (idx 0) "strseg0" builder in
-      let strseg1 = build_in_bounds_gep strseg (idx 1) "strseg1" builder in
-      ignore (build_store el strseg0 builder);
-      ignore (build_store nullterm strseg1 builder);
       let newptr = build_in_bounds_gep newar [| loopidx |] "arptr" builder in
-      ignore (build_store (box_value strseg0) newptr builder);
+      ignore (build_store (box_value el) newptr builder);
       (* end body *)
       let next_var = build_add (unbox_int variable)
                              (const_int i64_type 1) "nextvar" builder in

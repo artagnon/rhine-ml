@@ -1,3 +1,0 @@
-(println (str-join ["f" "o" "o"]))
----
-(string len 3) foo

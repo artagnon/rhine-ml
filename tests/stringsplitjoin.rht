@@ -1,3 +1,0 @@
-(print (str-join (str-split "hello")))
----
-(string len 5) hello

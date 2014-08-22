@@ -1,3 +1,0 @@
-(println (str-split "foo"))
----
-(array len 3) [(string len 1) f;(string len 1) o;(string len 1) o;]

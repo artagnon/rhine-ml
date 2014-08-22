@@ -1,0 +1,7 @@
+(println (str-split "foo"))
+(println (str-join ['q' 'u' 'u' 'x']))
+(print (str-join (str-split "hello")))
+---
+(array len 3) [(char) f;(char) o;(char) o;]
+(string len 4) quux
+(string len 5) hello
