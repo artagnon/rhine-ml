@@ -24,7 +24,7 @@ let (--) i j =
 
 let atom_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
-                               [ "int?"; "dbl?" ]
+                               [ "int?"; "dbl?"; "ar?" ]
 
 let arith_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
@@ -211,6 +211,7 @@ and codegen_atom_op op args =
   let unboxed_value = match op with
       "int?" -> build_icmp Icmp.Eq atype (const_int i32_type 1) "int?" builder
     | "dbl?" -> build_icmp Icmp.Eq atype (const_int i32_type 6) "dbl?" builder
+    | "ar?" -> build_icmp Icmp.Eq atype (const_int i32_type 4) "ar?" builder
     | _ -> raise (Error "Unknown atom op") in
   box_value unboxed_value
 
@@ -245,8 +246,11 @@ and codegen_array_op op args =
   let arg = List.hd args in
   match op with
     "first" ->
-    let ar = unbox_ar arg in
-    build_load ar "first" builder
+    let first_el ar = build_load ar "first" builder in
+    let condf () = unbox_bool (codegen_atom_op "ar?" [arg]) in
+    let truef () = first_el (unbox_ar arg) in
+    let falsef () = box_value (first_el (unbox_str arg)) in
+    codegen_if condf truef falsef
   | "rest" ->
      let len = unbox_length arg in
      let el = unbox_ar arg in
