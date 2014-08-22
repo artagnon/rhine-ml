@@ -252,12 +252,20 @@ and codegen_array_op op args =
     let falsef () = box_value (first_el (unbox_str arg)) in
     codegen_if condf truef falsef
   | "rest" ->
-     let len = unbox_length arg in
-     let el = unbox_ar arg in
-     let newptr = build_in_bounds_gep el [| const_int i64_type 1 |]
-                                      "rest" builder in
-     let newlen = build_sub len (const_int i64_type 1) "restsub" builder in
-     box_llar newptr newlen
+     let condf () = unbox_bool (codegen_atom_op "ar?" [arg]) in
+     let truef () =
+       let len = unbox_length arg in
+       let newlen = build_sub len (const_int i64_type 1) "restsub" builder in
+       let el = unbox_ar arg in
+       let newptr = build_in_bounds_gep el [| const_int i64_type 1 |]
+                                        "rest" builder in
+       box_llar newptr newlen in
+     let falsef () =
+       let el = unbox_str arg in
+       let newptr = build_in_bounds_gep el [| const_int i64_type 1 |]
+                                         "rest" builder in
+       box_value newptr in
+     codegen_if condf truef falsef
   | "length" ->
      box_value (unbox_length arg)
   | "cons" ->

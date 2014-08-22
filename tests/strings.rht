@@ -4,7 +4,9 @@ is
 a
 string")
 (println "this is a \"string\" with a \"")
-(print "the end")
+(println "the end")
+(println (first "foo"))
+(println (rest "quux"))
 ---
 (string len 16) this is a string
 (string len 16) this
@@ -13,3 +15,5 @@ a
 string
 (string len 27) this is a "string" with a "
 (string len 7) the end
+(char) f
+(string len 3) uux
