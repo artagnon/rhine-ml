@@ -83,27 +83,11 @@ let undef_vec len =
   let undef_list = List.map (fun i -> undef i64_type) (0--(len - 1)) in
   const_vector (Array.of_list undef_list)
 
-let box_llar llval lllen =
+let box_value ?(lllen = const_null i32_type) llval =
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
     | None -> raise (Error "Could not look up value_t")
   in
-  let value_ptr = build_malloc (size_of value_t) value_t "value" builder in
-  let type_dst = build_in_bounds_gep value_ptr (idx 0) "boxptr" builder in
-  let lenptr = build_in_bounds_gep value_ptr (idx 5) "lenptr" builder in
-  let dst = build_in_bounds_gep value_ptr (idx 4) "boxptr" builder in
-  let lltype_tag = const_int i32_type 4 in
-  ignore (build_store lltype_tag type_dst builder);
-  ignore (build_store lllen lenptr builder);
-  ignore (build_store llval dst builder);
-  value_ptr
-
-let box_value llval =
-  let value_t = match type_by_name the_module "value_t" with
-      Some t -> t
-    | None -> raise (Error "Could not look up value_t")
-  in
-  let rharray_type size = array_type (pointer_type value_t) size in
   let value_ptr = build_malloc (size_of value_t) value_t "value" builder in
   let match_pointer ty = match ty with
     | ty when ty = pointer_type (function_type (pointer_type value_t)
@@ -112,19 +96,21 @@ let box_value llval =
     | _ ->
        match element_type ty with
          ty when ty = i8_type ->
-         let len = build_strlen llval in
+         let len = if is_null lllen then build_strlen llval else lllen in
          let lenptr = build_in_bounds_gep value_ptr (idx 5) "lenptr" builder in
          ignore (build_store len lenptr builder);
          (3, llval)
-       | ty when ty = rharray_type (array_length ty) ->
-          let len = const_int i64_type (array_length ty) in
+       | ty when ty = pointer_type value_t ->
+          let len = lllen in
           let lenptr = build_in_bounds_gep value_ptr (idx 5) "lenptr" builder in
           ignore (build_store len lenptr builder);
-          (4, build_in_bounds_gep llval (idx 0) "llval" builder)
-       | ty -> raise (Error "Don't know how to box type") in
+          (4, llval)
+       | ty -> raise (Error ("Don't know how to box type: " ^
+                               (string_of_lltype ty))) in
   let match_composite ty = match classify_type ty with
       TypeKind.Pointer -> match_pointer ty
-    | _ -> raise (Error "Don't know how to box type") in
+    | _ -> raise (Error ("Don't know how to box type: " ^
+                           (string_of_lltype ty))) in
   let (type_tag, llval) = match type_of llval with
       ty when ty = i64_type ->
        (1, llval)
@@ -252,19 +238,19 @@ and codegen_array_op op args =
     let falsef () = box_value (first_el (unbox_str arg)) in
     codegen_if condf truef falsef
   | "rest" ->
+     let len = unbox_length arg in
+     let newlen = build_sub len (const_int i64_type 1) "restsub" builder in
      let condf () = unbox_bool (codegen_atom_op "ar?" [arg]) in
      let truef () =
-       let len = unbox_length arg in
-       let newlen = build_sub len (const_int i64_type 1) "restsub" builder in
        let el = unbox_ar arg in
        let newptr = build_in_bounds_gep el [| const_int i64_type 1 |]
                                         "rest" builder in
-       box_llar newptr newlen in
+       box_value ~lllen:newlen newptr in
      let falsef () =
        let el = unbox_str arg in
        let newptr = build_in_bounds_gep el [| const_int i64_type 1 |]
                                          "rest" builder in
-       box_value newptr in
+       box_value ~lllen:newlen newptr in
      codegen_if condf truef falsef
   | "length" ->
      box_value (unbox_length arg)
@@ -290,7 +276,7 @@ and codegen_array_op op args =
                                 "rawdst" builder in
      ignore (build_store arg ptrhead builder);
      ignore (build_memcpy rawsrc rawdst size);
-     box_llar ptr newlen
+     box_value ~lllen:newlen ptr
   | _ -> raise (Error "Unknown array operator")
 
 and codegen_string_op op s2 =
@@ -352,7 +338,7 @@ and codegen_string_op op s2 =
             Some old_val -> Hashtbl.add named_values var_name old_val
           | None -> ()
       end;
-      box_llar newar len
+      box_value ~lllen:len newar
   | "str-length" ->
      box_value (unbox_length (List.hd s2))
   | _ -> raise (Error "Unknown string operator")
@@ -534,8 +520,9 @@ and codegen_array qs =
   let new_array = build_alloca (rharray_type len) "ar" builder in
   let ptr n = build_in_bounds_gep new_array (idx n) "arptr" builder in
   let llqs = Array.map codegen_sexpr qs in
+  let lllen = const_int i64_type len in
   Array.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llqs;
-  box_value new_array
+  box_value ~lllen:lllen (ptr 0)
 
 let codegen_proto ?(main_p = false) p =
   let value_t = match type_by_name the_module "value_t" with
