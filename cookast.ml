@@ -7,11 +7,11 @@ let extract_strings args = List.map (fun i ->
                                       args
 
 let parse_defn_form = function
+    Ast.Atom(Ast.Symbol(sym))::Ast.Vector(v)::
+      Ast.Atom(Ast.String(_))::body |
     Ast.Atom(Ast.Symbol(sym))::Ast.Vector(v)::body ->
-    Ast.Defn(sym, extract_strings v, body)
-  | Ast.Atom(Ast.Symbol(sym))::body ->
-     Ast.Defn(sym, [], body)
-  | se -> raise (Error ("Malformed defn form:" ^ ppsexprl se))
+     Ast.Defn(sym, extract_strings v, body)
+    | se -> raise (Error ("Malformed defn form:" ^ ppsexprl se))
 
 let parse_def_form = function
     [Ast.Atom(Ast.Symbol(sym)); expr] -> Ast.Def(sym, expr)
