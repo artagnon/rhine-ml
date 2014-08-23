@@ -28,6 +28,10 @@ let rec ppsexpr p =
   | Vector(qs) -> sprintf "[%s]" (List.fold_left vfolder "" qs)
   | _ -> raise (Error "Don't know how to print cooked AST")
 
+let rec ppsexprl p =
+  let lfolder i j = i ^ (ppsexpr j) ^ "\n" in
+  List.fold_left lfolder "" p
+
 (* pretty print the program *)
 let pprint p = match p with
     Prog(ss) -> List.iter (fun i -> print_string (ppsexpr i);

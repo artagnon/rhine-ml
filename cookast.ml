@@ -11,11 +11,11 @@ let parse_defn_form = function
     Ast.Defn(sym, extract_strings v, body)
   | Ast.Atom(Ast.Symbol(sym))::body ->
      Ast.Defn(sym, [], body)
-  | se -> raise (Error "Malformed defn form")
+  | se -> raise (Error ("Malformed defn form:" ^ ppsexprl se))
 
 let parse_def_form = function
     [Ast.Atom(Ast.Symbol(sym)); expr] -> Ast.Def(sym, expr)
-  | se -> raise (Error "Malformed def form")
+  | se -> raise (Error ("Malformed def form:" ^ ppsexprl se))
 
 let cook_toplevel sexpr = match sexpr with
     Ast.List(Ast.Atom(Ast.Symbol(sym))::s2) ->
