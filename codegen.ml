@@ -103,8 +103,9 @@ let box_value ?(lllen = const_null i32_type) llval =
   in
   let value_ptr = build_malloc (size_of value_t) value_t "value" builder in
   let match_pointer ty = match ty with
-    | ty when ty = pointer_type (function_type (pointer_type value_t)
-                                               [| (pointer_type value_t) |]) ->
+    | ty when ty = pointer_type (var_arg_function_type
+                                   (pointer_type value_t)
+                                   [| i32_type |]) ->
        (7, llval)
     | _ ->
        match element_type ty with
@@ -497,7 +498,7 @@ and codegen_call_op f args =
                  Not_found -> raise (Error ("Unknown function: " ^ f)) in
        unbox_function v
   in
-  let args = Array.of_list args in
+  let args = Array.of_list ((const_int i32_type (List.length args))::args) in
   build_call callee args "call" builder;
 
 and codegen_binding_op f s2 =
@@ -595,6 +596,44 @@ and codegen_array qs =
   List.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llqs;
   box_value ~lllen:lllen (ptr 0)
 
+let build_va_arg_x86 ap argtype =
+  let el = build_alloca argtype "el" builder in
+  let idxptr = build_in_bounds_gep ap (idx 0) "idxptr" builder in
+  let idx0 = build_load idxptr "idx" builder in
+  let elsptr = build_in_bounds_gep ap (idx 3) "elsptr" builder in
+  let els = build_load elsptr "els" builder in
+  let rawel = build_in_bounds_gep els [| idx0 |] "rawel" builder in
+  let elptr = build_bitcast rawel (pointer_type argtype) "elptr" builder in
+  let newidx = build_add idx0 (const_int i32_type 8) "newidx" builder in
+  ignore (build_store newidx idxptr builder);
+  let newval = build_load elptr "newval" builder in
+  ignore (build_store newval el builder);
+  build_load el "ret" builder
+
+let codegen_unpack_args args =
+  let value_t = match type_by_name the_module "value_t" with
+      Some t -> t
+    | None -> raise (Error "Could not look up value_t") in
+  let valist_t = match type_by_name the_module "__va_list_tag" with
+      Some t -> t
+    | None -> raise (Error "Could not look up valist_t") in
+  let va_start = match lookup_function "llvm.va_start" the_module with
+      Some f -> f
+    | None -> raise (Error "Could not find va_start") in
+  let va_end = match lookup_function "llvm.va_end" the_module with
+      Some f -> f
+    | None -> raise (Error "Could not find va_end") in
+  let ap = build_alloca valist_t "ap" builder in
+  let ap2 = build_bitcast ap (pointer_type i8_type) "ap2" builder in
+  ignore (build_call va_start [| ap2 |] "" builder);
+  let va_arg () = build_va_arg_x86 ap (pointer_type value_t) in
+  let llargs = Array.map (fun arg -> va_arg ()) args in
+  ignore (build_call va_end [| ap2 |] "" builder);
+  Array.iteri (fun i a ->
+               let n = args.(i) in
+               Hashtbl.add named_values n a;
+              ) llargs
+
 let codegen_proto ?(main_p = false) p =
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
@@ -602,36 +641,26 @@ let codegen_proto ?(main_p = false) p =
   in
   match p with
     Ast.Prototype (name, args) ->
-    let args_len = Array.length args in
-    let argt = Array.make args_len (pointer_type value_t)  in
+    let pvalue_t = pointer_type value_t in
     let ft = if main_p then
-               function_type i64_type argt
+               function_type i64_type [||]
              else
-               function_type (pointer_type value_t) argt in
-    let f =
-      match lookup_function name the_module with
-        None -> declare_function name ft the_module
+               var_arg_function_type pvalue_t [| i32_type |] in
 
-      (* If 'f' conflicted, there was already something named 'name'. If it
-       * has a body, don't allow redefinition or reextern. *)
-      | Some f ->
-         (* If 'f' already has a body, reject this. *)
-         if block_begin f <> At_end f then
-           raise (Error "redefinition of function");
+    match lookup_function name the_module with
+      None -> declare_function name ft the_module
 
-         (* If 'f' took a different number of arguments, reject. *)
-         if element_type (type_of f) <> ft then
-           raise (Error "redefinition of function with different # args");
-         f
-    in
+    (* If 'f' conflicted, there was already something named 'name'. If it
+     * has a body, don't allow redefinition or reextern. *)
+    | Some f ->
+       (* If 'f' already has a body, reject this. *)
+       if block_begin f <> At_end f then
+         raise (Error "redefinition of function");
 
-    (* Set names for all arguments. *)
-    Array.iteri (fun i a ->
-                 let n = args.(i) in
-                 set_value_name n a;
-                 Hashtbl.add named_values n a;
-                ) (params f);
-    f
+       (* If 'f' took a different number of arguments, reject. *)
+       if element_type (type_of f) <> ft then
+         raise (Error "redefinition of function with different # args");
+       f
 
 let codegen_func ?(main_p = false) f = match f with
     Ast.Function (proto, body) ->
@@ -647,7 +676,9 @@ let codegen_func ?(main_p = false) f = match f with
         if main_p then
           unbox_int (codegen_sexpr_list body)
         else
-          codegen_sexpr_list body in
+          (let args = match proto with Ast.Prototype(name, args) -> args in
+           codegen_unpack_args args;
+           codegen_sexpr_list body) in
 
       (* Finish off the function. *)
       let _ = build_ret ret_val builder in

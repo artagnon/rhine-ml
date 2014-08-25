@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <math.h>
 #include <string.h>
+#include <stdarg.h>
 
 struct value_t {
 	int type_tag;
@@ -52,18 +53,30 @@ void print_atom(struct value_t *v) {
 	}
 }
 
-extern struct value_t *print(struct value_t *v) {
+extern struct value_t *print(int nargs, ...) {
 	struct value_t *ret;
+	va_list ap;
+	va_start(ap, nargs);
+	struct value_t *v = va_arg(ap, struct value_t *);
 	print_atom(v);
+	va_end(ap);
 	ret = malloc(sizeof(struct value_t));
 	ret->int_val = 0;
 	ret->type_tag = 1;
 	return ret;
 }
 
-extern struct value_t *println(struct value_t *v) {
-	struct value_t *ret = print(v);
+extern struct value_t *println(int nargs, ...) {
+	struct value_t *ret;
+	va_list ap;
+	va_start(ap, nargs);
+	struct value_t *v = va_arg(ap, struct value_t *);
+	print_atom(v);
 	printf("\n");
+	va_end(ap);
+	ret = malloc(sizeof(struct value_t));
+	ret->int_val = 0;
+	ret->type_tag = 1;
 	return ret;
 }
 
@@ -165,9 +178,15 @@ extern struct value_t *cgte(struct value_t *v, struct value_t *v2) {
 	return ret;
 }
 
-extern struct value_t *cequ(struct value_t *v, struct value_t *v2) {
+extern struct value_t *cequ(int nargs, ...) {
 	int ret_type = 0;
 	struct value_t *ret;
+	va_list ap;
+	va_start(ap, nargs);
+	struct value_t *v = va_arg(ap, struct value_t *);
+	struct value_t *v2 = va_arg(ap, struct value_t *);
+	va_end(ap);
+
 	// only makes sense for integers and bools currently
 	switch(v->type_tag) {
 	case 1:
@@ -252,8 +271,12 @@ extern struct value_t *cexponent(struct value_t *v, struct value_t *v2) {
 }
 
 
-extern struct value_t *cstrjoin(struct value_t *v) {
+extern struct value_t *cstrjoin(int nargs, ...) {
 	struct value_t *ret;
+	va_list ap;
+	va_start(ap, nargs);
+	struct value_t *v = va_arg(ap, struct value_t *);
+	va_end(ap);
 	int i = 0;
 	ret = malloc(sizeof(struct value_t));
 	ret->string_val = malloc(sizeof(char) * (v->array_len+1));

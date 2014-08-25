@@ -91,12 +91,19 @@ let main_loop ss =
                         (pointer_type (pointer_type llvalue_t));  (* array *)
                         i64_type; (* array length *)
                         double_type;
-                        pointer_type (function_type
+                        pointer_type (var_arg_function_type
                                         (pointer_type llvalue_t)
-                                        [| (pointer_type llvalue_t) |]);
+                                        [| i32_type |]);
                         i8_type;
                        |] in
   struct_set_body llvalue_t value_t_elts false;
+
+  let llvalist_t = named_struct_type context "__va_list_tag" in
+  let valist_t_elts = [| i32_type;
+                         i32_type;
+                         (pointer_type i8_type);
+                         (pointer_type i8_type) |] in
+  struct_set_body llvalist_t valist_t_elts false;
 
   (* Declare external functions *)
   let ft = function_type (pointer_type i8_type) [| i64_type |] in
