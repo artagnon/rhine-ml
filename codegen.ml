@@ -195,36 +195,56 @@ let rec extract_args s =
     Ast.List(se) -> List.map codegen_sexpr se
   | _ -> raise (Error "Expected list")
 
+and codegen_is_dbl el =
+  build_icmp Icmp.Eq (get_type el) (const_int i32_type 6) "dbl?" builder
+
 and codegen_atom_op op args =
   let hd = List.hd args in
   let atype = get_type hd in
   let unboxed_value = match op with
       "int?" -> build_icmp Icmp.Eq atype (const_int i32_type 1) "int?" builder
-    | "dbl?" -> build_icmp Icmp.Eq atype (const_int i32_type 6) "dbl?" builder
+    | "dbl?" -> codegen_is_dbl hd
     | "ar?" -> build_icmp Icmp.Eq atype (const_int i32_type 4) "ar?" builder
     | _ -> raise (Error "Unknown atom op") in
   box_value unboxed_value
 
+and to_dbl el =
+  let condf () = codegen_is_dbl el in
+  let truef () = unbox_dbl el in
+  let falsef () = let iel = unbox_int el in
+                  build_sitofp iel double_type "sitofp" builder in
+  codegen_if condf truef falsef
+
 and codegen_arith_op op args =
-  let hd = unbox_int (List.hd args) in
+  let hd = List.hd args in
   let tl = List.tl args in
-  let unboxed_value =
-    if tl == [] then hd else
-      let snd = List.nth args 1 in
-      match op with
-        "+" -> build_add hd (unbox_int (codegen_arith_op op tl))
-                         "add" builder
-      | "-" -> let usnd = unbox_int snd in
-               build_sub hd usnd "sub" builder
-      | "/" -> let usnd = unbox_dbl snd in
-               build_fdiv hd usnd "div" builder
-      | "*" -> build_mul hd (unbox_int (codegen_arith_op op tl))
-                         "mul" builder
-      | "%" -> let usnd = unbox_int snd in
-               build_udiv hd usnd "div" builder
-      | "^" -> const_int i32_type 0
-      | _ -> raise (Error "Unknown arithmetic operator") in
-  box_value unboxed_value
+  if tl == [] then hd else
+    let snd = List.nth args 1 in
+    let condf () = unbox_bool (codegen_or (box_value (codegen_is_dbl hd))
+                                          (box_value (codegen_is_dbl snd))) in
+    let trueff f () = let dhd = to_dbl hd in
+                      let dsnd = to_dbl snd in
+                      box_value (f dhd dsnd "fop" builder) in
+    let falseff f () = let ihd = unbox_int hd in
+                       let isnd = unbox_int snd in
+                       box_value (f ihd isnd "iop" builder) in
+    match op with
+      "+" -> let truef = trueff build_fadd in
+             let falsef = falseff build_add in
+             codegen_if condf truef falsef
+    | "-" -> let truef = trueff build_fsub in
+             let falsef = falseff build_sub in
+             codegen_if condf truef falsef
+    | "/" -> trueff build_fdiv ()
+    | "*" -> let truef = trueff build_fmul in
+             let falsef = falseff build_mul in
+             codegen_if condf truef falsef
+    | "%" -> trueff build_udiv ()
+    | "^" -> const_int i32_type 0
+    | _ -> raise (Error "Unknown arithmetic operator")
+
+and codegen_or hd snd =
+  codegen_call_op "cor" [hd;snd]
 
 and codegen_logical_op op args =
   let hd = List.hd args in
@@ -234,7 +254,7 @@ and codegen_logical_op op args =
      let snd = List.nth args 1 in
      match op with
        "and" -> codegen_call_op "cand" [hd;snd]
-     | "or" -> codegen_call_op "cor" [hd;snd]
+     | "or" -> codegen_or hd snd
      | _ -> raise (Error "Unknown logical operator")
 
 and codegen_cmp_op op args =
