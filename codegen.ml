@@ -29,12 +29,15 @@ let atom_ops = List.fold_left (fun s k -> StringSet.add k s)
 let arith_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
                                [ "+"; "-"; "*"; "/"; "%"; "^" ]
+
 let logical_ops = List.fold_left (fun s k -> StringSet.add k s)
                                  StringSet.empty
                                  [ "and"; "or"; "not" ]
+
 let cmp_ops = List.fold_left (fun s k -> StringSet.add k s)
                              StringSet.empty
                              [ "<"; ">"; "<="; ">="; "=" ]
+
 let array_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
                                [ "first"; "rest"; "cons"; "length" ]
@@ -69,17 +72,22 @@ let build_malloc llsize llt id builder =
 let build_strlen llv =
   let callee = match lookup_function "strlen" the_module with
       Some callee -> callee
-    | None -> raise (Error "Unknown function referenced") in
+    | None -> raise (Error "strlen function undeclared") in
   build_call callee [| llv |] "strlen" builder
 
 let build_memcpy src dst llsize =
   let callee = match lookup_function "llvm.memcpy.p0i8.p0i8.i64" the_module with
       Some callee -> callee
-    | None -> raise (Error "Unknown function referenced") in
+    | None -> raise (Error "memcpy function undeclared") in
   build_call callee [| dst; src; llsize;
                        const_int i32_type 0;
                        const_int i1_type 0 |] "" builder
 
+let build_pow base exp =
+  let callee = match lookup_function "llvm.pow.f64" the_module with
+      Some callee -> callee
+    | None -> raise (Error "pow function undeclared") in
+  build_call callee [| base; exp |] "pow" builder
 
 let idx n = [| const_int i32_type 0; const_int i32_type n |]
 
@@ -231,6 +239,7 @@ and codegen_arith_op op args =
   let hd = List.hd args in
   let tl = List.tl args in
   if tl == [] then hd else
+    let snd = List.nth args 1 in
     let is_dbl_list = List.map (fun i -> box_value (is_dbl i)) args in
     let condf () = unbox_bool (codegen_logical_op "or" is_dbl_list) in
     let trueff f () = let dhd = to_dbl hd in
@@ -251,9 +260,11 @@ and codegen_arith_op op args =
              let falsef = falseff build_mul in
              codegen_if condf truef falsef
     | "%" -> let ihd = to_int hd in
-             let isnd = to_int (codegen_arith_op op tl) in
+             let isnd = to_int snd in
              box_value (build_udiv ihd isnd "iop" builder)
-    | "^" -> box_value (const_int i64_type 0)
+    | "^" -> let dhd = to_dbl hd in
+             let dsnd = to_dbl snd in
+             box_value (build_pow dhd dsnd)
     | _ -> raise (Error "Unknown arithmetic operator")
 
 and codegen_logical_op op args =

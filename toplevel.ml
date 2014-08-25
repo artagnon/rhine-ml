@@ -102,6 +102,8 @@ let main_loop ss =
                          [| pointer_type i8_type; pointer_type i8_type;
                             i64_type; i32_type; i1_type |] in
   ignore (declare_function "llvm.memcpy.p0i8.p0i8.i64" ft the_module);
+  let ft = function_type double_type [| double_type; double_type |] in
+  ignore (declare_function "llvm.pow.f64" ft the_module);
   let ft = function_type void_type [| pointer_type i8_type |] in
   ignore (declare_function "llvm.va_start" ft the_module);
   let ft = function_type void_type [| pointer_type i8_type |] in
