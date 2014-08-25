@@ -10,6 +10,8 @@ let parse_defn_form = function
     Ast.Atom(Ast.Symbol(sym))::Ast.Vector(v)::
       Ast.Atom(Ast.String(_))::body |
     Ast.Atom(Ast.Symbol(sym))::Ast.Vector(v)::body ->
+     if body == [] then
+       raise (Error "Empty function definition");
      Ast.Defn(sym, extract_strings v, body)
     | se -> raise (Error ("Malformed defn form:" ^ ppsexprl se))
 
