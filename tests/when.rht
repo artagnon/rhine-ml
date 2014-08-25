@@ -1,4 +1,4 @@
 (when (= false true) (println 43))
 (when (= true true) (println 42))
---
+---
 (int) 42

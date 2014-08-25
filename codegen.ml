@@ -28,9 +28,13 @@ let atom_ops = List.fold_left (fun s k -> StringSet.add k s)
 
 let arith_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
-                               [ "+"; "-"; "*"; "/"; "/."; "<"; ">"; "%"; "^";
-                                 "<="; ">="; "="; "and"; "or"; "not" ]
-
+                               [ "+"; "-"; "*"; "/"; "%"; "^" ]
+let logical_ops = List.fold_left (fun s k -> StringSet.add k s)
+                                 StringSet.empty
+                                 [ "and"; "or"; "not" ]
+let cmp_ops = List.fold_left (fun s k -> StringSet.add k s)
+                             StringSet.empty
+                             [ "<"; ">"; "<="; ">="; "=" ]
 let array_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
                                [ "first"; "rest"; "cons"; "length" ]
@@ -202,28 +206,55 @@ and codegen_atom_op op args =
   box_value unboxed_value
 
 and codegen_arith_op op args =
-  let hd = List.hd args in
+  let hd = unbox_int (List.hd args) in
   let tl = List.tl args in
+  let unboxed_value =
+    if tl == [] then hd else
+      let snd = List.nth args 1 in
+      match op with
+        "+" -> build_add hd (unbox_int (codegen_arith_op op tl))
+                         "add" builder
+      | "-" -> let usnd = unbox_int snd in
+               build_sub hd usnd "sub" builder
+      | "/" -> let usnd = unbox_dbl snd in
+               build_fdiv hd usnd "div" builder
+      | "*" -> build_mul hd (unbox_int (codegen_arith_op op tl))
+                         "mul" builder
+      | "%" -> let usnd = unbox_int snd in
+               build_udiv hd usnd "div" builder
+      | "^" -> const_int i32_type 0
+      | _ -> raise (Error "Unknown arithmetic operator") in
+  box_value unboxed_value
+
+and codegen_logical_op op args =
+  let hd = List.hd args in
   match op with
     "not" -> codegen_call_op "cnot" [hd]
   | _ ->
-     if tl == [] then hd else
-       let snd = List.nth args 1 in
-       match op with
-         "+" -> codegen_call_op "cadd" [hd;(codegen_arith_op op tl)]
-       | "-" -> codegen_call_op "csub" [hd;snd]
-       | "/" -> codegen_call_op "cdiv" [hd;snd]
-       | "*" -> codegen_call_op "cmul" [hd;(codegen_arith_op op tl)]
-       | "%" -> codegen_call_op "cmod" [hd;snd]
-       | "^" -> codegen_call_op "cexponent" [hd;snd]
-       | "<" -> codegen_call_op "clt" [hd;snd]
-       | ">" -> codegen_call_op "cgt" [hd;snd]
-       | "<=" -> codegen_call_op "clte" [hd;snd]
-       | ">=" -> codegen_call_op "cgte" [hd;snd]
-       | "=" -> codegen_call_op "cequ" [hd;snd]
-       | "and" -> codegen_call_op "cand" [hd;snd]
-       | "or" -> codegen_call_op "cor" [hd;snd]
-       | _ -> raise (Error "Unknown arithmetic operator")
+     let snd = List.nth args 1 in
+     match op with
+       "and" -> codegen_call_op "cand" [hd;snd]
+     | "or" -> codegen_call_op "cor" [hd;snd]
+     | _ -> raise (Error "Unknown logical operator")
+
+and codegen_cmp_op op args =
+  let hd = List.hd args in
+  let snd = List.nth args 1 in
+  let unboxed_value =
+    match op with
+      "<" -> codegen_call_op "clt" [hd;snd]
+    | ">" -> codegen_call_op "cgt" [hd;snd]
+    | "<=" -> codegen_call_op "clte" [hd;snd]
+    | ">=" -> codegen_call_op "cgte" [hd;snd]
+    | "=" -> codegen_call_op "cequ" [hd;snd]
+    | _ -> raise (Error "Unknown comparison operator") in
+(*      "<" -> build_icmp Icmp.Ult hd snd "lt" builder
+    | ">" -> build_icmp Icmp.Ugt hd snd "gt" builder
+    | "<=" -> build_icmp Icmp.Ule hd snd "le" builder
+    | ">=" -> build_icmp Icmp.Uge hd snd "ge" builder
+    | "=" -> build_icmp Icmp.Eq hd snd "eq" builder
+    | _ -> raise (Error "Unknown comparison operator") in *)
+  unboxed_value
 
 and codegen_array_op op args =
   let value_t = match type_by_name the_module "value_t" with
@@ -477,6 +508,10 @@ and match_action s s2 =
       codegen_atom_op s args
     else if StringSet.mem s arith_ops then
       codegen_arith_op s args
+    else if StringSet.mem s logical_ops then
+      codegen_logical_op s args
+    else if StringSet.mem s cmp_ops then
+      codegen_cmp_op s args
     else if StringSet.mem s array_ops then
       codegen_array_op s args
     else if StringSet.mem s string_ops then
