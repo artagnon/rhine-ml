@@ -12,6 +12,7 @@ rule token = parse
  | [' ' '\t' '\r' '\n'] { token lexbuf }
  | ";;" { comment lexbuf }
  | '`' { SQUOTE }
+ | '~' { UNQUOTE }
  | '(' { LPAREN }
  | ')' { RPAREN }
  | '[' { LSQBR }

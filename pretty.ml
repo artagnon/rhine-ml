@@ -25,6 +25,7 @@ let rec ppsexpr p =
   match p with
     Atom(a) -> ppatom a
   | SQuote(se) -> sprintf "`%s" (ppsexpr se)
+  | Unquote(se) -> sprintf "~%s" (ppsexpr se)
   | List(sel) -> sprintf "(%s)" (List.fold_left lfolder "" sel)
   | Vector(qs) -> sprintf "[%s]" (List.fold_left vfolder "" qs)
   | _ -> raise (Error "Don't know how to print cooked AST")
