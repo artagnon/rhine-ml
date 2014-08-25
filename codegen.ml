@@ -286,21 +286,15 @@ and codegen_logical_op op args =
 and codegen_cmp_op op args =
   let hd = List.hd args in
   let snd = List.nth args 1 in
-  let unboxed_value =
-    match op with
-      "<" -> codegen_call_op "clt" [hd;snd]
-    | ">" -> codegen_call_op "cgt" [hd;snd]
-    | "<=" -> codegen_call_op "clte" [hd;snd]
-    | ">=" -> codegen_call_op "cgte" [hd;snd]
-    | "=" -> codegen_call_op "cequ" [hd;snd]
-    | _ -> raise (Error "Unknown comparison operator") in
-(*      "<" -> build_icmp Icmp.Ult hd snd "lt" builder
-    | ">" -> build_icmp Icmp.Ugt hd snd "gt" builder
-    | "<=" -> build_icmp Icmp.Ule hd snd "le" builder
-    | ">=" -> build_icmp Icmp.Uge hd snd "ge" builder
-    | "=" -> build_icmp Icmp.Eq hd snd "eq" builder
-    | _ -> raise (Error "Unknown comparison operator") in *)
-  unboxed_value
+  let uhd = to_int hd in
+  let usnd = to_int snd in
+  match op with
+    "<" -> box_value (build_icmp Icmp.Slt uhd usnd "lt" builder)
+  | ">" -> box_value (build_icmp Icmp.Sgt uhd usnd "gt" builder)
+  | "<=" -> box_value (build_icmp Icmp.Sle uhd usnd "le" builder)
+  | ">=" -> box_value (build_icmp Icmp.Sge uhd usnd "ge" builder)
+  | "=" -> codegen_call_op "cequ" [hd;snd]
+  | _ -> raise (Error "Unknown comparison operator")
 
 and codegen_array_op op args =
   let value_t = match type_by_name the_module "value_t" with
