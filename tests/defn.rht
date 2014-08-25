@@ -1,13 +1,16 @@
 (defn test1 [b] b)
 (defn test2 [a b] (+ a b))
+(defn test3 [a b c] (if true (* a b c) []))
 (defn test4 [] 8)
 (defn test5 [a] "optional docstring" a)
 (println (test1 55))
 (println (test2 55 66))
+(println (test3 55 66 22))
 (println (test4))
 (println (test5 42))
 ---
 (int) 55
 (int) 121
+(int) 79860
 (int) 8
 (int) 42
