@@ -1,12 +1,16 @@
 (println (and true false))
 (println (and true true))
+(println (and true true false))
 (println (or true false))
 (println (or false false))
+(println (or false false true))
 (println (not false))
 ---
 (bool) false
 (bool) true
+(bool) false
 (bool) true
 (bool) false
+(bool) true
 (bool) true
 
