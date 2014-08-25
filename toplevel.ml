@@ -98,13 +98,13 @@ let main_loop ss =
   ignore (declare_function "malloc" ft the_module);
   let ft = function_type i64_type [| pointer_type i8_type |] in
   ignore (declare_function "strlen" ft the_module);
-  let ft = function_type i32_type
+  let ft = function_type void_type
                          [| pointer_type i8_type; pointer_type i8_type;
                             i64_type; i32_type; i1_type |] in
   ignore (declare_function "llvm.memcpy.p0i8.p0i8.i64" ft the_module);
-  let ft = function_type i32_type [| pointer_type i8_type |] in
+  let ft = function_type void_type [| pointer_type i8_type |] in
   ignore (declare_function "llvm.va_start" ft the_module);
-  let ft = function_type i32_type [| pointer_type i8_type |] in
+  let ft = function_type void_type [| pointer_type i8_type |] in
   ignore (declare_function "llvm.va_end" ft the_module);
   ignore (codegen_proto (Ast.Prototype("println", Array.make 1 "v")));
   ignore (codegen_proto (Ast.Prototype("print", Array.make 1 "v")));

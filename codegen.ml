@@ -74,7 +74,7 @@ let build_memcpy src dst llsize =
     | None -> raise (Error "Unknown function referenced") in
   build_call callee [| dst; src; llsize;
                        const_int i32_type 0;
-                       const_int i1_type 0 |] "memcpy" builder
+                       const_int i1_type 0 |] "" builder
 
 
 let idx n = [| const_int i32_type 0; const_int i32_type n |]
