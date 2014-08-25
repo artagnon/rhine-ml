@@ -9,6 +9,7 @@ type atom =
 
 type sexpr =
     Atom of atom
+  | SQuote of sexpr
   | List of sexpr list
   | Vector of sexpr list
   | Defn of string * string list * sexpr list

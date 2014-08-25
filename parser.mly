@@ -1,6 +1,6 @@
 %{ open Ast %}
 
-%token LPAREN RPAREN LSQBR RSQBR NIL TRUE FALSE EOF
+%token SQUOTE LPAREN RPAREN LSQBR RSQBR NIL TRUE FALSE EOF
 %token <int> INTEGER
 %token <float> DOUBLE
 %token <string> SYMBOL
@@ -15,7 +15,7 @@
 %%
 
 prog:
-    sexprs EOF { Prog($1) }
+   sexprs EOF { Prog($1) }
 
 atom:
    NIL { Nil }
@@ -31,12 +31,16 @@ sexpr:
    atom { Atom($1) }
  | LPAREN sexprs RPAREN { List($2) }
 
-qsexpr:
-    LSQBR sexprs RSQBR { Vector($2) }
-  | LSQBR RSQBR { Vector([]) }
+vsexpr:
+   LSQBR sexprs RSQBR { Vector($2) }
+ | LSQBR RSQBR { Vector([]) }
 
 sexprs:
    sexpr sexprs { $1::$2 }
- | qsexpr sexprs { $1::$2 }
+ | SQUOTE sexpr sexprs { SQuote($2)::$3 }
+ | vsexpr sexprs { $1::$2 }
+ | SQUOTE vsexpr sexprs { SQuote($2)::$3 }
  | sexpr { [$1] }
- | qsexpr { [$1] }
+ | SQUOTE sexpr { [SQuote($2)] }
+ | vsexpr { [$1] }
+ | SQUOTE vsexpr { [SQuote($2)] }

@@ -577,7 +577,8 @@ and codegen_sexpr_list sl =
                       end
                     | Ast.Atom n -> codegen_atom n
                     | Ast.Vector(qs) -> codegen_array qs
-                    | _ -> raise (Error ("Can't codegen that"))) sl in
+                    | _ -> raise (Error ("Can't codegen: " ^
+                                           (Pretty.ppsexpr se)))) sl in
   List.hd (List.rev r)
 
 and codegen_array qs =
