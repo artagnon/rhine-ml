@@ -44,4 +44,9 @@
           (map f (rest coll)))
     []))
 
-
+(defn map2
+  [f c1 c2]
+  (if (not (or (= [] c1) (= [] c2)))
+    (cons (f (first c1) (first c2))
+          (map2 f (rest c1) (rest c2)))
+    []))
