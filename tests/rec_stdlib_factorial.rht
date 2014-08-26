@@ -1,3 +1,0 @@
-(print (factorial 5))
----
-(int) 120
