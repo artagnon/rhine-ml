@@ -26,8 +26,12 @@ let sexpr_matcher sexpr =
     | None -> raise (Error "Could not look up value_t") in
   match sexpr with
     Ast.Defn(sym, args, body) ->
-    codegen_func(Ast.Function(Ast.Prototype(sym, Array.of_list args),
-                              body)), false
+    let f = codegen_func(Ast.Function(Ast.Prototype(sym, Array.of_list args),
+                                      body)) in
+    Ast.ParsedFunction(f, false)
+  | Ast.Defmacro(sym, args, body) ->
+     Hashtbl.add named_macros sym (Ast.Macro(Array.of_list args, body));
+     Ast.ParsedMacro
   | Ast.Def(sym, expr) ->
      (* Emit initializer function *)
      let the_function = codegen_proto (Ast.Prototype("", [||])) ~main_p:true in
@@ -38,27 +42,28 @@ let sexpr_matcher sexpr =
      let global = define_global sym (const_null value_t) the_module in
      ignore (build_store llexpr global builder);
      ignore (build_ret (const_int i64_type 0) builder);
-     the_function, true
-  | Ast.AnonCall(body) -> emit_anonymous_f body, true
+     Ast.ParsedFunction(the_function, true)
+  | Ast.AnonCall(body) -> Ast.ParsedFunction(emit_anonymous_f body, true)
   | _ -> raise (Error "Invalid toplevel form")
 
 let print_and_jit se =
-  let f, main_p = sexpr_matcher se in
+  match sexpr_matcher se with
+    Ast.ParsedFunction(f, main_p) ->
+    (* Validate the generated code, checking for consistency. *)
+    (* Llvm_analysis.assert_valid_function f;*)
 
-  (* Validate the generated code, checking for consistency. *)
-  (* Llvm_analysis.assert_valid_function f;*)
+    (* Optimize the function. *)
+    ignore (PassManager.run_function f the_fpm);
 
-  (* Optimize the function. *)
-  ignore (PassManager.run_function f the_fpm);
+    dump_value f;
 
-  dump_value f;
-
-  if main_p then (
-    let result = ExecutionEngine.run_function f [||] the_execution_engine in
-    print_string "Evaluated to ";
-    print_int (GenericValue.as_int result);
-    print_newline ()
-  )
+    if main_p then (
+      let result = ExecutionEngine.run_function f [||] the_execution_engine in
+      print_string "Evaluated to ";
+      print_int (GenericValue.as_int result);
+      print_newline ()
+    )
+    | Ast.ParsedMacro -> ()
 
 let main_loop ss =
   (* Do simple "peephole" optimizations and bit-twiddling optzn. *)

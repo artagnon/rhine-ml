@@ -13,6 +13,8 @@ toplevel.cmo: toplevel.ml
 	ocamlfind $(ocamlc) -c -package llvm -linkpkg $<
 %.cmo : %.ml
 	$(ocamlc) -c $<
+ast.cmi: ast.mli
+	ocamlfind $(ocamlc) -c -package llvm -linkpkg $<
 %.cmi : %.mli
 	$(ocamlc) -c $<
 %.o   : %.c

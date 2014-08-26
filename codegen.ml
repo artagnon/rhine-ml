@@ -8,6 +8,7 @@ let context = global_context ()
 let the_module = create_module context "Rhine JIT"
 let builder = builder context
 let named_values:(string, llvalue) Hashtbl.t = Hashtbl.create 10
+let named_macros:(string, Ast.macro) Hashtbl.t = Hashtbl.create 10
 let i8_type = i8_type context
 let i32_type = i32_type context
 let i64_type = i64_type context
