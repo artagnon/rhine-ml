@@ -90,6 +90,7 @@ let build_pow base exp =
   build_call callee [| base; exp |] "pow" builder
 
 let idx n = [| const_int i32_type 0; const_int i32_type n |]
+let idx_ n = [| const_int i32_type n |]
 
 let box_value ?(lllen = const_null i32_type) llval =
   let value_t = lookupt_or_die "value_t" in
@@ -168,6 +169,18 @@ let unbox_ar llval =
   let dst = build_in_bounds_gep llval (idx 4) "boxptr" builder in
   build_load dst "load" builder
 
+let unresolved_err n () = raise (Error ("Symbol unbound: " ^ n))
+
+let resolve_name n unresolvedf =
+  match lookup_global n the_module with
+    Some v -> v
+  | None ->
+     match lookup_function n the_module with
+       Some f -> box_value f
+     | None ->
+        try Hashtbl.find named_values n with
+          Not_found -> unresolvedf n ()
+
 let codegen_atom atom =
   let value_t = lookupt_or_die "value_t" in
   let unboxed_value = match atom with
@@ -177,14 +190,7 @@ let codegen_atom atom =
     | Ast.Char c -> const_int i8_type (int_of_char c)
     | Ast.Nil -> const_null (pointer_type value_t)
     | Ast.String s -> build_global_stringptr s "string" builder
-    | Ast.Symbol n -> match lookup_global n the_module with
-                        Some v -> v
-                      | None ->
-                         match lookup_function n the_module with
-                           Some f -> box_value f
-                         | None ->
-                            try Hashtbl.find named_values n with
-                              Not_found -> raise (Error ("Symbol unbound:" ^ n))
+    | Ast.Symbol n -> resolve_name n unresolved_err
   in match atom with
        Ast.Symbol n -> unboxed_value
      | Ast.Nil -> unboxed_value
@@ -304,13 +310,11 @@ and codegen_array_op op args =
      let condf () = unbox_bool (codegen_atom_op "ar?" [arg]) in
      let truef () =
        let el = unbox_ar arg in
-       let newptr = build_in_bounds_gep el [| const_int i64_type 1 |]
-                                        "rest" builder in
+       let newptr = build_in_bounds_gep el (idx_ 1) "rest" builder in
        box_value ~lllen:newlen newptr in
      let falsef () =
        let el = unbox_str arg in
-       let newptr = build_in_bounds_gep el [| const_int i64_type 1 |]
-                                         "rest" builder in
+       let newptr = build_in_bounds_gep el (idx_ 1) "rest" builder in
        box_value ~lllen:newlen newptr in
      codegen_if condf truef falsef
   | "length" ->
@@ -325,10 +329,8 @@ and codegen_array_op op args =
      let newlen = build_add len (const_int i64_type 1) "conslen" builder in
      let newsize = build_mul newlen sizeof "newsize" builder in
      let ptr = build_malloc newsize (pointer_type value_t) "malloc" builder in
-     let ptrhead = build_in_bounds_gep ptr [| const_int i32_type 0 |]
-                                       "ptrhead" builder in
-     let ptrrest = build_in_bounds_gep ptr [| const_int i32_type 1 |]
-                                       "ptrrest" builder in
+     let ptrhead = build_in_bounds_gep ptr (idx_ 0) "ptrhead" builder in
+     let ptrrest = build_in_bounds_gep ptr (idx_ 1) "ptrrest" builder in
      let tailptr = build_in_bounds_gep tail (idx 4) "ptrhead" builder in
      let tailel = build_load tailptr "tailptr" builder in
      let rawsrc = build_bitcast tailel (pointer_type i8_type)
@@ -351,8 +353,7 @@ and codegen_string_op op s2 =
       let arg = List.hd s2 in
       let str = unbox_str arg in
       let len = unbox_length arg in
-      let size = build_mul (size_of rharel_type)
-                         len "size" builder in
+      let size = build_mul (size_of rharel_type) len "size" builder in
       let newar = build_malloc size rharel_type "newar" builder in
 
       let var_name = "i" in
@@ -485,11 +486,14 @@ and codegen_call_op f args =
   in
   let nargs = const_int i32_type (List.length args) in
   let rharel_type = pointer_type value_t in
-  let envar = build_malloc (size_of rharel_type) rharel_type "envar" builder in
-  let env = build_in_bounds_gep envar
-                                [| const_int i32_type 0 |] "env" builder in
-  ignore (build_store (codegen_atom (Ast.Int 8)) env builder);
-  let args = Array.of_list (nargs::env::args) in
+  let len = const_int i64_type 8 in
+  let size = build_mul (size_of rharel_type) len "size" builder in
+  let envar = build_malloc size rharel_type "envar" builder in
+  let ptr n = build_in_bounds_gep envar (idx_ n) "arptr" builder in
+  let llenvel = List.map (fun i -> codegen_atom (Ast.Int i)) (0--7) in
+  List.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llenvel;
+
+  let args = Array.of_list (nargs::(ptr 0)::args) in
   build_call callee args "call" builder;
 
 and codegen_binding_op f s2 =
@@ -646,16 +650,58 @@ let codegen_proto ?(main_p = false) p =
          raise (Error "redefinition of function with different # args");
        f
 
-let extract_env_vars body = [| "env" |]
+let extract_unbound_names n =
+  match lookup_global n the_module with
+    Some v -> []
+  | None ->
+     match lookup_function n the_module with
+       Some f -> []
+     | None -> [n]
 
-let codegen_splice_env llenv body =
-  let env_vars = extract_env_vars body in
-  Array.iteri (fun i n ->
-               let elptr = build_in_bounds_gep
-                             llenv [| const_int i32_type i |] "elptr" builder in
-               let el = build_load elptr "el" builder in
-               Hashtbl.add named_values n el;
-              ) env_vars
+let extracta_env_vars a =
+  match a with
+    Ast.Symbol n -> extract_unbound_names n
+  | _ -> []
+
+let rec append_env_vars a b =
+  List.append a (extract_env_vars b)
+
+and extract_env_vars se =
+  match se with
+    Ast.Atom n -> extracta_env_vars n
+  | Ast.Vector(qs) -> List.fold_left append_env_vars [] qs
+  | Ast.List(Ast.Atom(Ast.Symbol s)::s2) ->
+     List.fold_left append_env_vars [] s2
+  | _ -> raise (Error "Expected atom, vector, or function call")
+
+let extractl_env_vars body =
+  let r = List.map (fun se ->
+                    match se with
+                      Ast.List(l2) ->
+                      begin match l2 with
+                              Ast.Atom(Ast.Symbol s)::s2 ->
+                              List.fold_left append_env_vars [] s2
+                            | _ -> raise (Error "Expected symbol")
+                      end
+                    | Ast.Atom n -> extracta_env_vars n
+                    | Ast.Vector(qs) -> List.fold_left append_env_vars [] qs
+                    | _ -> raise (Error ("Can't extractl_env_vars: " ^
+                                           (Pretty.ppsexpr se)))) body in
+  List.flatten r
+
+let codegen_splice_env llenv args body =
+  let evraw = extractl_env_vars body in
+  let evraw_set = List.fold_left (fun s k -> StringSet.add k s)
+                                    StringSet.empty evraw in
+  let args_set = Array.fold_left (fun s k -> StringSet.add k s)
+                                 StringSet.empty args in
+  let env_vars = StringSet.elements (StringSet.diff evraw_set args_set) in
+  List.iteri (fun i n ->
+              let elptr = build_in_bounds_gep
+                            llenv (idx_ i) "elptr" builder in
+              let el = build_load elptr "el" builder in
+              Hashtbl.add named_values n el;
+             ) env_vars
 
 let codegen_func ?(main_p = false) f = match f with
     Ast.Function (proto, body) ->
@@ -673,7 +719,7 @@ let codegen_func ?(main_p = false) f = match f with
         else
           (let args = match proto with Ast.Prototype(name, args) -> args in
            codegen_unpack_args args;
-           codegen_splice_env (param the_function 1) body;
+           codegen_splice_env (param the_function 1) args body;
            codegen_sexpr_list body) in
 
       (* Finish off the function. *)
