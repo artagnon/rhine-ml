@@ -1,18 +1,36 @@
 # Rhine
 
-Rhine is a dynamically typed Lisp-1 on LLVM. It intends to be a
-language for a programmable editor and is a recursive acronym for
-"Rhine is not Emacs". All values are boxed/ unboxed from a value_t
-structure at runtime. The structure can represent the fundamental
-types Int, String, and Array. Array is implemented as a const-size
-array of value_t* in the IR; this is because LLVM does not support
-arrays of variable size.
+Rhine is a dynamically typed Lisp-1 on LLVM, inspired by Clojure. All
+values are boxed/unboxed from a `value_t` structure at runtime:
 
-## Builtins
+```
+%value_t = type {
+	 i32,                                ; type of data
+	 i64,                                ; integer
+	 i1,                                 ; bool
+	 i8*,                                ; string
+	 %value_t**,                         ; array
+	 i64,                                ; array/string length
+	 double,                             ; double
+	 %value_t* (i32, %value_t**, ...)*,  ; function
+	 i8                                  ; char
+}
+```
 
-`+`, `-`, `*` work on N integers. `head` and `rest` work on
-arrays. `str-split` works on a string, `str-join` works on an array of
-strings.
+Note that LLVM arrays and vectors cannot be used since they are
+fixed-length. Instead, we have to malloc, getelementptr and store by
+hand.
+
+The function type is especially interesting: the first argument is the
+number of arguments, and the second argument is the closure
+environment (which has the same type as an array). It takes variable
+number of arguments primarily to make the type uniform, so as to
+implement first-class functions (function pointers).
+
+Rhine does automatic type conversions, so `(+ 3 4.2)` will do the
+right thing. To implement this, IR is generated to inspect the types
+of the operands (first member of `value_t`), and a br is used to take
+the right codepath.
 
 ## Building
 
@@ -39,3 +57,9 @@ strings.
   not work, since the callstack leading up to an LLVM call in C++ is
   not owned by OCaml. The alternative is to use lldb, but matching up
   the C++ call with a line in the OCaml code is non-trivial.
+
+- Implementing complex functions as builtins (by directly generating
+  IR) is perhaps more efficient than implementing them in Rhine, but
+  the gap is very small due to optimization passes applied on the
+  Rhine-generated IR. The marginal benefit outweighs the cost of
+  correctly weaving complex IR.
