@@ -53,10 +53,10 @@ void print_atom(struct value_t *v) {
 	}
 }
 
-extern struct value_t *print(int nargs, ...) {
+extern struct value_t *print(int nargs, struct value_t **env, ...) {
 	struct value_t *ret;
 	va_list ap;
-	va_start(ap, nargs);
+	va_start(ap, env);
 	struct value_t *v = va_arg(ap, struct value_t *);
 	print_atom(v);
 	va_end(ap);
@@ -66,10 +66,10 @@ extern struct value_t *print(int nargs, ...) {
 	return ret;
 }
 
-extern struct value_t *println(int nargs, ...) {
+extern struct value_t *println(int nargs, struct value_t **env, ...) {
 	struct value_t *ret;
 	va_list ap;
-	va_start(ap, nargs);
+	va_start(ap, env);
 	struct value_t *v = va_arg(ap, struct value_t *);
 	print_atom(v);
 	printf("\n");
@@ -97,11 +97,11 @@ struct value_t *save_value(double val, int ret_type) {
 	return ret;
 }
 
-extern struct value_t *cequ(int nargs, ...) {
+extern struct value_t *cequ(int nargs, struct value_t **env, ...) {
 	int ret_type = 0;
 	struct value_t *ret;
 	va_list ap;
-	va_start(ap, nargs);
+	va_start(ap, env);
 	struct value_t *v = va_arg(ap, struct value_t *);
 	struct value_t *v2 = va_arg(ap, struct value_t *);
 	va_end(ap);
@@ -140,10 +140,10 @@ extern struct value_t *cequ(int nargs, ...) {
 	return ret;
 }
 
-extern struct value_t *cstrjoin(int nargs, ...) {
+extern struct value_t *cstrjoin(int nargs, struct value_t **env, ...) {
 	struct value_t *ret;
 	va_list ap;
-	va_start(ap, nargs);
+	va_start(ap, env);
 	struct value_t *v = va_arg(ap, struct value_t *);
 	va_end(ap);
 	int i = 0;

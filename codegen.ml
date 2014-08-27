@@ -101,11 +101,12 @@ let box_value ?(lllen = const_null i32_type) llval =
       Some t -> t
     | None -> raise (Error "Could not look up value_t")
   in
+  let pvalue_t = pointer_type value_t in
   let value_ptr = build_malloc (size_of value_t) value_t "value" builder in
   let match_pointer ty = match ty with
     | ty when ty = pointer_type (var_arg_function_type
-                                   (pointer_type value_t)
-                                   [| i32_type |]) ->
+                                   pvalue_t
+                                   [| i32_type; pointer_type pvalue_t |]) ->
        (7, llval)
     | _ ->
        match element_type ty with
@@ -491,6 +492,9 @@ and codegen_cf_op op s2 =
   | _ -> raise (Error "Unknown control flow operation")
 
 and codegen_call_op f args =
+  let value_t = match type_by_name the_module "value_t" with
+      Some t -> t
+    | None -> raise (Error "Could not look up value_t") in
   let callee = match lookup_function f the_module with
       Some callee -> callee
     | None ->
@@ -498,7 +502,13 @@ and codegen_call_op f args =
                  Not_found -> raise (Error ("Unknown function: " ^ f)) in
        unbox_function v
   in
-  let args = Array.of_list ((const_int i32_type (List.length args))::args) in
+  let nargs = const_int i32_type (List.length args) in
+  let rharel_type = pointer_type value_t in
+  let envar = build_malloc (size_of rharel_type) rharel_type "envar" builder in
+  let env = build_in_bounds_gep envar
+                                [| const_int i32_type 0 |] "env" builder in
+  ignore (build_store (codegen_atom (Ast.Int 8)) env builder);
+  let args = Array.of_list (nargs::env::args) in
   build_call callee args "call" builder;
 
 and codegen_binding_op f s2 =
@@ -642,10 +652,11 @@ let codegen_proto ?(main_p = false) p =
   match p with
     Ast.Prototype (name, args) ->
     let pvalue_t = pointer_type value_t in
+    let env_t = pointer_type pvalue_t in
     let ft = if main_p then
                function_type i64_type [||]
              else
-               var_arg_function_type pvalue_t [| i32_type |] in
+               var_arg_function_type pvalue_t [| i32_type; env_t |] in
 
     match lookup_function name the_module with
       None -> declare_function name ft the_module
@@ -661,6 +672,17 @@ let codegen_proto ?(main_p = false) p =
        if element_type (type_of f) <> ft then
          raise (Error "redefinition of function with different # args");
        f
+
+let extract_env_vars body = [| "env" |]
+
+let codegen_splice_env llenv body =
+  let env_vars = extract_env_vars body in
+  Array.iteri (fun i n ->
+               let elptr = build_in_bounds_gep
+                             llenv [| const_int i32_type i |] "elptr" builder in
+               let el = build_load elptr "el" builder in
+               Hashtbl.add named_values n el;
+              ) env_vars
 
 let codegen_func ?(main_p = false) f = match f with
     Ast.Function (proto, body) ->
@@ -678,6 +700,7 @@ let codegen_func ?(main_p = false) f = match f with
         else
           (let args = match proto with Ast.Prototype(name, args) -> args in
            codegen_unpack_args args;
+           codegen_splice_env (param the_function 1) body;
            codegen_sexpr_list body) in
 
       (* Finish off the function. *)

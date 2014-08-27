@@ -82,28 +82,29 @@ let main_loop ss =
   ignore (PassManager.initialize the_fpm);
 
   (* Declare global variables/ types *)
-  let llvalue_t = named_struct_type context "value_t" in
+  let value_t = named_struct_type context "value_t" in
+  let pvalue_t = pointer_type value_t in
   (* 1 int, 2 bool, 3 str, 4 ar, 6 dbl, 7 fun, 8 char *)
   let value_t_elts = [| i32_type;                 (* value type of struct *)
                         i64_type;                 (* integer *)
                         i1_type;                  (* bool *)
                         (pointer_type i8_type);   (* string *)
-                        (pointer_type (pointer_type llvalue_t));  (* array *)
+                        (pointer_type pvalue_t);  (* array *)
                         i64_type; (* array length *)
                         double_type;
                         pointer_type (var_arg_function_type
-                                        (pointer_type llvalue_t)
-                                        [| i32_type |]);
+                                        pvalue_t
+                                        [| i32_type; pointer_type pvalue_t |]);
                         i8_type;
                        |] in
-  struct_set_body llvalue_t value_t_elts false;
+  struct_set_body value_t value_t_elts false;
 
-  let llvalist_t = named_struct_type context "__va_list_tag" in
+  let valist_t = named_struct_type context "__va_list_tag" in
   let valist_t_elts = [| i32_type;
                          i32_type;
                          (pointer_type i8_type);
                          (pointer_type i8_type) |] in
-  struct_set_body llvalist_t valist_t_elts false;
+  struct_set_body valist_t valist_t_elts false;
 
   (* Declare external functions *)
   let ft = function_type (pointer_type i8_type) [| i64_type |] in
