@@ -656,13 +656,17 @@ let codegen_proto ?(main_p = false) p =
          raise (Error "redefinition of function with different # args");
        f
 
+let bound_names:(string, bool) Hashtbl.t = Hashtbl.create 10
+
 let extract_unbound_names n =
   match lookup_global n the_module with
     Some v -> []
   | None ->
      match lookup_function n the_module with
        Some f -> []
-     | None -> [n]
+     | None ->
+        try ignore (Hashtbl.find bound_names n); [] with
+          Not_found -> [n]
 
 let extracta_env_vars a =
   match a with
@@ -680,13 +684,28 @@ and extract_env_vars se =
      List.fold_left append_env_vars [] s2
   | _ -> raise (Error "Expected atom, vector, or function call")
 
+let extractf_env_vars f s2 =
+  match f with
+    "let" ->
+    let bindlist, body = match s2 with
+        Ast.Vector(qs)::next -> qs, next
+      | _ -> raise (Error "Malformed let") in
+    let bind n =
+      let s = match n with
+          Ast.Atom(Ast.Symbol(s)) -> s
+        | _ -> raise (Error "Malformed binding form in let") in
+      Hashtbl.add bound_names s true in
+    List.iteri (fun i n -> if (i mod 2 == 0) then bind n) bindlist;
+    List.fold_left append_env_vars [] body
+  | _ -> List.fold_left append_env_vars [] s2
+
 let extractl_env_vars body =
   let r = List.map (fun se ->
                     match se with
                       Ast.List(l2) ->
                       begin match l2 with
                               Ast.Atom(Ast.Symbol s)::s2 ->
-                              List.fold_left append_env_vars [] s2
+                              extractf_env_vars s s2
                             | _ -> raise (Error "Expected symbol")
                       end
                     | Ast.Atom n -> extracta_env_vars n
@@ -697,12 +716,9 @@ let extractl_env_vars body =
 
 let codegen_splice_env llenv proto body =
   let fname, args = match proto with Ast.Prototype(n, a) -> n, a in
-  let evraw = extractl_env_vars body in
-  let evraw_set = List.fold_left (fun s k -> StringSet.add k s)
-                                    StringSet.empty evraw in
-  let args_set = Array.fold_left (fun s k -> StringSet.add k s)
-                                 StringSet.empty args in
-  let env_vars = StringSet.elements (StringSet.diff evraw_set args_set) in
+  Hashtbl.clear bound_names;
+  Array.iter (fun n -> Hashtbl.add bound_names n true) args;
+  let env_vars = extractl_env_vars body in
   List.iteri (fun i n ->
               let elptr = build_in_bounds_gep
                             llenv (idx_ i) "elptr" builder in

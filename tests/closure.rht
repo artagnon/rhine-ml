@@ -1,6 +1,10 @@
 (defn foo [] (println aenv) (println env))
 (defn bar [env aenv] (foo))
 (bar 8 4)
+(defn baz [a b] (let [env a aenv b] (foo)))
+(baz 7 9)
 ---
 (int) 4
 (int) 8
+(int) 9
+(int) 7
