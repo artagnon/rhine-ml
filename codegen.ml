@@ -9,6 +9,7 @@ let the_module = create_module context "Rhine JIT"
 let builder = builder context
 let named_values:(string, llvalue) Hashtbl.t = Hashtbl.create 10
 let named_macros:(string, Ast.macro) Hashtbl.t = Hashtbl.create 10
+let function_envs:(string, string list) Hashtbl.t = Hashtbl.create 50
 let i8_type = i8_type context
 let i32_type = i32_type context
 let i64_type = i64_type context
@@ -485,13 +486,18 @@ and codegen_call_op f args =
        unbox_function v
   in
   let nargs = const_int i32_type (List.length args) in
+
+  let env_vars = try Hashtbl.find function_envs f with
+                   Not_found -> [] (* builtins don't have env *) in
+  let nv_or_die v = try Hashtbl.find named_values v with
+                      Not_found -> raise (Error ("Variable unbound: " ^ v)) in
+  let llenv = List.map nv_or_die env_vars in
   let rharel_type = pointer_type value_t in
-  let len = const_int i64_type 8 in
+  let len = const_int i64_type (List.length llenv) in
   let size = build_mul (size_of rharel_type) len "size" builder in
   let envar = build_malloc size rharel_type "envar" builder in
   let ptr n = build_in_bounds_gep envar (idx_ n) "arptr" builder in
-  let llenvel = List.map (fun i -> codegen_atom (Ast.Int i)) (0--7) in
-  List.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llenvel;
+  List.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llenv;
 
   let args = Array.of_list (nargs::(ptr 0)::args) in
   build_call callee args "call" builder;
@@ -689,7 +695,8 @@ let extractl_env_vars body =
                                            (Pretty.ppsexpr se)))) body in
   List.flatten r
 
-let codegen_splice_env llenv args body =
+let codegen_splice_env llenv proto body =
+  let fname, args = match proto with Ast.Prototype(n, a) -> n, a in
   let evraw = extractl_env_vars body in
   let evraw_set = List.fold_left (fun s k -> StringSet.add k s)
                                     StringSet.empty evraw in
@@ -701,7 +708,8 @@ let codegen_splice_env llenv args body =
                             llenv (idx_ i) "elptr" builder in
               let el = build_load elptr "el" builder in
               Hashtbl.add named_values n el;
-             ) env_vars
+             ) env_vars;
+  Hashtbl.add function_envs fname env_vars
 
 let codegen_func ?(main_p = false) f = match f with
     Ast.Function (proto, body) ->
@@ -719,7 +727,7 @@ let codegen_func ?(main_p = false) f = match f with
         else
           (let args = match proto with Ast.Prototype(name, args) -> args in
            codegen_unpack_args args;
-           codegen_splice_env (param the_function 1) args body;
+           codegen_splice_env (param the_function 1) proto body;
            codegen_sexpr_list body) in
 
       (* Finish off the function. *)

@@ -1,0 +1,6 @@
+(defn foo [] (println aenv) (println env))
+(defn bar [env aenv] (foo))
+(bar 8 4)
+---
+(int) 4
+(int) 8
