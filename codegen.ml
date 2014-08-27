@@ -18,6 +18,16 @@ let void_type = void_type context
 
 let int_of_bool = function true -> 1 | false -> 0
 
+let lookupf_or_die name =
+  match lookup_function name the_module with
+    Some v -> v
+  | None -> raise (Error ("Unknown function: " ^ name))
+
+let lookupt_or_die name =
+  match type_by_name the_module name with
+    Some v -> v
+  | None -> raise (Error ("Unknown type: " ^ name))
+
 let (--) i j =
     let rec aux n acc =
       if n < i then acc else aux (n-1) (n :: acc)
@@ -56,38 +66,27 @@ let binding_ops = List.fold_left (fun s k -> StringSet.add k s)
                                  [ "let"; "def" ]
 
 let create_entry_block_alloca the_function var_name =
-  let value_t = match type_by_name the_module "value_t" with
-      Some t -> t
-    | None -> raise (Error "Could not look up value_t")
-  in
+  let value_t = lookupt_or_die "value_t" in
   let builder = builder_at context (instr_begin (entry_block the_function)) in
   build_alloca value_t var_name builder
 
 let build_malloc llsize llt id builder =
-  let callee = match lookup_function "malloc" the_module with
-      Some callee -> callee
-    | None -> raise (Error "Unknown function referenced") in
+  let callee = lookupf_or_die "malloc" in
   let raw_ptr = build_call callee [| llsize |] id builder in
   build_bitcast raw_ptr (pointer_type llt) "malloc_value" builder
 
 let build_strlen llv =
-  let callee = match lookup_function "strlen" the_module with
-      Some callee -> callee
-    | None -> raise (Error "strlen function undeclared") in
+  let callee = lookupf_or_die "strlen" in
   build_call callee [| llv |] "strlen" builder
 
 let build_memcpy src dst llsize =
-  let callee = match lookup_function "llvm.memcpy.p0i8.p0i8.i64" the_module with
-      Some callee -> callee
-    | None -> raise (Error "memcpy function undeclared") in
+  let callee = lookupf_or_die "llvm.memcpy.p0i8.p0i8.i64" in
   build_call callee [| dst; src; llsize;
                        const_int i32_type 0;
                        const_int i1_type 0 |] "" builder
 
 let build_pow base exp =
-  let callee = match lookup_function "llvm.pow.f64" the_module with
-      Some callee -> callee
-    | None -> raise (Error "pow function undeclared") in
+  let callee = lookupf_or_die "llvm.pow.f64" in
   build_call callee [| base; exp |] "pow" builder
 
 let idx n = [| const_int i32_type 0; const_int i32_type n |]
@@ -97,10 +96,7 @@ let undef_vec len =
   const_vector (Array.of_list undef_list)
 
 let box_value ?(lllen = const_null i32_type) llval =
-  let value_t = match type_by_name the_module "value_t" with
-      Some t -> t
-    | None -> raise (Error "Could not look up value_t")
-  in
+  let value_t = lookupt_or_die "value_t" in
   let pvalue_t = pointer_type value_t in
   let value_ptr = build_malloc (size_of value_t) value_t "value" builder in
   let match_pointer ty = match ty with
@@ -177,10 +173,7 @@ let unbox_ar llval =
   build_load dst "load" builder
 
 let codegen_atom atom =
-  let value_t = match type_by_name the_module "value_t" with
-      Some t -> t
-    | None -> raise (Error "Could not look up value_t")
-  in
+  let value_t = lookupt_or_die "value_t" in
   let unboxed_value = match atom with
       Ast.Int n -> const_int i64_type n
     | Ast.Bool n -> const_int i1_type (int_of_bool n)
@@ -300,9 +293,7 @@ and codegen_cmp_op op args =
   | _ -> raise (Error "Unknown comparison operator")
 
 and codegen_array_op op args =
-  let value_t = match type_by_name the_module "value_t" with
-      Some t -> t
-    | None -> raise (Error "Could not look up value_t") in
+  let value_t = lookupt_or_die "value_t" in
   let arg = List.hd args in
   match op with
     "first" ->
@@ -354,9 +345,7 @@ and codegen_array_op op args =
   | _ -> raise (Error "Unknown array operator")
 
 and codegen_string_op op s2 =
-  let value_t = match type_by_name the_module "value_t" with
-      Some t -> t
-    | None -> raise (Error "Could not look up value_t") in
+  let value_t = lookupt_or_die "value_t" in
   let rharel_type = pointer_type value_t in
   match op with
     "str-join" ->
@@ -434,9 +423,7 @@ and codegen_if condf truef falsef =
   phi
 
 and codegen_cf_op op s2 =
-  let value_t = match type_by_name the_module "value_t" with
-      Some t -> t
-    | None -> raise (Error "Could not look up value_t") in
+  let value_t = lookupt_or_die "value_t" in
   match op with
     "if" ->
     let condse, truese, falsese = match s2 with
@@ -492,9 +479,7 @@ and codegen_cf_op op s2 =
   | _ -> raise (Error "Unknown control flow operation")
 
 and codegen_call_op f args =
-  let value_t = match type_by_name the_module "value_t" with
-      Some t -> t
-    | None -> raise (Error "Could not look up value_t") in
+  let value_t = lookupt_or_die "value_t" in
   let callee = match lookup_function f the_module with
       Some callee -> callee
     | None ->
@@ -621,18 +606,10 @@ let build_va_arg_x86 ap argtype =
   build_load el "ret" builder
 
 let codegen_unpack_args args =
-  let value_t = match type_by_name the_module "value_t" with
-      Some t -> t
-    | None -> raise (Error "Could not look up value_t") in
-  let valist_t = match type_by_name the_module "__va_list_tag" with
-      Some t -> t
-    | None -> raise (Error "Could not look up valist_t") in
-  let va_start = match lookup_function "llvm.va_start" the_module with
-      Some f -> f
-    | None -> raise (Error "Could not find va_start") in
-  let va_end = match lookup_function "llvm.va_end" the_module with
-      Some f -> f
-    | None -> raise (Error "Could not find va_end") in
+  let value_t = lookupt_or_die "value_t" in
+  let valist_t = lookupt_or_die "__va_list_tag" in
+  let va_start = lookupf_or_die "llvm.va_start" in
+  let va_end = lookupf_or_die "llvm.va_end" in
   let ap = build_alloca valist_t "ap" builder in
   let ap2 = build_bitcast ap (pointer_type i8_type) "ap2" builder in
   ignore (build_call va_start [| ap2 |] "" builder);
