@@ -695,8 +695,14 @@ let extractf_env_vars f s2 =
           Ast.Atom(Ast.Symbol(s)) -> s
         | _ -> raise (Error "Malformed binding form in let") in
       Hashtbl.add bound_names s true in
-    List.iteri (fun i n -> if (i mod 2 == 0) then bind n) bindlist;
-    List.fold_left append_env_vars [] body
+    List.iteri (fun i n -> if i mod 2 == 0 then bind n) bindlist;
+
+    (* extract env vars from values in bindlist *)
+    let evl = List.mapi (fun i se -> if i mod 2 == 0 then []
+                                     else extract_env_vars se) bindlist in
+    let evs = List.fold_left List.append [] evl in
+    let body_evs = List.fold_left append_env_vars [] body in
+    List.append evs body_evs
   | _ -> List.fold_left append_env_vars [] s2
 
 let extractl_env_vars body =

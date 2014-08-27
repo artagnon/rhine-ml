@@ -3,8 +3,12 @@
 (bar 8 4)
 (defn baz [a b] (let [env a aenv b] (foo)))
 (baz 7 9)
+(defn quux [] (let [a aenv] (println a) (println env)))
+(println (let [env 12 aenv 17] (quux)))
 ---
 (int) 4
 (int) 8
 (int) 9
 (int) 7
+(int) 17
+(int) 12
