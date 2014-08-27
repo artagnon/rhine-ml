@@ -91,10 +91,6 @@ let build_pow base exp =
 
 let idx n = [| const_int i32_type 0; const_int i32_type n |]
 
-let undef_vec len =
-  let undef_list = List.map (fun i -> undef i64_type) (0--(len - 1)) in
-  const_vector (Array.of_list undef_list)
-
 let box_value ?(lllen = const_null i32_type) llval =
   let value_t = lookupt_or_die "value_t" in
   let pvalue_t = pointer_type value_t in
