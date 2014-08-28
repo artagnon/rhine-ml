@@ -216,10 +216,7 @@ let codegen_atom atom =
      | Ast.Nil -> unboxed_value
      | _ -> box_value unboxed_value
 
-let rec extract_args s =
-  match s with
-    Ast.List(se) -> List.map codegen_sexpr se
-  | _ -> raise (Error "Expected list")
+let rec extract_args sl = List.map codegen_sexpr sl
 
 and is_int el =
   build_icmp Icmp.Eq (get_type el) (const_int i32_type 1) "int?" builder
@@ -444,7 +441,7 @@ and codegen_cf_op op s2 =
   match op with
     "if" ->
     let condse, truese, falsese = match s2 with
-        Ast.List([c; t; f]) -> c, t, f
+        [c; t; f] -> c, t, f
       | _ -> raise (Error "Malformed if expression") in
     let condf () = unbox_bool (codegen_sexpr condse) in
     let truef () = codegen_sexpr truese in
@@ -452,7 +449,7 @@ and codegen_cf_op op s2 =
     codegen_if condf truef falsef
   | "when" ->
      let condse, truese = match s2 with
-         Ast.List([c; t]) -> c, t
+         [c; t] -> c, t
        | _ -> raise (Error "Malformed when expression") in
      let condf () = unbox_bool (codegen_sexpr condse) in
      let truef () = codegen_sexpr truese in
@@ -460,7 +457,7 @@ and codegen_cf_op op s2 =
      codegen_if condf truef falsef
   | "dotimes" ->
      let qs, body = match s2 with
-         Ast.List(Ast.Vector(qs)::body) -> qs, body
+         Ast.Vector(qs)::body -> qs, body
        | _ -> raise (Error "Malformed dotimes expression") in
      let var_name = match List.hd qs with
          Ast.Atom(Ast.Symbol(s)) -> s
@@ -513,11 +510,7 @@ and codegen_binding_op f s2 =
   match f with
     "let" ->
     let bindlist, body = match s2 with
-        Ast.List(l) ->
-        begin match l with
-                Ast.Vector(qs)::next -> qs, next
-              | _ -> raise (Error "Malformed let")
-        end
+        Ast.Vector(qs)::next -> qs, next
       | _ -> raise (Error "Malformed let") in
     let len = List.length bindlist in
     if len mod 2 != 0 then
@@ -572,7 +565,7 @@ and codegen_sexpr s = match s with
     Ast.Atom n -> codegen_atom n
   | Ast.Vector(qs) -> codegen_array qs
   | Ast.List(Ast.Atom(Ast.Symbol s)::s2) ->
-     match_action s (Ast.List s2)
+     match_action s s2
   | _ -> raise (Error "Expected atom, vector, or function call")
 
 and codegen_sexpr_list sl =
@@ -581,7 +574,7 @@ and codegen_sexpr_list sl =
                       Ast.List(l2) ->
                       begin match l2 with
                               Ast.Atom(Ast.Symbol s)::s2 ->
-                              match_action s (Ast.List s2)
+                              match_action s s2
                             | _ -> raise (Error "Expected symbol")
                       end
                     | Ast.Atom n -> codegen_atom n
