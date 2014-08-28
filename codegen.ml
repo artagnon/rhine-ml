@@ -93,6 +93,21 @@ let build_pow base exp =
 let idx n = [| const_int i32_type 0; const_int i32_type n |]
 let idx_ n = [| const_int i32_type n |]
 
+let codegen_function_env f =
+  let value_t = lookupt_or_die "value_t" in
+  let env_vars = try Hashtbl.find function_envs f with
+                   Not_found -> [] (* builtins don't have env *) in
+  let nv_or_die v = try Hashtbl.find named_values v with
+                      Not_found -> raise (Error ("Variable unbound: " ^ v)) in
+  let llenv = List.map nv_or_die env_vars in
+  let rharel_type = pointer_type value_t in
+  let len = const_int i64_type (List.length llenv) in
+  let size = build_mul (size_of rharel_type) len "size" builder in
+  let envar = build_malloc size rharel_type "envar" builder in
+  let ptr n = build_in_bounds_gep envar (idx_ n) "arptr" builder in
+  List.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llenv;
+  ptr 0
+
 let box_value ?(lllen = const_null i32_type) llval =
   let value_t = lookupt_or_die "value_t" in
   let pvalue_t = pointer_type value_t in
@@ -101,6 +116,9 @@ let box_value ?(lllen = const_null i32_type) llval =
     | ty when ty = pointer_type (var_arg_function_type
                                    pvalue_t
                                    [| i32_type; pointer_type pvalue_t |]) ->
+       let fenv_ptr = build_in_bounds_gep value_ptr (idx 9) "boxptr" builder in
+       let fenv = codegen_function_env (value_name llval) in
+       ignore (build_store fenv fenv_ptr builder);
        (7, llval)
     | _ ->
        match element_type ty with
@@ -155,8 +173,9 @@ let unbox_bool llval =
   build_load dst "load" builder
 
 let unbox_function llval =
-  let dst = build_in_bounds_gep llval (idx 7) "boxptr" builder in
-  build_load dst "load" builder
+  let func = build_in_bounds_gep llval (idx 7) "boxptr" builder in
+  let fenv = build_in_bounds_gep llval (idx 9) "boxptr" builder in
+  build_load func "func" builder, build_load fenv "fenv" builder
 
 let unbox_str llval =
   let dst = build_in_bounds_gep llval (idx 3) "boxptr" builder in
@@ -477,29 +496,16 @@ and codegen_cf_op op s2 =
   | _ -> raise (Error "Unknown control flow operation")
 
 and codegen_call_op f args =
-  let value_t = lookupt_or_die "value_t" in
-  let callee = match lookup_function f the_module with
-      Some callee -> callee
+  let nargs = const_int i32_type (List.length args) in
+  let callee, env = match lookup_function f the_module with
+      Some callee ->
+      let env = codegen_function_env f in
+      callee, env
     | None ->
        let v = try Hashtbl.find named_values f with
                  Not_found -> raise (Error ("Unknown function: " ^ f)) in
-       unbox_function v
-  in
-  let nargs = const_int i32_type (List.length args) in
-
-  let env_vars = try Hashtbl.find function_envs f with
-                   Not_found -> [] (* builtins don't have env *) in
-  let nv_or_die v = try Hashtbl.find named_values v with
-                      Not_found -> raise (Error ("Variable unbound: " ^ v)) in
-  let llenv = List.map nv_or_die env_vars in
-  let rharel_type = pointer_type value_t in
-  let len = const_int i64_type (List.length llenv) in
-  let size = build_mul (size_of rharel_type) len "size" builder in
-  let envar = build_malloc size rharel_type "envar" builder in
-  let ptr n = build_in_bounds_gep envar (idx_ n) "arptr" builder in
-  List.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llenv;
-
-  let args = Array.of_list (nargs::(ptr 0)::args) in
+       unbox_function v in
+  let args = Array.of_list (nargs::env::args) in
   build_call callee args "call" builder;
 
 and codegen_binding_op f s2 =

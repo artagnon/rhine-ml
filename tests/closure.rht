@@ -4,7 +4,10 @@
 (defn baz [a b] (let [env a aenv b] (foo)))
 (baz 7 9)
 (defn quux [] (let [a aenv] (println a) (println env)))
-(println (let [env 12 aenv 17] (quux)))
+(let [env 12 aenv 17] (quux))
+(defn t [y] (+ x y))
+(defn f [x] t)
+(let [g (f 3)] (println (g 4)))
 ---
 (int) 4
 (int) 8
@@ -12,3 +15,4 @@
 (int) 7
 (int) 17
 (int) 12
+(int) 7

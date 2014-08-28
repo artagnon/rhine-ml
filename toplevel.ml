@@ -84,7 +84,7 @@ let main_loop ss =
   (* Declare global variables/ types *)
   let value_t = named_struct_type context "value_t" in
   let pvalue_t = pointer_type value_t in
-  (* 1 int, 2 bool, 3 str, 4 ar, 6 dbl, 7 fun, 8 char *)
+  (* 1 int, 2 bool, 3 str, 4 ar, 5 len, 6 dbl, 7 fun, 8 char, 9 env *)
   let value_t_elts = [| i32_type;                 (* value type of struct *)
                         i64_type;                 (* integer *)
                         i1_type;                  (* bool *)
@@ -96,6 +96,7 @@ let main_loop ss =
                                         pvalue_t
                                         [| i32_type; pointer_type pvalue_t |]);
                         i8_type;
+                        pointer_type pvalue_t;
                        |] in
   struct_set_body value_t value_t_elts false;
 
