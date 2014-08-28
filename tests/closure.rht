@@ -1,13 +1,22 @@
 (defn foo [] (println aenv) (println env))
+
 (defn bar [env aenv] (foo))
 (bar 8 4)
+
 (defn baz [a b] (let [env a aenv b] (foo)))
 (baz 7 9)
+
 (defn quux [] (let [a aenv] (println a) (println env)))
 (let [env 12 aenv 17] (quux))
+
 (defn t [y] (+ x y))
 (defn f [x] t)
 (let [g (f 3)] (println (g 4)))
+
+(defn p [z] (+ x y z))
+(defn q [y] p)
+(defn r [x] q)
+(let [s (r 3) ss (s 4)] (println (ss 5)))
 ---
 (int) 4
 (int) 8
@@ -16,3 +25,4 @@
 (int) 17
 (int) 12
 (int) 7
+(int) 12
