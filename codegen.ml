@@ -669,7 +669,14 @@ let extract_unbound_names n =
     Some v -> []
   | None ->
      match lookup_function n the_module with
-       Some f -> []
+     | Some f ->
+        (try
+            let extenv = Hashtbl.find function_envs (value_name f) in
+            List.filter (fun i ->
+                         try ignore (Hashtbl.find bound_names i); false
+                         with Not_found -> true) extenv
+          with
+            Not_found -> [])
      | None ->
         try ignore (Hashtbl.find bound_names n); [] with
           Not_found -> [n]
