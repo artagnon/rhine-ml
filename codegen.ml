@@ -590,7 +590,8 @@ and codegen_sexpr s = match s with
   | Ast.Vector(qs) -> codegen_array qs
   | Ast.List(Ast.Atom(Ast.Symbol s)::s2) ->
      match_action s s2
-  | _ -> raise (Error "Expected atom, vector, or function call")
+  | _ -> raise (Error ("Expected atom, vector, or function call: " ^
+                         Pretty.ppsexpr s))
 
 and codegen_sexpr_list sl =
   let r = List.map (fun se ->
@@ -712,7 +713,8 @@ and extract_env_vars se =
   | Ast.Vector(qs) -> List.fold_left append_env_vars [] qs
   | Ast.List(Ast.Atom(Ast.Symbol s)::s2) ->
      List.fold_left append_env_vars [] s2
-  | _ -> raise (Error "Expected atom, vector, or function call")
+  | _ -> raise (Error ("Expected atom, vector, or function call: " ^
+                         Pretty.ppsexpr se))
 
 let extractf_env_vars f s2 =
   match f with
