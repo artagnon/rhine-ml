@@ -35,16 +35,17 @@ vsexpr:
    LSQBR sexprs RSQBR { Vector($2) }
  | LSQBR RSQBR { Vector([]) }
 
+tsexpr:
+   sexpr { $1 }
+ | vsexpr { $1 }
+
+tsexprs:
+   tsexpr sexprs { $1::$2 }
+
 sexprs:
-   sexpr sexprs { $1::$2 }
- | SQUOTE sexpr sexprs { SQuote($2)::$3 }
- | UNQUOTE sexpr sexprs { Unquote($2)::$3 }
- | vsexpr sexprs { $1::$2 }
- | SQUOTE vsexpr sexprs { SQuote($2)::$3 }
- | UNQUOTE vsexpr sexprs { Unquote($2)::$3 }
- | sexpr { [$1] }
- | SQUOTE sexpr { [SQuote($2)] }
- | UNQUOTE sexpr { [Unquote($2)] }
- | vsexpr { [$1] }
- | SQUOTE vsexpr { [SQuote($2)] }
- | UNQUOTE vsexpr { [Unquote($2)] }
+   tsexpr { [$1] }
+ | SQUOTE tsexpr { [SQuote($2)] }
+ | UNQUOTE tsexpr { [Unquote($2)] }
+ | tsexprs { $1 }
+ | SQUOTE tsexprs { SQuote(List.hd $2)::(List.tl $2) }
+ | UNQUOTE tsexprs { Unquote(List.hd $2)::(List.tl $2) }
