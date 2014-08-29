@@ -46,6 +46,8 @@ sexprs:
    tsexpr { [$1] }
  | SQUOTE tsexpr { [SQuote($2)] }
  | UNQUOTE tsexpr { [Unquote($2)] }
+ | SQUOTE UNQUOTE tsexpr { [SQuote(Unquote($3))] }
  | tsexprs { $1 }
  | SQUOTE tsexprs { SQuote(List.hd $2)::(List.tl $2) }
  | UNQUOTE tsexprs { Unquote(List.hd $2)::(List.tl $2) }
+ | SQUOTE UNQUOTE tsexprs { SQuote(Unquote(List.hd $3))::(List.tl $3) }
