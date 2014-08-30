@@ -1,4 +1,9 @@
 (defmacro foo [x] `(+ ~x 3))
 (println (foo 2))
+
+(defmacro bar [x]
+  `(println `~x))
+(bar (2 2 +))
 ---
 (int) 5
+(string len 20) (int:2 int:2 sym:+ )

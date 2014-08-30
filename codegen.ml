@@ -543,7 +543,7 @@ and macro_args:(string, Ast.sexpr) Hashtbl.t = Hashtbl.create 5
 
 and macroexpand_se se quote_p =
   match se with
-      Ast.SQuote(se) -> macroexpand_se se true
+      Ast.SQuote(se) -> Ast.SQuote(macroexpand_se se true)
     | Ast.Unquote(se) ->
        if quote_p then macroexpand_se se false else
          raise (Error ("Extra unquote: " ^ Pretty.ppsexpr se))
@@ -552,6 +552,8 @@ and macroexpand_se se quote_p =
          (try Hashtbl.find macro_args s with Not_found -> a)
     | Ast.List(sl) -> Ast.List(List.map (fun se ->
                                          macroexpand_se se quote_p) sl)
+    | Ast.Vector(sl) -> Ast.Vector(List.map (fun se ->
+                                             macroexpand_se se quote_p) sl)
     | token -> token
 
 and macroexpand m s2 =
@@ -590,6 +592,7 @@ and codegen_sexpr s = match s with
   | Ast.Vector(qs) -> codegen_array qs
   | Ast.List(Ast.Atom(Ast.Symbol s)::s2) ->
      match_action s s2
+  | Ast.SQuote(se) -> codegen_atom (Ast.String(Pretty.ppsexpr se))
   | _ -> raise (Error ("Expected atom, vector, or function call: " ^
                          Pretty.ppsexpr s))
 
@@ -604,6 +607,7 @@ and codegen_sexpr_list sl =
                       end
                     | Ast.Atom n -> codegen_atom n
                     | Ast.Vector(qs) -> codegen_array qs
+                    | Ast.SQuote(se) -> codegen_sexpr_list [se]
                     | _ -> raise (Error ("Can't codegen: " ^
                                            (Pretty.ppsexpr se)))) sl in
   List.hd (List.rev r)
