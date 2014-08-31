@@ -2,9 +2,8 @@
 (foo 2)
 
 (defmacro bar [x]
-  `(println `~x))
+  ``~x)
 (bar (2 2 +))
 ---
 Evaluated to 5
-Evaluated to 0
-(string len 20) (int:2 int:2 sym:+ )
+Evaluated to (int:2 int:2 sym:+ )
