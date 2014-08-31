@@ -49,7 +49,7 @@ let sexpr_matcher sexpr =
 type lang_value = LangInt of int
                 | LangBool of bool
                 | LangString of string
-                | LangArray of lang_value list
+                | LangArray of lang_value array
                 | LangDouble of float
                 | LangChar of char
                 | LangNil
@@ -58,11 +58,15 @@ external unbox_value: 'a -> lang_value = "unbox_value"
 
 let string_of_bool = function true -> "true" | false -> "false"
 
-let rec print_value = function
+
+
+let rec print_value v =
+  let arelprint a = print_value a; print_char ';' in
+  match v with
     LangInt n -> print_int n
   | LangBool n -> print_string (string_of_bool n)
   | LangString s -> print_string s
-  | LangArray a -> List.iter print_value a
+  | LangArray a -> print_char '['; Array.iter arelprint a; print_char ']'
   | LangDouble d -> print_float d
   | LangChar c -> print_char c
   | LangNil -> print_string "(nil)"
