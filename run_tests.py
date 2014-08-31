@@ -35,12 +35,12 @@ def run():
             continue
         contents = open("tests/"+filename).read().split("---")
         test_input = contents[0].strip()
-        expected_output = "---".join(contents[1:]).strip().lower()
+        expected_output = "---".join(contents[1:]).strip()
 
         p = Popen(["./rhine", "-"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
         stdout, stderr = p.communicate(stdlib+"\n"+test_input)
-        stdout = stdout.lower()
-        stderr = stderr.lower()
+        stdout = stdout
+        stderr = stderr
 
         if stderr.find(expected_output) >= 0 or stdout.find(expected_output) >= 0:
             no_successes += 1

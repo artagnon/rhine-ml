@@ -1,9 +1,15 @@
-(if (= [] []) (print "OK!") (print "NO"))
-(if (= [1] [1]) (print "OK!") (print "NO"))
-(print (nth 1 [1.0 "string" [1 2 3] 4 5 6]))
-(print (nth 2 [1.0 "string" [1 2 3] 4 5 6]))
-(print (nth 3 [1.0 "string" [1 2 3] 4 5 6]))
-(print (nth 4 [1.0 "string" [1 2 3] 4 5 6]))
-(print (length [ 1 2 3 4]))
+(if (= [] []) (println "OK!") (println "NO"))
+(if (= [1] [1]) (println "OK!") (println "NO"))
+(println (nth 1 [1.0 "string" [1 2 3] 4 5 6]))
+(println (nth 2 [1.0 "string" [1 2 3] 4 5 6]))
+(println (nth 3 [1.0 "string" [1 2 3] 4 5 6]))
+(println (nth 4 [1.0 "string" [1 2 3] 4 5 6]))
+(println (length [ 1 2 3 4]))
 ---
-(string len 3) ok!(string len 3) ok!(double) 1.000000(string len 6) string(array len 3) [(int) 1;(int) 2;(int) 3;](int) 4(int) 4
+(string len 3) OK!
+(string len 3) OK!
+(double) 1.000000
+(string len 6) string
+(array len 3) [(int) 1;(int) 2;(int) 3;]
+(int) 4
+(int) 4
