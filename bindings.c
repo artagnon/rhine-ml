@@ -56,31 +56,6 @@ void print_atom(struct value_t *v) {
 	}
 }
 
-value mlbox_value(int atype, struct value_t *v) {
-	value dblblock = caml_alloc(0, Double_tag);
-	switch(atype) {
-	case 0:
-		return Val_long(v->int_val);
-	case 1:
-		return Int_val(!!v->bool_val);
-	case 2:
-		return caml_copy_string(v->string_val);
-	case 3:
-		return caml_alloc(0, 0);
-		// v->array_val
-	case 4:
-		Store_double_field(dblblock, 0, v->dbl_val);
-		return dblblock;
-	case 5:
-		return Int_val(v->char_val - '0');
-	case 6:
-		return Int_val(0);
-	default:
-		printf("Don't know how to print type %d", v->type_tag);
-		exit(1);
-	}
-}
-
 int v_to_atype(struct value_t *v) {
 	if (!v)
 		return 6;
@@ -103,13 +78,54 @@ int v_to_atype(struct value_t *v) {
 	}
 }
 
+value mlbox_value(int atype, struct value_t *v) {
+	value int_block = caml_alloc(1, 0);
+	value bool_block = caml_alloc(1, 1);
+	value string_block = caml_alloc(1, 2);
+	value array_block = caml_alloc(1, 4);
+	value dbl_block = caml_alloc(1, 5);
+	value char_block = caml_alloc(1, 6);
+	value dbl_value = caml_alloc(1, Double_tag);
+	value array_value = 0;
+	if (atype == 3)
+		array_value = caml_alloc(v->array_len, 0);
+	switch(atype) {
+	case 0:
+		Store_field(int_block, 0, Val_long(v->int_val));
+		return int_block;
+	case 1:
+		Store_field(bool_block, 0, Val_int(!!v->bool_val));
+		return bool_block;
+	case 2:
+		Store_field(string_block, 0, caml_copy_string(v->string_val));
+		return string_block;
+	case 3:
+		for (int i = 0; i < v->array_len; i++) {
+			struct value_t *el = (v->array_val)[i];
+			value v = mlbox_value(v_to_atype(el), el);
+			Store_field(array_value, i, v);
+		}
+		Store_field(array_block, 0, array_value);
+		return array_block;
+	case 4:
+		Store_double_field(dbl_value, 0, v->dbl_val);
+		Store_field(dbl_block, 0, dbl_value);
+		return dbl_block;
+	case 5:
+		Store_field(char_block, 0, Val_int(v->char_val - '0'));
+		return char_block;
+	case 6:
+		return Val_int(0);
+	default:
+		printf("Don't know how to box type: %d", atype);
+		exit(1);
+	}
+}
+
 value unbox_value(value ptr_value) {
 	CAMLparam1(ptr_value);
 	struct value_t *v = (struct value_t *) ptr_value;
-	value result = caml_alloc(6, 0);
-	int atype = v_to_atype(v);
-	Store_field(result, atype, mlbox_value(atype, v));
-	CAMLreturn(result);
+	CAMLreturn(mlbox_value(v_to_atype(v), v));
 }
 
 extern struct value_t *print(int nargs, struct value_t **env, ...) {

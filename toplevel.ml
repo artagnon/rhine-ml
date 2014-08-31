@@ -52,12 +52,20 @@ type lang_value = LangInt of int
                 | LangArray of lang_value list
                 | LangDouble of float
                 | LangChar of char
+                | LangNil
 
 external unbox_value: 'a -> lang_value = "unbox_value"
 
-let print_value = function
+let string_of_bool = function true -> "true" | false -> "false"
+
+let rec print_value = function
     LangInt n -> print_int n
-  | _ -> raise (Error "Don't know how to print lang_value")
+  | LangBool n -> print_string (string_of_bool n)
+  | LangString s -> print_string s
+  | LangArray a -> List.iter print_value a
+  | LangDouble d -> print_float d
+  | LangChar c -> print_char c
+  | LangNil -> print_string "(nil)"
 
 let print_and_jit se =
   match sexpr_matcher se with
