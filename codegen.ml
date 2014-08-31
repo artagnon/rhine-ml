@@ -617,11 +617,12 @@ and codegen_array qs =
       Some t -> t
     | None -> raise (Error "Could not look up value_t") in
   let len = List.length qs in
-  let rharray_type size = array_type (pointer_type value_t) size in
-  let new_array = build_alloca (rharray_type len) "ar" builder in
-  let ptr n = build_in_bounds_gep new_array (idx n) "arptr" builder in
-  let llqs = List.map codegen_sexpr qs in
+  let rharel_type = pointer_type value_t in
   let lllen = const_int i64_type len in
+  let size = build_mul (size_of rharel_type) lllen "size" builder in
+  let new_array = build_malloc size rharel_type "newar" builder in
+  let ptr n = build_in_bounds_gep new_array (idx_ n) "arptr" builder in
+  let llqs = List.map codegen_sexpr qs in
   List.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llqs;
   box_value ~lllen:lllen (ptr 0)
 
