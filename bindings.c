@@ -112,7 +112,7 @@ value mlbox_value(int atype, struct value_t *v) {
 		Store_field(dbl_block, 0, dbl_value);
 		return dbl_block;
 	case 5:
-		Store_field(char_block, 0, Val_int(v->char_val - '0'));
+		Store_field(char_block, 0, Val_int(v->char_val));
 		return char_block;
 	case 6:
 		return Val_int(0);
