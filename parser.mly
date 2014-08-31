@@ -1,6 +1,13 @@
-%{ open Ast %}
+%{ open Ast
+   let (--) i j =
+     let rec aux n acc =
+       if n < i then acc else aux (n-1) (n :: acc)
+     in aux j []
+%}
 
-%token SQUOTE UNQUOTE LPAREN RPAREN LSQBR RSQBR NIL TRUE FALSE EOF
+%token LPAREN RPAREN LSQBR RSQBR NIL TRUE FALSE EOF
+%token <int> SQUOTE
+%token <int> UNQUOTE
 %token <int> INTEGER
 %token <float> DOUBLE
 %token <string> SYMBOL
@@ -44,10 +51,42 @@ tsexprs:
 
 sexprs:
    tsexpr { [$1] }
- | SQUOTE tsexpr { [SQuote($2)] }
- | UNQUOTE tsexpr { [Unquote($2)] }
- | SQUOTE UNQUOTE tsexpr { [SQuote(Unquote($3))] }
+ | SQUOTE tsexpr
+          {
+            let towrap = $2 in
+            let w1 = List.fold_left (fun a b -> SQuote a) towrap (1--$1) in
+            [w1]
+          }
+ | UNQUOTE tsexpr
+           {
+             let towrap = $2 in
+             let w1 = List.fold_left (fun a b -> Unquote a) towrap (1--$1) in
+             [w1]
+           }
+ | SQUOTE UNQUOTE tsexpr
+          {
+            let towrap = $3 in
+            let w1 = List.fold_left (fun a b -> Unquote a) towrap (1--$2) in
+            let w2 = List.fold_left (fun a b -> SQuote a) w1 (1--$1) in
+            [w2]
+          }
  | tsexprs { $1 }
- | SQUOTE tsexprs { SQuote(List.hd $2)::(List.tl $2) }
- | UNQUOTE tsexprs { Unquote(List.hd $2)::(List.tl $2) }
- | SQUOTE UNQUOTE tsexprs { SQuote(Unquote(List.hd $3))::(List.tl $3) }
+ | SQUOTE tsexprs
+           {
+             let towrap = List.hd $2 in
+             let w1 = List.fold_left (fun a b -> SQuote a) towrap (1--$1) in
+             w1::(List.tl $2)
+           }
+ | UNQUOTE tsexprs
+           {
+             let towrap = List.hd $2 in
+             let w1 = List.fold_left (fun a b -> Unquote a) towrap (1--$1) in
+             w1::(List.tl $2)
+           }
+ | SQUOTE UNQUOTE tsexprs
+          {
+            let towrap = List.hd $3 in
+            let w1 = List.fold_left (fun a b -> Unquote a) towrap (1--$2) in
+            let w2 = List.fold_left (fun a b -> SQuote a) w1 (1--$1) in
+            w2::(List.tl $3)
+          }

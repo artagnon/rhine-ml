@@ -11,8 +11,8 @@ let e = ['E''e']['-''+']?['0'-'9']+
 rule token = parse
  | [' ' '\t' '\r' '\n'] { token lexbuf }
  | ";;" { comment lexbuf }
- | '`' { SQUOTE }
- | '~' { UNQUOTE }
+ | '`'+ as s { SQUOTE(String.length s) }
+ | '~'+ as s { UNQUOTE(String.length s) }
  | '(' { LPAREN }
  | ')' { RPAREN }
  | '[' { LSQBR }
