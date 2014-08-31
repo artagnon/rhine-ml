@@ -570,19 +570,7 @@ and codegen_sexpr s = match s with
                          Pretty.ppsexpr s))
 
 and codegen_sexpr_list sl =
-  let r = List.map (fun se ->
-                    match se with
-                      Ast.List(l2) ->
-                      begin match l2 with
-                              Ast.Atom(Ast.Symbol s)::s2 ->
-                              match_action s s2
-                            | _ -> raise (Error "Expected symbol")
-                      end
-                    | Ast.Atom n -> codegen_atom n
-                    | Ast.Vector(qs) -> codegen_array qs
-                    | Ast.SQuote(se) -> codegen_sexpr_list [se]
-                    | _ -> raise (Error ("Can't codegen: " ^
-                                           (Pretty.ppsexpr se)))) sl in
+  let r = List.map codegen_sexpr sl in
   List.hd (List.rev r)
 
 and codegen_array qs =
