@@ -22,8 +22,8 @@ ast.cmi: ast.mli
 clean :
 	rm -f rhine parser.ml parser.mli lexer.ml *.o *.cmo *.cmi *.cmx
 
-codegen.cmo : ast.cmi
-codegen.cmx : ast.cmi
+codegen.cmo : pretty.cmo ast.cmi
+codegen.cmx : pretty.cmx ast.cmi
 cookast.cmo : pretty.cmo ast.cmi
 cookast.cmx : pretty.cmx ast.cmi
 lexer.cmo : parser.cmi
