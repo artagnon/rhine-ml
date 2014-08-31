@@ -665,7 +665,7 @@ let codegen_proto ?(main_p = false) p =
     let pvalue_t = pointer_type value_t in
     let env_t = pointer_type pvalue_t in
     let ft = if main_p then
-               function_type i64_type [||]
+               function_type pvalue_t [||]
              else
                var_arg_function_type pvalue_t [| i32_type; env_t |] in
 
@@ -781,7 +781,7 @@ let codegen_func ?(main_p = false) f = match f with
     try
       let ret_val =
         if main_p then
-          unbox_int (codegen_sexpr_list body)
+          codegen_sexpr_list body
         else
           (let args = match proto with Ast.Prototype(name, args) -> args in
            codegen_unpack_args args;

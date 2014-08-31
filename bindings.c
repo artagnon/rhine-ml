@@ -4,6 +4,9 @@
 #include <math.h>
 #include <string.h>
 #include <stdarg.h>
+#include <caml/mlvalues.h>
+#include <caml/memory.h>
+#include <caml/alloc.h>
 
 struct value_t {
 	int type_tag;
@@ -51,6 +54,62 @@ void print_atom(struct value_t *v) {
 	default:
 		printf("Don't know how to print type %d", v->type_tag);
 	}
+}
+
+value mlbox_value(int atype, struct value_t *v) {
+	value dblblock = caml_alloc(0, Double_tag);
+	switch(atype) {
+	case 0:
+		return Val_long(v->int_val);
+	case 1:
+		return Int_val(!!v->bool_val);
+	case 2:
+		return caml_copy_string(v->string_val);
+	case 3:
+		return caml_alloc(0, 0);
+		// v->array_val
+	case 4:
+		Store_double_field(dblblock, 0, v->dbl_val);
+		return dblblock;
+	case 5:
+		return Int_val(v->char_val - '0');
+	case 6:
+		return Int_val(0);
+	default:
+		printf("Don't know how to print type %d", v->type_tag);
+		exit(1);
+	}
+}
+
+int v_to_atype(struct value_t *v) {
+	if (!v)
+		return 6;
+	switch(v->type_tag) {
+	case 1:
+		return 0;
+	case 2:
+		return 1;
+	case 3:
+		return 2;
+	case 4:
+		return 3;
+	case 6:
+		return 4;
+	case 8:
+		return 5;
+	default:
+		printf("Don't know how to print type %d", v->type_tag);
+		exit(1);
+	}
+}
+
+value unbox_value(value ptr_value) {
+	CAMLparam1(ptr_value);
+	struct value_t *v = (struct value_t *) ptr_value;
+	value result = caml_alloc(6, 0);
+	int atype = v_to_atype(v);
+	Store_field(result, atype, mlbox_value(atype, v));
+	CAMLreturn(result);
 }
 
 extern struct value_t *print(int nargs, struct value_t **env, ...) {

@@ -46,6 +46,19 @@ let sexpr_matcher sexpr =
   | Ast.AnonCall(body) -> Ast.ParsedFunction(emit_anonymous_f body, true)
   | _ -> raise (Error "Invalid toplevel form")
 
+type lang_value = LangInt of int
+                | LangBool of bool
+                | LangString of string
+                | LangArray of lang_value list
+                | LangDouble of float
+                | LangChar of char
+
+external unbox_value: 'a -> lang_value = "unbox_value"
+
+let print_value = function
+    LangInt n -> print_int n
+  | _ -> raise (Error "Don't know how to print lang_value")
+
 let print_and_jit se =
   match sexpr_matcher se with
     Ast.ParsedFunction(f, main_p) ->
@@ -60,7 +73,7 @@ let print_and_jit se =
     if main_p then (
       let result = ExecutionEngine.run_function f [||] the_execution_engine in
       print_string "Evaluated to ";
-      print_int (GenericValue.as_int result);
+      print_value (unbox_value (GenericValue.as_pointer result));
       print_newline ()
     )
     | Ast.ParsedMacro -> ()

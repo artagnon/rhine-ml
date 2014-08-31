@@ -18,7 +18,7 @@ ast.cmi: ast.mli
 %.cmi : %.mli
 	$(ocamlc) -c $<
 %.o   : %.c
-	cc -c -o $@ $<
+	cc -I`ocamlc -where` -c -o $@ $<
 clean :
 	rm -f rhine parser.ml parser.mli lexer.ml *.o *.cmo *.cmi *.cmx
 
