@@ -26,8 +26,9 @@ let sexpr_matcher sexpr =
     | None -> raise (Error "Could not look up value_t") in
   match sexpr with
     Ast.Defn(sym, args, body) ->
+    let lbody = lift_macros body in
     let f = codegen_func(Ast.Function(Ast.Prototype(sym, Array.of_list args),
-                                      body)) in
+                                      lbody)) in
     Ast.ParsedFunction(f, false)
   | Ast.Defmacro(sym, args, body) ->
      Hashtbl.add named_macros sym (Ast.Macro(Array.of_list args, body));
@@ -43,7 +44,8 @@ let sexpr_matcher sexpr =
      ignore (build_store llexpr global builder);
      ignore (build_ret (const_int i64_type 0) builder);
      Ast.ParsedFunction(the_function, true)
-  | Ast.AnonCall(body) -> Ast.ParsedFunction(emit_anonymous_f body, true)
+  | Ast.AnonCall(body) -> let lbody = lift_macros body in
+                          Ast.ParsedFunction(emit_anonymous_f lbody, true)
   | _ -> raise (Error "Invalid toplevel form")
 
 type lang_value = LangInt of int
@@ -57,8 +59,6 @@ type lang_value = LangInt of int
 external unbox_value: 'a -> lang_value = "unbox_value"
 
 let string_of_bool = function true -> "true" | false -> "false"
-
-
 
 let rec print_value v =
   let arelprint a = print_value a; print_char ';' in
@@ -90,7 +90,7 @@ let print_and_jit se =
     )
     | Ast.ParsedMacro -> ()
 
-let main_loop ss =
+let main_loop sl =
   (* Do simple "peephole" optimizations and bit-twiddling optzn. *)
 
   add_instruction_combination the_fpm;
@@ -165,4 +165,4 @@ let main_loop ss =
   ignore (codegen_proto (Ast.Prototype("cnot", Array.make 1 "v")));
   ignore (codegen_proto (Ast.Prototype("cstrjoin", Array.make 1 "v")));
 
-  List.iter (fun se -> print_and_jit (cook_toplevel se)) ss
+  List.iter (fun se -> print_and_jit (cook_toplevel se)) sl

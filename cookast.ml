@@ -1,5 +1,9 @@
 open Pretty
 
+exception Error of string
+
+let named_macros:(string, Ast.macro) Hashtbl.t = Hashtbl.create 10
+
 let extract_strings args = List.map (fun i ->
                                        (match i with
                                           Ast.Atom(Ast.Symbol(s)) -> s
@@ -36,3 +40,40 @@ let cook_toplevel sexpr = match sexpr with
      | "defmacro" -> parse_defmacro_form s2
      | _ -> Ast.AnonCall [sexpr])
   | _ -> Ast.AnonCall [sexpr]
+
+let macro_args:(string, Ast.sexpr) Hashtbl.t = Hashtbl.create 5
+
+let rec macroexpand_se se quote_p =
+  match se with
+      Ast.SQuote(se) -> Ast.SQuote(macroexpand_se se true)
+    | Ast.Unquote(se) ->
+       if quote_p then macroexpand_se se false else
+         raise (Error ("Extra unquote: " ^ Pretty.ppsexpr se))
+    | Ast.Atom(Ast.Symbol(s)) as a ->
+       if quote_p then a else
+         (try Hashtbl.find macro_args s with Not_found -> a)
+    | Ast.List(sl) -> Ast.List(List.map (fun se ->
+                                         macroexpand_se se quote_p) sl)
+    | Ast.Vector(sl) -> Ast.Vector(List.map (fun se ->
+                                             macroexpand_se se quote_p) sl)
+    | token -> token
+
+let macroexpand m s2 =
+  let arg_names, sl = match m with Ast.Macro(args, sl) -> args, sl in
+  Array.iteri (fun i n -> Hashtbl.add macro_args n (List.nth s2 i)) arg_names;
+  let l = List.map (fun se -> macroexpand_se se false) sl in
+  List.nth l 0
+
+let rec lift_macros body =
+  let lift_macros_se = function
+      Ast.List(Ast.Atom(Ast.Symbol s)::s2) ->
+      (try
+          let m = Hashtbl.find named_macros s
+          in macroexpand m s2
+        with
+          Not_found -> Ast.List(Ast.Atom(Ast.Symbol s)::lift_macros s2))
+    | se -> se in
+  let splice_toplevel se = match se with
+      Ast.SQuote se -> se
+    | _ -> se in
+  List.map (fun i -> splice_toplevel (lift_macros_se i)) body

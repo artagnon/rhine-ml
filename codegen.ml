@@ -8,7 +8,6 @@ let context = global_context ()
 let the_module = create_module context "Rhine JIT"
 let builder = builder context
 let named_values:(string, llvalue) Hashtbl.t = Hashtbl.create 10
-let named_macros:(string, Ast.macro) Hashtbl.t = Hashtbl.create 10
 let function_envs:(string, string list) Hashtbl.t = Hashtbl.create 50
 let i8_type = i8_type context
 let i32_type = i32_type context
@@ -539,53 +538,27 @@ and codegen_binding_op f s2 =
     llbody
     | _ -> raise (Error "Unknown binding operator")
 
-and macro_args:(string, Ast.sexpr) Hashtbl.t = Hashtbl.create 5
-
-and macroexpand_se se quote_p =
-  match se with
-      Ast.SQuote(se) -> Ast.SQuote(macroexpand_se se true)
-    | Ast.Unquote(se) ->
-       if quote_p then macroexpand_se se false else
-         raise (Error ("Extra unquote: " ^ Pretty.ppsexpr se))
-    | Ast.Atom(Ast.Symbol(s)) as a ->
-       if quote_p then a else
-         (try Hashtbl.find macro_args s with Not_found -> a)
-    | Ast.List(sl) -> Ast.List(List.map (fun se ->
-                                         macroexpand_se se quote_p) sl)
-    | Ast.Vector(sl) -> Ast.Vector(List.map (fun se ->
-                                             macroexpand_se se quote_p) sl)
-    | token -> token
-
-and macroexpand m s2 =
-  let arg_names, sl = match m with Ast.Macro(args, sl) -> args, sl in
-  Array.iteri (fun i n -> Hashtbl.add macro_args n (List.nth s2 i)) arg_names;
-  List.map (fun se -> macroexpand_se se false) sl
-
 and match_action s s2 =
   if StringSet.mem s binding_ops then
     codegen_binding_op s s2
   else if StringSet.mem s cf_ops then
     codegen_cf_op s s2
   else
-    try
-      let m = Hashtbl.find named_macros s in
-      codegen_sexpr_list (macroexpand m s2)
-    with Not_found ->
-      let args = extract_args s2 in
-      if StringSet.mem s atom_ops then
-        codegen_atom_op s args
-      else if StringSet.mem s arith_ops then
-        codegen_arith_op s args
-      else if StringSet.mem s logical_ops then
-        codegen_logical_op s args
-      else if StringSet.mem s cmp_ops then
-        codegen_cmp_op s args
-      else if StringSet.mem s array_ops then
-        codegen_array_op s args
-      else if StringSet.mem s string_ops then
-        codegen_string_op s args
-      else
-        codegen_call_op s args
+    let args = extract_args s2 in
+    if StringSet.mem s atom_ops then
+      codegen_atom_op s args
+    else if StringSet.mem s arith_ops then
+      codegen_arith_op s args
+    else if StringSet.mem s logical_ops then
+      codegen_logical_op s args
+    else if StringSet.mem s cmp_ops then
+      codegen_cmp_op s args
+    else if StringSet.mem s array_ops then
+      codegen_array_op s args
+    else if StringSet.mem s string_ops then
+      codegen_string_op s args
+    else
+      codegen_call_op s args
 
 and codegen_sexpr s = match s with
     Ast.Atom n -> codegen_atom n
@@ -718,7 +691,7 @@ and extract_env_vars se =
   | Ast.Vector(qs) -> List.fold_left append_env_vars [] qs
   | Ast.List(Ast.Atom(Ast.Symbol s)::s2) ->
      List.fold_left append_env_vars [] s2
-  | _ -> raise (Error ("Expected atom, vector, or function call: " ^
+  | _ -> raise (Error ("Expected atom, vector, or function call (env_vars): " ^
                          Pretty.ppsexpr se))
 
 let extractf_env_vars f s2 =
