@@ -82,9 +82,9 @@ value mlbox_value(int atype, struct value_t *v) {
 	value int_block = caml_alloc(1, 0);
 	value bool_block = caml_alloc(1, 1);
 	value string_block = caml_alloc(1, 2);
-	value array_block = caml_alloc(1, 4);
-	value dbl_block = caml_alloc(1, 5);
-	value char_block = caml_alloc(1, 6);
+	value array_block = caml_alloc(1, 3);
+	value dbl_block = caml_alloc(1, 4);
+	value char_block = caml_alloc(1, 5);
 	value dbl_value = caml_alloc(1, Double_tag);
 	value array_value = 0;
 	if (atype == 3)
