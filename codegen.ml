@@ -565,9 +565,7 @@ and codegen_sexpr s = match s with
   | Ast.Vector(qs) -> codegen_array qs
   | Ast.List(Ast.Atom(Ast.Symbol s)::s2) ->
      match_action s s2
-  | Ast.SQuote(se) -> codegen_atom (Ast.String(Pretty.ppsexpr se))
-  | _ -> raise (Error ("Expected atom, vector, or function call: " ^
-                         Pretty.ppsexpr s))
+  | _ -> codegen_atom (Ast.String(Pretty.ppsexpr s))
 
 and codegen_sexpr_list sl =
   let r = List.map codegen_sexpr sl in

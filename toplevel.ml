@@ -21,32 +21,35 @@ let run_f f =
 
 let macro_args:(string, Ast.sexpr) Hashtbl.t = Hashtbl.create 5
 
-let rec macroexpand_se se quote_p =
+let rec macroexpand_se ?(unquote_p = false) se quote_nr =
   let run_se_splice se =
     let lv = run_f (emit_anonymous_f [se]) in
     lang_val_to_ast lv in
   match se with
-      Ast.SQuote(se) -> Ast.SQuote(macroexpand_se se true)
+      Ast.SQuote(se) -> macroexpand_se se (quote_nr + 1)
     | Ast.Unquote(se) ->
-       if quote_p then macroexpand_se se false else
+       if quote_nr > 0 then
+         macroexpand_se se ~unquote_p:true (quote_nr - 1)
+       else
          raise (Error ("Extra unquote: " ^ Pretty.ppsexpr se))
     | Ast.Atom(Ast.Symbol(s)) as a ->
-       if quote_p then a else
+       if unquote_p then
          (try Hashtbl.find macro_args s with Not_found -> a)
+       else a
     | Ast.List(sl) ->
        let leval = Ast.List(List.map (fun se ->
-                                      macroexpand_se se quote_p) sl) in
-       if quote_p then leval else
-         run_se_splice leval
+                                      macroexpand_se se quote_nr) sl) in
+       if unquote_p then run_se_splice leval
+       else leval
     | Ast.Vector(sl) -> Ast.Vector(List.map (fun se ->
-                                             macroexpand_se se quote_p) sl)
-    | se -> if quote_p then se else
-              run_se_splice se
+                                             macroexpand_se se quote_nr) sl)
+    | se -> if unquote_p then run_se_splice se
+            else se
 
 let macroexpand m s2 =
   let arg_names, sl = match m with Ast.Macro(args, sl) -> args, sl in
   Array.iteri (fun i n -> Hashtbl.add macro_args n (List.nth s2 i)) arg_names;
-  let l = List.map (fun se -> macroexpand_se se false) sl in
+  let l = List.map (fun se -> macroexpand_se se 0) sl in
   List.nth l 0
 
 let rec lift_macros body =
@@ -58,10 +61,7 @@ let rec lift_macros body =
         with
           Not_found -> Ast.List(Ast.Atom(Ast.Symbol s)::lift_macros s2))
     | se -> se in
-  let splice_toplevel se = match se with
-      Ast.SQuote se -> se
-    | _ -> se in
-  List.map (fun i -> splice_toplevel (lift_macros_se i)) body
+  List.map lift_macros_se body
 
 let sexpr_matcher sexpr =
   let value_t = match type_by_name the_module "value_t" with

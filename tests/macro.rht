@@ -1,14 +1,19 @@
 (defmacro splice-variable [x] `(+ ~x 3))
 (splice-variable 2)
 
+(defmacro splice-variable-vector [x]
+  `[~x 4 3])
+(splice-variable-vector 2)
+
 (defmacro unevaled-sexpr [x]
   ``~x)
 (unevaled-sexpr (2 2 +))
 
 (defmacro splice-eval-segment [x]
-  ``~(+ x 2))
+  ``~(+ ~x 2))
 (splice-eval-segment 2)
 ---
 Evaluated to 5
+Evaluated to [2;4;3;]
 Evaluated to (int:2 int:2 sym:+ )
-Evaluated to int:4
+Evaluated to 4
