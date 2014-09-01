@@ -1,9 +1,14 @@
-(defmacro foo [x] `(+ ~x 3))
-(foo 2)
+(defmacro splice-variable [x] `(+ ~x 3))
+(splice-variable 2)
 
-(defmacro bar [x]
+(defmacro unevaled-sexpr [x]
   ``~x)
-(bar (2 2 +))
+(unevaled-sexpr (2 2 +))
+
+(defmacro splice-eval-segment [x]
+  ``~(+ x 2))
+(splice-eval-segment 2)
 ---
 Evaluated to 5
 Evaluated to (int:2 int:2 sym:+ )
+Evaluated to int:4

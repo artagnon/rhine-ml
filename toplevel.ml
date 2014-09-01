@@ -4,6 +4,7 @@ open Llvm_target
 open Llvm_scalar_opts
 open Codegen
 open Cookast
+open Mlunbox
 
 exception Error of string
 
@@ -14,11 +15,53 @@ let the_fpm = PassManager.create_function the_module
 let emit_anonymous_f s =
   codegen_func ~main_p:true (Ast.Function(Ast.Prototype("", [||]), s))
 
-let extract_strings args = Array.map (fun i ->
-                                       (match i with
-                                          Ast.Atom(Ast.Symbol(s)) -> s
-                                        | _ -> raise (Error "Bad argument")))
-                                      args
+let run_f f =
+  let result = ExecutionEngine.run_function f [||] the_execution_engine in
+  unbox_value (GenericValue.as_pointer result)
+
+let macro_args:(string, Ast.sexpr) Hashtbl.t = Hashtbl.create 5
+
+let rec macroexpand_se se quote_p =
+  let run_se_splice se =
+    let lv = run_f (emit_anonymous_f [se]) in
+    lang_val_to_ast lv in
+  match se with
+      Ast.SQuote(se) -> Ast.SQuote(macroexpand_se se true)
+    | Ast.Unquote(se) ->
+       if quote_p then macroexpand_se se false else
+         raise (Error ("Extra unquote: " ^ Pretty.ppsexpr se))
+    | Ast.Atom(Ast.Symbol(s)) as a ->
+       if quote_p then a else
+         (try Hashtbl.find macro_args s with Not_found -> a)
+    | Ast.List(sl) ->
+       let leval = Ast.List(List.map (fun se ->
+                                      macroexpand_se se quote_p) sl) in
+       if quote_p then leval else
+         run_se_splice leval
+    | Ast.Vector(sl) -> Ast.Vector(List.map (fun se ->
+                                             macroexpand_se se quote_p) sl)
+    | se -> if quote_p then se else
+              run_se_splice se
+
+let macroexpand m s2 =
+  let arg_names, sl = match m with Ast.Macro(args, sl) -> args, sl in
+  Array.iteri (fun i n -> Hashtbl.add macro_args n (List.nth s2 i)) arg_names;
+  let l = List.map (fun se -> macroexpand_se se false) sl in
+  List.nth l 0
+
+let rec lift_macros body =
+  let lift_macros_se = function
+      Ast.List(Ast.Atom(Ast.Symbol s)::s2) ->
+      (try
+          let m = Hashtbl.find named_macros s
+          in macroexpand m s2
+        with
+          Not_found -> Ast.List(Ast.Atom(Ast.Symbol s)::lift_macros s2))
+    | se -> se in
+  let splice_toplevel se = match se with
+      Ast.SQuote se -> se
+    | _ -> se in
+  List.map (fun i -> splice_toplevel (lift_macros_se i)) body
 
 let sexpr_matcher sexpr =
   let value_t = match type_by_name the_module "value_t" with
@@ -48,29 +91,6 @@ let sexpr_matcher sexpr =
                           Ast.ParsedFunction(emit_anonymous_f lbody, true)
   | _ -> raise (Error "Invalid toplevel form")
 
-type lang_value = LangInt of int
-                | LangBool of bool
-                | LangString of string
-                | LangArray of lang_value array
-                | LangDouble of float
-                | LangChar of char
-                | LangNil
-
-external unbox_value: 'a -> lang_value = "unbox_value"
-
-let string_of_bool = function true -> "true" | false -> "false"
-
-let rec print_value v =
-  let arelprint a = print_value a; print_char ';' in
-  match v with
-    LangInt n -> print_int n
-  | LangBool n -> print_string (string_of_bool n)
-  | LangString s -> print_string s
-  | LangArray a -> print_char '['; Array.iter arelprint a; print_char ']'
-  | LangDouble d -> print_float d
-  | LangChar c -> print_char c
-  | LangNil -> print_string "(nil)"
-
 let print_and_jit se =
   match sexpr_matcher se with
     Ast.ParsedFunction(f, main_p) ->
@@ -83,9 +103,8 @@ let print_and_jit se =
     dump_value f;
 
     if main_p then (
-      let result = ExecutionEngine.run_function f [||] the_execution_engine in
       print_string "Evaluated to ";
-      print_value (unbox_value (GenericValue.as_pointer result));
+      print_value (run_f f);
       print_newline ()
     )
     | Ast.ParsedMacro -> ()
