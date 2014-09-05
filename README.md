@@ -15,7 +15,7 @@ map to hardware.
 An untyped system means that all values are boxed/unboxed from a
 `value_t` structure at runtime:
 
-```
+```llvm
 %value_t = type {
 	 i32,                                ; type of data
 	 i64,                                ; integer
@@ -53,7 +53,7 @@ To implement first-class functions, note that all functions must have
 the same type; i.e. the type of the function pointer (the seventh
 member of `value_t`). How else would you implement:
 
-```
+```clojure
 (defn map
   [f coll]
   (if (not (= [] coll))
@@ -88,7 +88,7 @@ the names from the `env` argument in order. At the callsite, look up
 this hashtable, and pack all the corresponding environment variables
 into the `env` argument. So, stuff like this will work:
 
-```
+```clojure
 (defn quux [] (let [a aenv] (println a) (println env)))
 (let [env 12 aenv 17] (quux))
 ```
@@ -96,7 +96,7 @@ into the `env` argument. So, stuff like this will work:
 But there's a problem because we have first-class functions. What
 happens to this?
 
-```
+```clojure
 (defn t [y] (+ x y))
 (defn f [x] t)
 (let [g (f 3)] (println (g 4)))
@@ -112,7 +112,7 @@ It's important to realize that macros require that we go
 back-and-fourth between LLVM values and the OCaml codegen engine. How
 else would you evaluate something like:
 
-```
+```clojure
 (defmacro baz [x]
   `[1 2 ~x])
 (baz (+ 2 2))
