@@ -1,10 +1,9 @@
 # Rhine
 
-Rhine is a dynamically typed Lisp on LLVM JIT, inspired by Clojure
-featuring variable-length untyped arrays, first-class functions,
-closures, and macros. While Clojure hides the lower-level details by
-running atop the JVM, Rhine aims to expose how common Lisp constructs
-map to hardware.
+Rhine is a Clojure-inspired Lisp on LLVM JIT featuring variable-length
+untyped arrays, first-class functions, closures, and macros. While
+Clojure hides the lower-level details by running atop the JVM, Rhine
+aims to expose how common Lisp constructs map to hardware.
 
 ## Building
 
