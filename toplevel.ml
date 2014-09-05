@@ -23,7 +23,9 @@ let macro_args:(string, Ast.sexpr) Hashtbl.t = Hashtbl.create 5
 
 let rec macroexpand_se ?(unquote_p = false) se quote_nr =
   let run_se_splice se =
-    let lv = run_f (emit_anonymous_f [se]) in
+    let f = emit_anonymous_f [se] in
+    dump_value f;
+    let lv = run_f f in
     lang_val_to_ast lv in
   match se with
       Ast.SQuote(se) -> macroexpand_se se (quote_nr + 1)
