@@ -115,7 +115,7 @@ let box_value ?(lllen = const_null i32_type) llval =
     | ty when ty = pointer_type (var_arg_function_type
                                    pvalue_t
                                    [| i32_type; pointer_type pvalue_t |]) ->
-       let fenv_ptr = build_in_bounds_gep value_ptr (idx 9) "boxptr" builder in
+       let fenv_ptr = build_in_bounds_gep value_ptr (idx 4) "boxptr" builder in
        let fenv = codegen_function_env (value_name llval) in
        ignore (build_store fenv fenv_ptr builder);
        (7, llval)
@@ -173,7 +173,7 @@ let unbox_bool llval =
 
 let unbox_function llval =
   let func = build_in_bounds_gep llval (idx 7) "boxptr" builder in
-  let fenv = build_in_bounds_gep llval (idx 9) "boxptr" builder in
+  let fenv = build_in_bounds_gep llval (idx 4) "boxptr" builder in
   build_load func "func" builder, build_load fenv "fenv" builder
 
 let unbox_str llval =

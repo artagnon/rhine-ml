@@ -128,19 +128,18 @@ let main_loop sl =
   (* Declare global variables/ types *)
   let value_t = named_struct_type context "value_t" in
   let pvalue_t = pointer_type value_t in
-  (* 1 int, 2 bool, 3 str, 4 ar, 5 len, 6 dbl, 7 fun, 8 char, 9 env *)
+  (* 1 int, 2 bool, 3 str, 4 ar/env, 5 len, 6 dbl, 7 fun, 8 char *)
   let value_t_elts = [| i32_type;                 (* value type of struct *)
                         i64_type;                 (* integer *)
                         i1_type;                  (* bool *)
-                        (pointer_type i8_type);   (* string *)
-                        (pointer_type pvalue_t);  (* array *)
-                        i64_type; (* array length *)
+                        pointer_type i8_type;     (* string *)
+                        pointer_type pvalue_t;    (* array *)
+                        i64_type;                 (* array length *)
                         double_type;
                         pointer_type (var_arg_function_type
                                         pvalue_t
                                         [| i32_type; pointer_type pvalue_t |]);
                         i8_type;
-                        pointer_type pvalue_t;
                        |] in
   struct_set_body value_t value_t_elts false;
 
