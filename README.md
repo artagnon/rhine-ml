@@ -120,10 +120,10 @@ else would you evaluate something like:
 
 Note that macro arguments must be passed unevaluated at the
 callsite. The maco-expand stage now needs to codegen `[1 2
-<something>]`, where that <something> itself needs to be codegen'ed by
-evaluating the argument: the result from the compiler must be returned
-as an AST object to OCaml. This requires some involved construction of
-OCaml objects from C.
+<something>]`, where that `<something>` itself needs to be codegen'ed
+by evaluating the argument: the result from the compiler must be
+returned as an AST object to OCaml. This requires some involved
+construction of OCaml objects from C.
 
 Another subtle point to note is that macros must be lifted out of the
 program and macro-expanded at the beginning of the program. This is
