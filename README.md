@@ -108,7 +108,7 @@ augment function pointers with the environment (resuing the fourth
 argument of `value_t`).
 
 It's important to realize that macros require that we go
-back-and-fourth between LLVM values and the OCaml codegen engine. How
+back-and-forth between LLVM values and the OCaml codegen engine. How
 else would you evaluate something like:
 
 ```clojure
