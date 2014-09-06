@@ -142,8 +142,19 @@ in the middle of codegen'ing another function.
 
 - Custom optimizations.
 
-- Lots of little language features to turn it into a real usable
-  language.
+- Copy-on-write for persistent data structures, and persistent
+  variables with `setq`. How do you access a variable's history?
+
+- FFI to C. It's simply a question of defining a good interface,
+  because we already use malloc and memcpy internally in LLVM IR.
+
+- Self-hosting compiler. Necessary to co-develop the language and
+  compiler.
+
+- Optional typesystem. Use the :- syntax to provide type safety and
+  optimizations!
+
+- Concurrency primitives. See Clojure's core.async.
 
 ## Notes
 
