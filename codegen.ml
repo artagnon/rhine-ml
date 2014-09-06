@@ -436,6 +436,35 @@ and codegen_if condf truef falsef =
   position_at_end mergebb builder;
   phi
 
+and codegen_dotimes var_name loop_lim bodyf =
+  let start_val = codegen_sexpr (Ast.Atom(Ast.Int(0))) in
+  let start_bb = insertion_block builder in
+  let the_function = block_parent start_bb in
+  let loop_bb = append_block context "loop" the_function in
+  ignore (build_br loop_bb builder);
+  position_at_end loop_bb builder;
+  let variable = build_phi [(start_val, start_bb)] var_name builder in
+  let old_val =
+    try Some (Hashtbl.find named_values var_name) with Not_found -> None
+  in
+  Hashtbl.add named_values var_name variable;
+  ignore (bodyf ());
+  let next_var = build_add (unbox_int variable)
+                           (const_int i64_type 1) "nextvar" builder in
+  let next_var = box_value next_var in
+  let end_cond = build_icmp Icmp.Slt (unbox_int next_var)
+                            (unbox_int loop_lim) "end_cond" builder in
+  let loop_end_bb = insertion_block builder in
+  let after_bb = append_block context "after_loop" the_function in
+  ignore (build_cond_br end_cond loop_bb after_bb builder);
+  position_at_end after_bb builder;
+  add_incoming (next_var, loop_end_bb) variable;
+  begin match old_val with
+          Some old_val -> Hashtbl.add named_values var_name old_val
+        | None -> ()
+  end;
+  box_value (const_int i64_type 0)
+
 and codegen_cf_op op s2 =
   let value_t = lookupt_or_die "value_t" in
   match op with
@@ -463,33 +492,8 @@ and codegen_cf_op op s2 =
          Ast.Atom(Ast.Symbol(s)) -> s
        | _ -> raise (Error "Expected symbol in dotimes") in
      let loop_lim = codegen_sexpr (List.nth qs 1) in
-     let start_val = codegen_sexpr (Ast.Atom(Ast.Int(0))) in
-     let start_bb = insertion_block builder in
-     let the_function = block_parent start_bb in
-     let loop_bb = append_block context "loop" the_function in
-     ignore (build_br loop_bb builder);
-     position_at_end loop_bb builder;
-     let variable = build_phi [(start_val, start_bb)] var_name builder in
-     let old_val =
-       try Some (Hashtbl.find named_values var_name) with Not_found -> None
-     in
-     Hashtbl.add named_values var_name variable;
-     ignore (codegen_sexpr_list body);
-     let next_var = build_add (unbox_int variable)
-                              (const_int i64_type 1) "nextvar" builder in
-     let next_var = box_value next_var in
-     let end_cond = build_icmp Icmp.Slt (unbox_int next_var)
-                               (unbox_int loop_lim) "end_cond" builder in
-     let loop_end_bb = insertion_block builder in
-     let after_bb = append_block context "after_loop" the_function in
-     ignore (build_cond_br end_cond loop_bb after_bb builder);
-     position_at_end after_bb builder;
-     add_incoming (next_var, loop_end_bb) variable;
-     begin match old_val with
-             Some old_val -> Hashtbl.add named_values var_name old_val
-           | None -> ()
-     end;
-     box_value (const_int i64_type 0)
+     let bodyf () = codegen_sexpr_list body in
+     codegen_dotimes var_name loop_lim bodyf
   | _ -> raise (Error "Unknown control flow operation")
 
 and codegen_call_op f args =
