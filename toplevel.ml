@@ -169,20 +169,7 @@ let main_loop sl =
   ignore (declare_function "llvm.va_end" ft the_module);
   ignore (codegen_proto (Ast.Prototype("println", Array.make 1 "v")));
   ignore (codegen_proto (Ast.Prototype("print", Array.make 1 "v")));
-  ignore (codegen_proto (Ast.Prototype("cadd", Array.make 2 "v")));
-  ignore (codegen_proto (Ast.Prototype("cdiv", Array.make 2 "v")));
-  ignore (codegen_proto (Ast.Prototype("csub", Array.make 2 "v")));
-  ignore (codegen_proto (Ast.Prototype("cmul", Array.make 2 "v")));
-  ignore (codegen_proto (Ast.Prototype("cmod", Array.make 2 "v")));
-  ignore (codegen_proto (Ast.Prototype("cexponent", Array.make 2 "v")));
-  ignore (codegen_proto (Ast.Prototype("clt", Array.make 2 "v")));
-  ignore (codegen_proto (Ast.Prototype("cgt", Array.make 2 "v")));
-  ignore (codegen_proto (Ast.Prototype("clte", Array.make 2 "v")));
-  ignore (codegen_proto (Ast.Prototype("cgte", Array.make 2 "v")));
   ignore (codegen_proto (Ast.Prototype("cequ", Array.make 2 "v")));
-  ignore (codegen_proto (Ast.Prototype("cand", Array.make 2 "v")));
-  ignore (codegen_proto (Ast.Prototype("cor", Array.make 2 "v")));
-  ignore (codegen_proto (Ast.Prototype("cnot", Array.make 1 "v")));
   ignore (codegen_proto (Ast.Prototype("cstrjoin", Array.make 1 "v")));
 
   List.iter (fun se -> print_and_jit (cook_toplevel se)) sl
