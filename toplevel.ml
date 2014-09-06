@@ -13,7 +13,8 @@ let the_execution_engine = ExecutionEngine.create_jit the_module 1
 let the_fpm = PassManager.create_function the_module
 
 let emit_anonymous_f s =
-  codegen_func ~main_p:true (Ast.Function(Ast.Prototype("", [||]), s))
+  codegen_func (Ast.Function(Ast.Prototype("", [||], Ast.RestNil), s))
+               ~main_p:true
 
 let run_f f =
   let result = ExecutionEngine.run_function f [||] the_execution_engine in
@@ -70,17 +71,18 @@ let sexpr_matcher sexpr =
       Some t -> t
     | None -> raise (Error "Could not look up value_t") in
   match sexpr with
-    Ast.Defn(sym, args, body) ->
+    Ast.Defn(sym, args, restarg, body) ->
     let lbody = lift_macros body in
-    let f = codegen_func(Ast.Function(Ast.Prototype(sym, Array.of_list args),
-                                      lbody)) in
+    let proto = Ast.Prototype(sym, Array.of_list args, restarg) in
+    let f = codegen_func(Ast.Function(proto, lbody)) in
     Ast.ParsedFunction(f, false)
-  | Ast.Defmacro(sym, args, body) ->
+  | Ast.Defmacro(sym, args, restarg, body) ->
      Hashtbl.add named_macros sym (Ast.Macro(Array.of_list args, body));
      Ast.ParsedMacro
   | Ast.Def(sym, expr) ->
      (* Emit initializer function *)
-     let the_function = codegen_proto (Ast.Prototype("", [||])) ~main_p:true in
+     let the_function = codegen_proto (Ast.Prototype("", [||], Ast.RestNil))
+                                      ~main_p:true in
      let bb = append_block context "entry" the_function in
      position_at_end bb builder;
      let llexpr = codegen_sexpr expr in
@@ -167,9 +169,10 @@ let main_loop sl =
   ignore (declare_function "llvm.va_start" ft the_module);
   let ft = function_type void_type [| pointer_type i8_type |] in
   ignore (declare_function "llvm.va_end" ft the_module);
-  ignore (codegen_proto (Ast.Prototype("println", Array.make 1 "v")));
-  ignore (codegen_proto (Ast.Prototype("print", Array.make 1 "v")));
-  ignore (codegen_proto (Ast.Prototype("cequ", Array.make 2 "v")));
-  ignore (codegen_proto (Ast.Prototype("cstrjoin", Array.make 1 "v")));
+  let ar n = Array.make n "v" in
+  ignore (codegen_proto (Ast.Prototype("println", ar 1, Ast.RestNil)));
+  ignore (codegen_proto (Ast.Prototype("print", ar 1, Ast.RestNil)));
+  ignore (codegen_proto (Ast.Prototype("cequ", ar 2, Ast.RestNil)));
+  ignore (codegen_proto (Ast.Prototype("cstrjoin", ar 1, Ast.RestNil)));
 
   List.iter (fun se -> print_and_jit (cook_toplevel se)) sl

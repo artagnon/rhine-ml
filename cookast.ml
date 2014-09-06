@@ -4,11 +4,19 @@ exception Error of string
 
 let named_macros:(string, Ast.macro) Hashtbl.t = Hashtbl.create 10
 
-let extract_strings args = List.map (fun i ->
-                                       (match i with
-                                          Ast.Atom(Ast.Symbol(s)) -> s
-                                        | _ -> raise (Error "Bad argument")))
-                                      args
+let extract_strings args =
+  let restarg, atoms =
+    if args == [] then Ast.RestNil, [] else
+      match List.hd (List.rev args) with
+        Ast.Atom(Ast.RestArgs s) -> Ast.RestVar s,
+                                    List.rev (List.tl (List.rev args))
+      | _ -> Ast.RestNil, args in
+  let args = List.map (fun i ->
+                        match i with
+                          Ast.Atom(Ast.Symbol s) -> s
+                        | _ -> raise (Error "Bad argument in defn"))
+                       atoms in
+  args, restarg
 
 let parse_defn_form = function
     Ast.Atom(Ast.Symbol(sym))::Ast.Vector(v)::
@@ -16,7 +24,8 @@ let parse_defn_form = function
     Ast.Atom(Ast.Symbol(sym))::Ast.Vector(v)::body ->
      if body == [] then
        raise (Error "Empty function definition");
-     Ast.Defn(sym, extract_strings v, body)
+     let args, restarg = extract_strings v in
+     Ast.Defn(sym, args, restarg, body)
     | se -> raise (Error ("Malformed defn form:" ^ ppsexprl se))
 
 let parse_defmacro_form = function
@@ -25,7 +34,8 @@ let parse_defmacro_form = function
     Ast.Atom(Ast.Symbol(sym))::Ast.Vector(v)::body ->
      if body == [] then
        raise (Error "Empty macro definition");
-     Ast.Defmacro(sym, extract_strings v, body)
+     let args, restarg = extract_strings v in
+     Ast.Defmacro(sym, args, restarg, body)
     | se -> raise (Error ("Malformed defmacro form:" ^ ppsexprl se))
 
 let parse_def_form = function

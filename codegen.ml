@@ -622,7 +622,7 @@ let codegen_proto ?(main_p = false) p =
     | None -> raise (Error "Could not look up value_t")
   in
   match p with
-    Ast.Prototype (name, args) ->
+    Ast.Prototype (name, args, restarg) ->
     let pvalue_t = pointer_type value_t in
     let env_t = pointer_type pvalue_t in
     let ft = if main_p then
@@ -718,7 +718,7 @@ let extractl_env_vars body =
   List.flatten r
 
 let codegen_splice_env llenv proto body =
-  let fname, args = match proto with Ast.Prototype(n, a) -> n, a in
+  let fname, args, rest = match proto with Ast.Prototype(n, a, r) -> n, a, r in
   Hashtbl.clear bound_names;
   Array.iter (fun n -> Hashtbl.add bound_names n true) args;
   let env_vars = extractl_env_vars body in
@@ -744,7 +744,7 @@ let codegen_func ?(main_p = false) f = match f with
         if main_p then
           codegen_sexpr_list body
         else
-          (let args = match proto with Ast.Prototype(name, args) -> args in
+          (let args = match proto with Ast.Prototype(_, args, _) -> args in
            codegen_unpack_args args;
            codegen_splice_env (param the_function 1) proto body;
            codegen_sexpr_list body) in
