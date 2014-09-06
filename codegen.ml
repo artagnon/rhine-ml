@@ -580,7 +580,7 @@ let build_va_arg_x86 ap argtype =
   ignore (build_store newval el builder);
   build_load el "ret" builder
 
-let codegen_unpack_args args =
+let codegen_unpack_args llnargs args restarg =
   let value_t = lookupt_or_die "value_t" in
   let valist_t = lookupt_or_die "__va_list_tag" in
   let va_start = lookupf_or_die "llvm.va_start" in
@@ -590,7 +590,24 @@ let codegen_unpack_args args =
   ignore (build_call va_start [| ap2 |] "" builder);
   let va_arg () = build_va_arg_x86 ap (pointer_type value_t) in
   let llargs = Array.map (fun arg -> va_arg ()) args in
-  ignore (build_call va_end [| ap2 |] "" builder);
+  let _ = match restarg with
+      Ast.RestNil -> ignore (build_call va_end [| ap2 |] "" builder)
+    | Ast.RestVar(n) ->
+       let value_t = lookupt_or_die "value_t" in
+       let rharel_type = pointer_type value_t in
+       let len = const_int i64_type (Array.length args) in
+       let size = build_mul (size_of rharel_type) len "size" builder in
+       let newar = build_malloc size rharel_type "newar" builder in
+       let llnargs64 = build_zext llnargs i64_type "llnargs64" builder in
+       let loop_lim = build_sub llnargs64 len "loop_lim" builder in
+       let bodyf loopidx =
+        let el = va_arg () in
+        let ptr = build_in_bounds_gep newar [| loopidx |] "arptr" builder in
+        ignore (build_store el ptr builder) in
+       let retf () = box_value ~lllen:loop_lim newar in
+       let newar = codegen_dotimes "i" (box_value loop_lim) bodyf retf in
+       ignore (build_call va_end [| ap2 |] "" builder);
+       Hashtbl.add named_values n newar in
   Array.iteri (fun i a ->
                let n = args.(i) in
                Hashtbl.add named_values n a;
@@ -724,8 +741,8 @@ let codegen_func ?(main_p = false) f = match f with
         if main_p then
           codegen_sexpr_list body
         else
-          (let args = match proto with Ast.Prototype(_, args, _) -> args in
-           codegen_unpack_args args;
+          (let a, r = match proto with Ast.Prototype(_, a, r) -> a, r in
+           codegen_unpack_args (param the_function 0) a r;
            codegen_splice_env (param the_function 1) proto body;
            codegen_sexpr_list body) in
 
