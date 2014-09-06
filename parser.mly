@@ -5,7 +5,7 @@
      in aux j []
 %}
 
-%token LPAREN RPAREN LSQBR RSQBR NIL TRUE FALSE EOF
+%token LPAREN RPAREN LSQBR RSQBR NIL TRUE FALSE REST_ARGS EOF
 %token <int> SQUOTE
 %token <int> UNQUOTE
 %token <int> INTEGER
@@ -36,6 +36,7 @@ atom:
 
 sexpr:
    atom { Atom($1) }
+ | REST_ARGS SYMBOL { Atom(RestArgs($2)) }
  | LPAREN sexprs RPAREN { List($2) }
 
 vsexpr:

@@ -5,6 +5,7 @@ type atom =
   | Double of float
   | Char of char
   | String of string
+  | RestArgs of string
   | Nil
 
 type sexpr =

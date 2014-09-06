@@ -20,6 +20,7 @@ rule token = parse
  | "nil" { NIL }
  | "true" { TRUE }
  | "false" { FALSE }
+ | '&' { REST_ARGS }
  | (['0'-'9']*)'.'['0'-'9']+e? as s { DOUBLE(float_of_string s) }
  | (['0'-'9']+)'.'['0'-'9']*e? as s { DOUBLE(float_of_string s) }
  | (['0'-'9']+)e as s { DOUBLE(float_of_string s) }

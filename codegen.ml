@@ -210,6 +210,7 @@ let codegen_atom atom =
     | Ast.Nil -> const_null (pointer_type value_t)
     | Ast.String s -> build_global_stringptr s "string" builder
     | Ast.Symbol n -> resolve_name n unresolved_err
+    | Ast.RestArgs n -> resolve_name n unresolved_err
   in match atom with
        Ast.Symbol n -> unboxed_value
      | Ast.Nil -> unboxed_value

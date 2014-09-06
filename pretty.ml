@@ -14,6 +14,7 @@ let ppatom p = match p with
   | Char(i) -> sprintf "char:%c" i
   | Bool(i) -> sprintf "bool:%s" (sprint_bool i)
   | Double(d) -> sprintf "dbl:%f" d
+  | RestArgs(s) -> "&" ^ s
   | Nil -> "nil"
 
 (* pretty print S-expressions *)
