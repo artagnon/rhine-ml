@@ -30,8 +30,8 @@ lexer.cmo : parser.cmi
 lexer.cmx : parser.cmx
 main.cmo : toplevel.cmo pretty.cmo parser.cmi lexer.cmo ast.cmi
 main.cmx : toplevel.cmx pretty.cmx parser.cmx lexer.cmx ast.cmi
-mlunbox.cmo :
-mlunbox.cmx :
+mlunbox.cmo : ast.cmi
+mlunbox.cmx : ast.cmi
 parser.cmo : ast.cmi parser.cmi
 parser.cmx : ast.cmi parser.cmi
 pretty.cmo : ast.cmi
