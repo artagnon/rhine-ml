@@ -99,14 +99,16 @@ value mlbox_value(int atype, struct value_t *v) {
 	case 2:
 		Store_field(string_block, 0, caml_copy_string(v->string_val));
 		return string_block;
-	case 3:
-		for (int i = 0; i < v->array_len; i++) {
+	case 3: {
+	    int i;
+		for (i = 0; i < v->array_len; i++) {
 			struct value_t *el = (v->array_val)[i];
 			value v = mlbox_value(v_to_atype(el), el);
 			Store_field(array_value, i, v);
 		}
 		Store_field(array_block, 0, array_value);
 		return array_block;
+	}
 	case 4:
 		Store_double_field(dbl_value, 0, v->dbl_val);
 		Store_field(dbl_block, 0, dbl_value);
