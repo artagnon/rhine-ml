@@ -570,12 +570,22 @@ let build_va_arg_x86 ap argtype =
   let el = build_alloca argtype "el" builder in
   let idxptr = build_in_bounds_gep ap (idx 0) "idxptr" builder in
   let idx0 = build_load idxptr "idx" builder in
-  let elsptr = build_in_bounds_gep ap (idx 3) "elsptr" builder in
-  let els = build_load elsptr "els" builder in
-  let rawel = build_in_bounds_gep els [| idx0 |] "rawel" builder in
-  let elptr = build_bitcast rawel (pointer_type argtype) "elptr" builder in
-  let newidx = build_add idx0 (const_int i32_type 8) "newidx" builder in
-  ignore (build_store newidx idxptr builder);
+  let magic_lim = const_int i32_type 40 in
+  let condf () = build_icmp Icmp.Ule idx0 magic_lim "le40" builder in
+  let truef () =
+    let elsptr = build_in_bounds_gep ap (idx 3) "elsptr" builder in
+    let els = build_load elsptr "els" builder in
+    let rawel = build_in_bounds_gep els [| idx0 |] "rawel" builder in
+    let elptr = build_bitcast rawel (pointer_type argtype) "elptr" builder in
+    let newidx = build_add idx0 (const_int i32_type 8) "newidx" builder in
+    ignore (build_store newidx idxptr builder); elptr in
+  let falsef () =
+    let elsptr = build_in_bounds_gep ap (idx 2) "elsptr" builder in
+    let els = build_load elsptr "els" builder in
+    let elptr = build_bitcast els (pointer_type argtype) "elptr" builder in
+    let rawel = build_in_bounds_gep els (idx_ 8) "rawel" builder in
+    ignore (build_store rawel elsptr builder); elptr in
+  let elptr = codegen_if condf truef falsef in
   let newval = build_load elptr "newval" builder in
   ignore (build_store newval el builder);
   build_load el "ret" builder
