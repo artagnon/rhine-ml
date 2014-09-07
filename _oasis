@@ -1,0 +1,19 @@
+OASISFormat: 0.4
+Name:        rhine
+Version:     0.1
+Synopsis:    A clojure-inspired language on llvm
+Authors:     artagnon
+License:     BSD-2-clause
+Plugins:     DevFiles (0.4)
+BuildTools:  ocamlbuild
+
+Executable rhine
+  Path:           .
+  BuildTools:     menhir, ocamlbuild
+  CSources:       bindings.c
+  BuildDepends:   llvm, 
+                  llvm.executionengine,
+                  llvm.analysis,
+                  llvm.target,
+                  llvm.scalar_opts
+  MainIs:         main.ml
