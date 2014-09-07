@@ -16,4 +16,4 @@ Executable rhine
                   llvm.analysis,
                   llvm.target,
                   llvm.scalar_opts
-  MainIs:         main.ml
+  MainIs:         rhine.ml

@@ -68,7 +68,7 @@ def run():
             print last_io
             continue
 
-        p = Popen(["./rhine", "-"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        p = Popen(["./rhine.byte", "-"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
         output = ""
         stdout, stderr = p.communicate(stdlib+"\n"+total_input+"\n"+ci)
 
