@@ -596,10 +596,10 @@ let codegen_unpack_args llnargs args restarg =
        let value_t = lookupt_or_die "value_t" in
        let rharel_type = pointer_type value_t in
        let len = const_int i64_type (Array.length args) in
-       let size = build_mul (size_of rharel_type) len "size" builder in
-       let newar = build_malloc size rharel_type "newar" builder in
        let llnargs64 = build_zext llnargs i64_type "llnargs64" builder in
        let loop_lim = build_sub llnargs64 len "loop_lim" builder in
+       let size = build_mul (size_of rharel_type) loop_lim "size" builder in
+       let newar = build_malloc size rharel_type "newar" builder in
        let bodyf loopidx =
         let el = va_arg () in
         let ptr = build_in_bounds_gep newar [| loopidx |] "arptr" builder in
@@ -718,6 +718,9 @@ let codegen_splice_env llenv proto body =
   let fname, args, rest = match proto with Ast.Prototype(n, a, r) -> n, a, r in
   Hashtbl.clear bound_names;
   Array.iter (fun n -> Hashtbl.add bound_names n true) args;
+  let _ = match rest with
+      Ast.RestVar(v) -> Hashtbl.add bound_names v true
+    | Ast.RestNil -> () in
   let env_vars = extractl_env_vars body in
   List.iteri (fun i n ->
               let elptr = build_in_bounds_gep
