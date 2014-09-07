@@ -35,7 +35,7 @@ let (--) i j =
 
 let atom_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
-                               [ "int?"; "dbl?"; "ar?" ]
+                               [ "bool?"; "int?"; "dbl?"; "ar?" ]
 
 let arith_ops = List.fold_left (fun s k -> StringSet.add k s)
                                StringSet.empty
@@ -218,6 +218,9 @@ let codegen_atom atom =
 
 let rec extract_args sl = List.map codegen_sexpr sl
 
+and is_bool el =
+  build_icmp Icmp.Eq (get_type el)  (const_int i32_type 2) "bool?" builder
+
 and is_int el =
   build_icmp Icmp.Eq (get_type el) (const_int i32_type 1) "int?" builder
 
@@ -230,7 +233,8 @@ and is_ar el =
 and codegen_atom_op op args =
   let hd = List.hd args in
   let unboxed_value = match op with
-      "int?" -> is_int hd
+    | "bool?" -> is_bool hd 
+    | "int?" -> is_int hd
     | "dbl?" -> is_dbl hd
     | "ar?" -> is_ar hd
     | _ -> raise (Error "Unknown atom op") in
