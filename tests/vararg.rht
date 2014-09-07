@@ -1,0 +1,5 @@
+(defn boom [a b &rest]
+  rest)
+(boom 1 2 3 4 5)
+---
+Evaluated to [3;4;5;]

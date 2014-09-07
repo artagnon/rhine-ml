@@ -75,9 +75,9 @@ implemented using the [varargs
 framework](http://llvm.org/docs/LangRef.html#variable-argument-handling-intrinsics)
 of LLVM. Note that `va_arg` doesn't work on x86, so Rhine extracts the
 values by hand. The first argument gives the number of arguments, and
-this can be used to implement varargs in the Rhine language. The
-second argument is the closure environment (which has the same type as
-an array).
+is used to implement varargs in the Rhine language. The second
+argument is the closure environment (which has the same type as an
+array).
 
 Closures are simple to implement with this framework in place. First,
 when a function is declared, parse out all the unbound variable names
@@ -130,9 +130,6 @@ because we can't suddenly codegen segments required for macroexpansion
 in the middle of codegen'ing another function.
 
 ## Todo
-
-- Variable number of arguments for functions using `&rest`
-  notation. This should be relatively straightforward.
 
 - Lambdas. Requires lifting them out and codegen'ing them first.
 
