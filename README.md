@@ -158,6 +158,10 @@ in the middle of codegen'ing another function.
 
 - Concurrency primitives. See Clojure's core.async.
 
+- Support for programs spanning multiple files.
+
+- Polished error reporting with file:line annotations.
+
 ## Notes
 
 - LLVM codegen statements all have side-effects. In most places, order
