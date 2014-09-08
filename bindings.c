@@ -87,6 +87,7 @@ value mlbox_value(int atype, struct value_t *v) {
 	value char_block = caml_alloc(1, 5);
 	value dbl_value = caml_alloc(1, Double_tag);
 	value array_value = 0;
+	int i;
 	if (atype == 3)
 		array_value = caml_alloc(v->array_len, 0);
 	switch(atype) {
@@ -99,8 +100,7 @@ value mlbox_value(int atype, struct value_t *v) {
 	case 2:
 		Store_field(string_block, 0, caml_copy_string(v->string_val));
 		return string_block;
-	case 3: {
-	    int i;
+	case 3:
 		for (i = 0; i < v->array_len; i++) {
 			struct value_t *el = (v->array_val)[i];
 			value v = mlbox_value(v_to_atype(el), el);
@@ -108,7 +108,6 @@ value mlbox_value(int atype, struct value_t *v) {
 		}
 		Store_field(array_block, 0, array_value);
 		return array_block;
-	}
 	case 4:
 		Store_double_field(dbl_value, 0, v->dbl_val);
 		Store_field(dbl_block, 0, dbl_value);
@@ -175,7 +174,6 @@ struct value_t *save_value(double val, int ret_type) {
 }
 
 extern struct value_t *cequ(int nargs, struct value_t **env, ...) {
-	int ret_type = 0;
 	struct value_t *ret;
 	va_list ap;
 	va_start(ap, env);
