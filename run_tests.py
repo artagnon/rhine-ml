@@ -37,7 +37,7 @@ def run():
         test_input = contents[0].strip()
         expected_output = "---".join(contents[1:]).strip()
 
-        p = Popen(["./rhine", "-"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        p = Popen(["./rhine.byte", "-"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
         stdout, stderr = p.communicate(stdlib+"\n"+test_input)
         stdout = stdout
         stderr = stderr
