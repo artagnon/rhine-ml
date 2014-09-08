@@ -1,9 +1,12 @@
-rhine
+rhine.byte
 lexer.ml
 parser.ml
 parser.mli
 bindings.o
 tests/output.*
+_build/
+setup.data
+setup.log
 *~
 *.cmi
 *.cmo
