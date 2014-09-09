@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 3b7d3ebcac7adc11670680178ca06334)
+# DO NOT EDIT (digest: bc32527ef8fb6f501563821bbba8faf5)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -14,12 +14,12 @@
 "_darcs": -traverse
 "_darcs": not_hygienic
 # Executable rhine
-"rhine.byte": use_librhine_stubs
-"rhine.byte": pkg_llvm
-"rhine.byte": pkg_llvm.analysis
-"rhine.byte": pkg_llvm.executionengine
-"rhine.byte": pkg_llvm.scalar_opts
-"rhine.byte": pkg_llvm.target
+"rhine.native": use_librhine_stubs
+"rhine.native": pkg_llvm
+"rhine.native": pkg_llvm.analysis
+"rhine.native": pkg_llvm.executionengine
+"rhine.native": pkg_llvm.scalar_opts
+"rhine.native": pkg_llvm.target
 <*.ml{,i}>: pkg_llvm
 <*.ml{,i}>: pkg_llvm.analysis
 <*.ml{,i}>: pkg_llvm.executionengine

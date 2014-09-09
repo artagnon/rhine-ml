@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 from os import walk
 from subprocess import Popen, PIPE
@@ -68,7 +68,7 @@ def run():
             print last_io
             continue
 
-        p = Popen(["./rhine.byte", "-"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        p = Popen(["./rhine.native", "-"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
         output = ""
         stdout, stderr = p.communicate(stdlib+"\n"+total_input+"\n"+ci)
 

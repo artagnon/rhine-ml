@@ -17,3 +17,4 @@ Executable rhine
                   llvm.target,
                   llvm.scalar_opts
   MainIs:         rhine.ml
+  CompiledObject: native
