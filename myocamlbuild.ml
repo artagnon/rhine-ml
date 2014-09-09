@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: febd4105f5f29c884a599f56fc93e8fb) *)
+(* DO NOT EDIT (digest: 253c0bda8941299e235fd851fc2848e7) *)
 module OASISGettext = struct
 (* # 22 "src/oasis/OASISGettext.ml" *)
 
@@ -599,12 +599,38 @@ let package_default =
      lib_c = [("rhine", ".", [])];
      flags =
        [
+          (["oasis_executable_rhine_ccopt"; "compile"],
+            [(OASISExpr.EBool true, S [A "-ccopt"; A "-rdynamic"])]);
+          (["oasis_executable_rhine_byte"; "ocaml"; "link"; "byte"],
+            [
+               (OASISExpr.EBool true,
+                 S [A "-cc"; A "clang++"; A "-ccopt"; A "-rdynamic"])
+            ]);
           (["oasis_executable_rhine_native"; "ocaml"; "link"; "native"],
-            [(OASISExpr.EBool true, S [A "-cc"; A "g++"])]);
+            [
+               (OASISExpr.EBool true,
+                 S [A "-cc"; A "clang++"; A "-ccopt"; A "-rdynamic"])
+            ]);
+          (["oasis_executable_rhine_byte"; "ocaml"; "ocamldep"; "byte"],
+            [
+               (OASISExpr.EBool true,
+                 S [A "-cc"; A "clang++"; A "-ccopt"; A "-rdynamic"])
+            ]);
           (["oasis_executable_rhine_native"; "ocaml"; "ocamldep"; "native"],
-            [(OASISExpr.EBool true, S [A "-cc"; A "g++"])]);
+            [
+               (OASISExpr.EBool true,
+                 S [A "-cc"; A "clang++"; A "-ccopt"; A "-rdynamic"])
+            ]);
+          (["oasis_executable_rhine_byte"; "ocaml"; "compile"; "byte"],
+            [
+               (OASISExpr.EBool true,
+                 S [A "-cc"; A "clang++"; A "-ccopt"; A "-rdynamic"])
+            ]);
           (["oasis_executable_rhine_native"; "ocaml"; "compile"; "native"],
-            [(OASISExpr.EBool true, S [A "-cc"; A "g++"])])
+            [
+               (OASISExpr.EBool true,
+                 S [A "-cc"; A "clang++"; A "-ccopt"; A "-rdynamic"])
+            ])
        ];
      includes = []
   }
@@ -612,7 +638,7 @@ let package_default =
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 616 "myocamlbuild.ml"
+# 642 "myocamlbuild.ml"
 (* OASIS_STOP *)
 
 dispatch dispatch_default ;;

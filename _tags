@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 293cdd4baf631822388928c1a28c3b14)
+# DO NOT EDIT (digest: 8b56ea98655baed3b22e3f11b4178f04)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -14,6 +14,11 @@
 "_darcs": -traverse
 "_darcs": not_hygienic
 # Executable rhine
+<*.ml{,i}>: oasis_executable_rhine_ccopt
+"bindings.c": oasis_executable_rhine_ccopt
+"rhine.native": oasis_executable_rhine_byte
+<*.ml{,i}>: oasis_executable_rhine_byte
+"bindings.c": oasis_executable_rhine_byte
 "rhine.native": oasis_executable_rhine_native
 <*.ml{,i}>: oasis_executable_rhine_native
 "bindings.c": oasis_executable_rhine_native

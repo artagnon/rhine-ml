@@ -17,5 +17,7 @@ Executable rhine
                   llvm.target,
                   llvm.scalar_opts
   MainIs:         rhine.ml
-  NativeOpt:      -cc g++
+  CCOpt:          -rdynamic
+  ByteOpt:        -cc clang++ -ccopt -rdynamic
+  NativeOpt:      -cc clang++ -ccopt -rdynamic
   CompiledObject: native
