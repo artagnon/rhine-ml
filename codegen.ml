@@ -254,6 +254,20 @@ and to_int el =
                   build_fptosi del i64_type "fptosi" builder in
   codegen_if condf truef falsef
 
+and to_bool el =
+  let nargs = 1 in
+  let llcase = get_type el in
+  let llz = const_int i64_type 0 in
+  let int_type = const_int i32_type 1 in
+  let defaultf () = unbox_bool el in
+  let caseintf () =
+    let condf () = build_icmp Icmp.Eq (unbox_int el) llz "intbool" builder in
+    let truef () = const_int i1_type 0 in
+    let falsef () = const_int i1_type 1 in
+    codegen_if condf truef falsef in
+  let case_list = [(int_type, caseintf)] in
+  codegen_switch nargs llcase defaultf case_list
+
 and codegen_arith_op op args =
   let hd = List.hd args in
   let tl = List.tl args in
@@ -391,6 +405,37 @@ and codegen_string_op op s2 =
      box_value (unbox_length (List.hd s2))
   | _ -> raise (Error "Unknown string operator")
 
+and codegen_switch nargs llcase defaultf case_list =
+  let start_bb = insertion_block builder in
+  let the_function = block_parent start_bb in
+  let default_bb = append_block context "default" the_function in
+  position_at_end default_bb builder;
+  let default_val = defaultf () in
+  let new_default_bb = insertion_block builder in
+  let caseNgen casef =
+    let caseN_bb = append_block context "caseN" the_function in
+    position_at_end caseN_bb builder;
+    let caseN_val = casef () in
+    let new_caseN_bb = insertion_block builder in
+    (caseN_val, new_caseN_bb) in
+  let case_incomings = List.map caseNgen (List.map snd case_list) in
+  let merge_bb = append_block context "switchcont" the_function in
+  position_at_end merge_bb builder;
+  let incoming = (default_val, new_default_bb)::case_incomings in
+  let phi = build_phi incoming "switchtmp" builder in
+  position_at_end start_bb builder;
+  let sw = build_switch llcase new_default_bb nargs builder in
+  let case_vals = List.map fst case_list in
+  let case_bbs = List.map snd case_incomings in
+  let add_case_gen i v = ignore (add_case sw v (List.nth case_bbs i)) in
+  List.iteri add_case_gen case_vals;
+  position_at_end new_default_bb builder; ignore (build_br merge_bb builder);
+  let finalbr casebb = position_at_end casebb builder;
+                       ignore (build_br merge_bb builder) in
+  List.iter finalbr case_bbs;
+  position_at_end merge_bb builder;
+  phi
+
 and codegen_if condf truef falsef =
   let cond_val = condf () in
   let start_bb = insertion_block builder in
@@ -451,7 +496,7 @@ and codegen_cf_op op s2 =
     let condse, truese, falsese = match s2 with
         [c; t; f] -> c, t, f
       | _ -> raise (Error "Malformed if expression") in
-    let condf () = unbox_bool (codegen_sexpr condse) in
+    let condf () = to_bool (codegen_sexpr condse) in
     let truef () = codegen_sexpr truese in
     let falsef () = codegen_sexpr falsese in
     codegen_if condf truef falsef
