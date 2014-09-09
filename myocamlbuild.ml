@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 13d3a06fca40c4a88f999cb3a44b8a7e) *)
+(* DO NOT EDIT (digest: febd4105f5f29c884a599f56fc93e8fb) *)
 module OASISGettext = struct
 (* # 22 "src/oasis/OASISGettext.ml" *)
 
@@ -597,14 +597,22 @@ let package_default =
   {
      MyOCamlbuildBase.lib_ocaml = [];
      lib_c = [("rhine", ".", [])];
-     flags = [];
+     flags =
+       [
+          (["oasis_executable_rhine_native"; "ocaml"; "link"; "native"],
+            [(OASISExpr.EBool true, S [A "-cc"; A "g++"])]);
+          (["oasis_executable_rhine_native"; "ocaml"; "ocamldep"; "native"],
+            [(OASISExpr.EBool true, S [A "-cc"; A "g++"])]);
+          (["oasis_executable_rhine_native"; "ocaml"; "compile"; "native"],
+            [(OASISExpr.EBool true, S [A "-cc"; A "g++"])])
+       ];
      includes = []
   }
   ;;
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 608 "myocamlbuild.ml"
+# 616 "myocamlbuild.ml"
 (* OASIS_STOP *)
 
 dispatch dispatch_default ;;

@@ -1,4 +1,4 @@
-rhine.byte
+rhine.native
 lexer.ml
 parser.ml
 parser.mli
