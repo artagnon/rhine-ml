@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 from os import walk, unlink
 from subprocess import Popen, PIPE
@@ -37,7 +37,7 @@ def run():
         test_input = contents[0].strip()
         expected_output = "---".join(contents[1:]).strip()
 
-        p = Popen(["./rhine.byte", "-"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        p = Popen(["./rhine.native", "-"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
         stdout, stderr = p.communicate(stdlib+"\n"+test_input)
         stdout = stdout
         stderr = stderr
