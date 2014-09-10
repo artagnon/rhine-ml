@@ -74,8 +74,9 @@ let sexpr_matcher sexpr =
     Ast.Defn(sym, args, restarg, body) ->
     let lbody = lift_macros body in
     let proto = Ast.Prototype(sym, Array.of_list args, restarg) in
-    let f = codegen_func(Ast.Function(proto, lbody)) in
-    Ast.ParsedFunction(f, false)
+    let main_p = if sym = "main" then true else false in
+    let f = codegen_func(Ast.Function(proto, lbody)) ~main_p:main_p in
+    Ast.ParsedFunction(f, main_p)
   | Ast.Defmacro(sym, args, restarg, body) ->
      Hashtbl.add named_macros sym (Ast.Macro(Array.of_list args, body));
      Ast.ParsedMacro
