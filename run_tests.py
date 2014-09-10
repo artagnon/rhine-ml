@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 from os import walk, unlink
 from subprocess import Popen, PIPE
