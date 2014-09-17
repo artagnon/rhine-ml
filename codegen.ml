@@ -417,8 +417,12 @@ and codegen_switch nargs llcase defaultf case_list =
     position_at_end caseN_bb builder;
     let caseN_val = casef () in
     let new_caseN_bb = insertion_block builder in
-    (caseN_val, new_caseN_bb) in
-  let case_incomings = List.map caseNgen (List.map snd case_list) in
+    (caseN_val, new_caseN_bb, caseN_bb) in
+  let caseNgens = List.map caseNgen (List.map snd case_list) in
+  let fst3 (a, _, _) = a in
+  let snd3 (_, b, _) = b in
+  let trd3 (_, _, c) = c in
+  let case_incomings = List.map (fun i -> fst3 i, snd3 i) caseNgens in
   let merge_bb = append_block context "switchcont" the_function in
   position_at_end merge_bb builder;
   let incoming = (default_val, new_default_bb)::case_incomings in
@@ -426,13 +430,14 @@ and codegen_switch nargs llcase defaultf case_list =
   position_at_end start_bb builder;
   let sw = build_switch llcase new_default_bb nargs builder in
   let case_vals = List.map fst case_list in
-  let case_bbs = List.map snd case_incomings in
+  let case_bbs = List.map trd3 caseNgens in
+  let case_new_bbs = List.map snd3 caseNgens in
   let add_case_gen i v = ignore (add_case sw v (List.nth case_bbs i)) in
   List.iteri add_case_gen case_vals;
   position_at_end new_default_bb builder; ignore (build_br merge_bb builder);
   let finalbr casebb = position_at_end casebb builder;
                        ignore (build_br merge_bb builder) in
-  List.iter finalbr case_bbs;
+  List.iter finalbr case_new_bbs;
   position_at_end merge_bb builder;
   phi
 
