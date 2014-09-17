@@ -305,7 +305,7 @@ and codegen_arith_op op args =
     | _ -> raise (Error "Unknown arithmetic operator")
 
 and codegen_logical_op op args =
-  let hd = unbox_bool (List.hd args) in
+  let hd = to_bool (List.hd args) in
   let tl = List.tl args in
   let unboxed_value =
     match op with
@@ -313,9 +313,9 @@ and codegen_logical_op op args =
     | _ ->
        if tl == [] then hd else
          match op with
-           "and" -> build_and hd (unbox_bool (codegen_logical_op op tl))
+           "and" -> build_and hd (to_bool (codegen_logical_op op tl))
                               "and" builder
-         | "or" -> build_or hd (unbox_bool (codegen_logical_op op tl))
+         | "or" -> build_or hd (to_bool (codegen_logical_op op tl))
                             "or" builder
          | _ -> raise (Error "Unknown logical operator") in
   box_value unboxed_value

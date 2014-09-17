@@ -9,6 +9,14 @@
 (if (= 4 4) 84 73)
 (if (= [] [1]) 4 57)
 (if (= [] []) 4 57)
+(and 0 85)
+(and 82 85)
+(and [] 59)
+(and ['a'] 12)
+(or 0 0)
+(or 0 28)
+(or [] [])
+(or ['l'] [])
 ---
 Evaluated to -28.5714285714
 Evaluated to 3
@@ -21,3 +29,11 @@ Evaluated to 73
 Evaluated to 84
 Evaluated to 57
 Evaluated to 4
+Evaluated to false
+Evaluated to true
+Evaluated to false
+Evaluated to true
+Evaluated to false
+Evaluated to true
+Evaluated to false
+Evaluated to true
