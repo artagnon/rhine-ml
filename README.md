@@ -73,18 +73,17 @@ member of `value_t`). How else would you implement:
 ```clojure
 (defn map
   [f coll]
-  (if (not (= [] coll))
+  (if coll
     (cons (f (first coll))
           (map f (rest coll)))
     []))
 
 (defn map2
   [f c1 c2]
-  (if (not (or (= [] c1) (= [] c2)))
+  (if (and c1 c2)
     (cons (f (first c1) (first c2))
           (map2 f (rest c1) (rest c2)))
     []))
-
 ```
 
 Here, `f` takes one argument in `map`, but takes two arguments in
