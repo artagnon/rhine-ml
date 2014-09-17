@@ -22,13 +22,13 @@
 ;; Return first n items of coll
 (defn take [n coll]
     (if
-       (and (> n 0) (not (= [] coll)))
+       (and (> n 0) coll)
        (cons (first coll) (take (- n 1) (rest coll)))
        []))
 
 ;; Drop the first n items of coll
 (defn drop [n coll]
-   (if (and (> n 0) (not (= [] coll)))
+   (if (and (> n 0) coll)
        (drop (dec n) (rest coll))
        coll))
 
@@ -39,14 +39,14 @@
 ;; Returns the result of applying f to each element of coll
 (defn map
   [f coll]
-  (if (not (= [] coll))
+  (if coll
     (cons (f (first coll))
           (map f (rest coll)))
     []))
 
 (defn map2
   [f c1 c2]
-  (if (not (or (= [] c1) (= [] c2)))
+  (if (and c1 c2)
     (cons (f (first c1) (first c2))
           (map2 f (rest c1) (rest c2)))
     []))
