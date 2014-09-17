@@ -259,13 +259,17 @@ and to_bool el =
   let llcase = get_type el in
   let llz = const_int i64_type 0 in
   let int_type = const_int i32_type 1 in
+  let ar_type = const_int i32_type 4 in
   let defaultf () = unbox_bool el in
+  let truef () = const_int i1_type 0 in
+  let falsef () = const_int i1_type 1 in
   let caseintf () =
     let condf () = build_icmp Icmp.Eq (unbox_int el) llz "intbool" builder in
-    let truef () = const_int i1_type 0 in
-    let falsef () = const_int i1_type 1 in
     codegen_if condf truef falsef in
-  let case_list = [(int_type, caseintf)] in
+  let casearf () =
+    let condf () = build_icmp Icmp.Eq (unbox_length el) llz "intbool" builder in
+    codegen_if condf truef falsef in
+  let case_list = [(int_type, caseintf); (ar_type, casearf)] in
   codegen_switch nargs llcase defaultf case_list
 
 and codegen_arith_op op args =

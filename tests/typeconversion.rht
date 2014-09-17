@@ -1,19 +1,23 @@
 (/ (+ 1 5.0) (- 1e-2 .22))
 (if false 2 3)
 (if true 2 3)
-(if 0 2 3)
-(if 8239 2 3)
-(if (= 3 4) 2 3)
-(if (= 4 4) 2 3)
-(if (= [] [1]) 2 3)
-(if (= [] []) 2 3)
+(if 0 28 74)
+(if 8239 28 74)
+(if [] 21 92)
+(if [1 2] 21 92)
+(if (= 3 4) 84 73)
+(if (= 4 4) 84 73)
+(if (= [] [1]) 4 57)
+(if (= [] []) 4 57)
 ---
 Evaluated to -28.5714285714
 Evaluated to 3
 Evaluated to 2
-Evaluated to 3
-Evaluated to 2
-Evaluated to 3
-Evaluated to 2
-Evaluated to 3
-Evaluated to 2
+Evaluated to 74
+Evaluated to 28
+Evaluated to 92
+Evaluated to 21
+Evaluated to 73
+Evaluated to 84
+Evaluated to 57
+Evaluated to 4
