@@ -1,8 +1,20 @@
-%{ open Ast
-   let (--) i j =
-     let rec aux n acc =
-       if n < i then acc else aux (n-1) (n :: acc)
-     in aux j []
+%{
+  open Ast
+  open Ast_helper
+
+  let (--) i j =
+    let rec aux n acc =
+      if n < i then acc else aux (n-1) (n :: acc)
+    in aux j []
+
+  let symbol_rloc start_pos end_pos = {
+    Location.loc_start = start_pos;
+    Location.loc_end = end_pos;
+    Location.loc_ghost = false;
+  }
+
+  let mklsexpr d sp ep = Lsexpr.mk ~loc:(symbol_rloc sp ep) d
+  let unlsexpr d = List.map (fun i -> i.lsexpr_desc) d
 %}
 
 %token LPAREN RPAREN LSQBR RSQBR NIL TRUE FALSE REST_ARGS EOF
@@ -18,6 +30,10 @@
 %type <Ast.prog> prog
 %type <Ast.atom> atom
 %type <Ast.sexpr> sexpr
+%type <Ast.sexpr> vsexpr
+%type <Ast.sexpr> tsexpr
+%type <Ast.sexpr list> tsexprs
+%type <Ast.lsexpr list> sexprs
 
 %%
 
@@ -35,59 +51,62 @@ atom:
  | SYMBOL { Symbol($1) }
 
 sexpr:
-   atom { Atom($1) }
- | REST_ARGS SYMBOL { Atom(RestArgs($2)) }
- | LPAREN sexprs RPAREN { List($2) }
+   atom { Atom $1 }
+ | REST_ARGS SYMBOL { Atom (RestArgs $2) }
+ | LPAREN sexprs RPAREN { List (unlsexpr $2) }
 
 vsexpr:
-   LSQBR sexprs RSQBR { Vector($2) }
- | LSQBR RSQBR { Vector([]) }
+   LSQBR sexprs RSQBR { Vector (unlsexpr $2) }
+ | LSQBR RSQBR { Vector [] }
 
 tsexpr:
    sexpr { $1 }
  | vsexpr { $1 }
 
 tsexprs:
-   tsexpr sexprs { $1::$2 }
+   tsexpr sexprs { $1::(unlsexpr $2) }
 
 sexprs:
-   tsexpr { [$1] }
+   tsexpr { [mklsexpr $1 $startpos $endpos] }
  | SQUOTE tsexpr
           {
             let towrap = $2 in
             let w1 = List.fold_left (fun a b -> SQuote a) towrap (1--$1) in
-            [w1]
+            [mklsexpr w1 $startpos $endpos]
           }
  | UNQUOTE tsexpr
            {
              let towrap = $2 in
              let w1 = List.fold_left (fun a b -> Unquote a) towrap (1--$1) in
-             [w1]
+             [mklsexpr w1 $startpos $endpos]
            }
  | SQUOTE UNQUOTE tsexpr
           {
             let towrap = $3 in
             let w1 = List.fold_left (fun a b -> Unquote a) towrap (1--$2) in
             let w2 = List.fold_left (fun a b -> SQuote a) w1 (1--$1) in
-            [w2]
+            [mklsexpr w2 $startpos $endpos]
           }
- | tsexprs { $1 }
+ | tsexprs { List.map (fun i -> mklsexpr i $startpos $endpos) $1 }
  | SQUOTE tsexprs
            {
              let towrap = List.hd $2 in
              let w1 = List.fold_left (fun a b -> SQuote a) towrap (1--$1) in
-             w1::(List.tl $2)
+             (mklsexpr w1 $startpos $endpos)::
+               (List.map (fun i -> mklsexpr i $startpos $endpos) (List.tl $2))
            }
  | UNQUOTE tsexprs
            {
              let towrap = List.hd $2 in
              let w1 = List.fold_left (fun a b -> Unquote a) towrap (1--$1) in
-             w1::(List.tl $2)
+             (mklsexpr w1 $startpos $endpos)::
+               (List.map (fun i -> mklsexpr i $startpos $endpos) (List.tl $2))
            }
  | SQUOTE UNQUOTE tsexprs
           {
             let towrap = List.hd $3 in
             let w1 = List.fold_left (fun a b -> Unquote a) towrap (1--$2) in
             let w2 = List.fold_left (fun a b -> SQuote a) w1 (1--$1) in
-            w2::(List.tl $3)
+            (mklsexpr w2 $startpos $endpos)::
+              (List.map (fun i -> mklsexpr i $startpos $endpos) (List.tl $3))
           }

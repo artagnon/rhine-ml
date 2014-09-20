@@ -24,8 +24,13 @@ type sexpr =
   | Call of string * sexpr list
   | AnonCall of sexpr list
 
+type lsexpr = {
+  lsexpr_desc: sexpr;
+  lsexpr_loc: Location.t;
+}
+
 type prog =
-    Prog of sexpr list
+    Prog of lsexpr list
 
 type proto =
     Prototype of string * string array * restplaceholder

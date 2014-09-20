@@ -2,6 +2,7 @@ open Llvm
 open Llvm_executionengine
 open Llvm_target
 open Llvm_scalar_opts
+open Ast
 open Codegen
 open Cookast
 open Mlunbox
@@ -13,14 +14,14 @@ let the_execution_engine = ExecutionEngine.create_jit the_module 1
 let the_fpm = PassManager.create_function the_module
 
 let emit_anonymous_f s =
-  codegen_func (Ast.Function(Ast.Prototype("", [||], Ast.RestNil), s))
+  codegen_func (Function(Prototype("", [||], RestNil), s))
                ~main_p:true
 
 let run_f f =
   let result = ExecutionEngine.run_function f [||] the_execution_engine in
   unbox_value (GenericValue.as_pointer result)
 
-let macro_args:(string, Ast.sexpr) Hashtbl.t = Hashtbl.create 5
+let macro_args:(string, sexpr) Hashtbl.t = Hashtbl.create 5
 
 let rec macroexpand_se ?(unquote_p = false) se quote_nr =
   let run_se_splice se =
@@ -29,40 +30,40 @@ let rec macroexpand_se ?(unquote_p = false) se quote_nr =
     let lv = run_f f in
     lang_val_to_ast lv in
   match se with
-      Ast.SQuote(se) -> macroexpand_se se (quote_nr + 1)
-    | Ast.Unquote(se) ->
+      SQuote(se) -> macroexpand_se se (quote_nr + 1)
+    | Unquote(se) ->
        if quote_nr > 0 then
          macroexpand_se se ~unquote_p:true (quote_nr - 1)
        else
          raise (Error ("Extra unquote: " ^ Pretty.ppsexpr se))
-    | Ast.Atom(Ast.Symbol(s)) as a ->
+    | Atom(Symbol(s)) as a ->
        if unquote_p then
          (try Hashtbl.find macro_args s with Not_found -> a)
        else a
-    | Ast.List(sl) ->
-       let leval = Ast.List(List.map (fun se ->
+    | List(sl) ->
+       let leval = List(List.map (fun se ->
                                       macroexpand_se se quote_nr) sl) in
        if unquote_p then run_se_splice leval
        else leval
-    | Ast.Vector(sl) -> Ast.Vector(List.map (fun se ->
+    | Vector(sl) -> Vector(List.map (fun se ->
                                              macroexpand_se se quote_nr) sl)
     | se -> if unquote_p then run_se_splice se
             else se
 
 let macroexpand m s2 =
-  let arg_names, sl = match m with Ast.Macro(args, sl) -> args, sl in
+  let arg_names, sl = match m with Macro(args, sl) -> args, sl in
   Array.iteri (fun i n -> Hashtbl.add macro_args n (List.nth s2 i)) arg_names;
   let l = List.map (fun se -> macroexpand_se se 0) sl in
   List.nth l 0
 
 let rec lift_macros body =
   let lift_macros_se = function
-      Ast.List(Ast.Atom(Ast.Symbol s)::s2) ->
+      List(Atom(Symbol s)::s2) ->
       (try
           let m = Hashtbl.find named_macros s
           in macroexpand m s2
         with
-          Not_found -> Ast.List(Ast.Atom(Ast.Symbol s)::lift_macros s2))
+          Not_found -> List(Atom(Symbol s)::lift_macros s2))
     | se -> se in
   List.map lift_macros_se body
 
@@ -71,18 +72,18 @@ let sexpr_matcher sexpr =
       Some t -> t
     | None -> raise (Error "Could not look up value_t") in
   match sexpr with
-    Ast.Defn(sym, args, restarg, body) ->
+    Defn(sym, args, restarg, body) ->
     let lbody = lift_macros body in
-    let proto = Ast.Prototype(sym, Array.of_list args, restarg) in
+    let proto = Prototype(sym, Array.of_list args, restarg) in
     let main_p = if sym = "main" then true else false in
-    let f = codegen_func(Ast.Function(proto, lbody)) ~main_p:main_p in
-    Ast.ParsedFunction(f, main_p)
-  | Ast.Defmacro(sym, args, restarg, body) ->
-     Hashtbl.add named_macros sym (Ast.Macro(Array.of_list args, body));
-     Ast.ParsedMacro
-  | Ast.Def(sym, expr) ->
+    let f = codegen_func(Function(proto, lbody)) ~main_p:main_p in
+    ParsedFunction(f, main_p)
+  | Defmacro(sym, args, restarg, body) ->
+     Hashtbl.add named_macros sym (Macro(Array.of_list args, body));
+     ParsedMacro
+  | Def(sym, expr) ->
      (* Emit initializer function *)
-     let the_function = codegen_proto (Ast.Prototype("", [||], Ast.RestNil))
+     let the_function = codegen_proto (Prototype("", [||], RestNil))
                                       ~main_p:true in
      let bb = append_block context "entry" the_function in
      position_at_end bb builder;
@@ -91,14 +92,14 @@ let sexpr_matcher sexpr =
      let global = define_global sym (const_null value_t) the_module in
      ignore (build_store llexpr global builder);
      ignore (build_ret (const_int i64_type 0) builder);
-     Ast.ParsedFunction(the_function, true)
-  | Ast.AnonCall(body) -> let lbody = lift_macros body in
-                          Ast.ParsedFunction(emit_anonymous_f lbody, true)
+     ParsedFunction(the_function, true)
+  | AnonCall(body) -> let lbody = lift_macros body in
+                          ParsedFunction(emit_anonymous_f lbody, true)
   | _ -> raise (Error "Invalid toplevel form")
 
 let print_and_jit se =
   match sexpr_matcher se with
-    Ast.ParsedFunction(f, main_p) ->
+    ParsedFunction(f, main_p) ->
     (* Validate the generated code, checking for consistency. *)
     (* Llvm_analysis.assert_valid_function f;*)
 
@@ -112,7 +113,7 @@ let print_and_jit se =
       print_value (run_f f);
       print_newline ()
     )
-    | Ast.ParsedMacro -> ()
+    | ParsedMacro -> ()
 
 let main_loop sl =
   (* Do simple "peephole" optimizations and bit-twiddling optzn. *)
@@ -171,9 +172,9 @@ let main_loop sl =
   let ft = function_type void_type [| pointer_type i8_type |] in
   ignore (declare_function "llvm.va_end" ft the_module);
   let ar n = Array.make n "v" in
-  ignore (codegen_proto (Ast.Prototype("println", ar 1, Ast.RestNil)));
-  ignore (codegen_proto (Ast.Prototype("print", ar 1, Ast.RestNil)));
-  ignore (codegen_proto (Ast.Prototype("cequ", ar 2, Ast.RestNil)));
-  ignore (codegen_proto (Ast.Prototype("cstrjoin", ar 1, Ast.RestNil)));
+  ignore (codegen_proto (Prototype("println", ar 1, RestNil)));
+  ignore (codegen_proto (Prototype("print", ar 1, RestNil)));
+  ignore (codegen_proto (Prototype("cequ", ar 2, RestNil)));
+  ignore (codegen_proto (Prototype("cstrjoin", ar 1, RestNil)));
 
-  List.iter (fun se -> print_and_jit (cook_toplevel se)) sl
+  List.iter (fun se -> print_and_jit (cook_toplevel se.lsexpr_desc)) sl

@@ -2,10 +2,11 @@ OASISFormat: 0.4
 Name:        rhine
 Version:     0.1
 Synopsis:    A clojure-inspired language on llvm
-Authors:     artagnon
+Authors:     Ramkumar Ramachandra
 License:     BSD-2-clause
 Plugins:     DevFiles (0.4)
 BuildTools:  ocamlbuild
+BuildDepends: core, threads, textutils, bytes
 
 Executable rhine
   Path:           .

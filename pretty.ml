@@ -37,6 +37,6 @@ let rec ppsexprl p =
 
 (* pretty print the program *)
 let pprint p = match p with
-    Prog(ss) -> List.iter (fun i -> print_string (ppsexpr i);
+    Prog(ss) -> List.iter (fun i -> print_string (ppsexpr i.lsexpr_desc);
                                     print_newline ();
                                     print_newline ()) ss
