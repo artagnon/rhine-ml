@@ -19,6 +19,7 @@ struct value_t {
 	struct value_t *(*function_val)(struct value_t *);
 	char char_val;
 	bool gc_marked;
+	struct value_t *gc_next;
 };
 
 void print_atom(struct value_t *v) {
@@ -130,7 +131,19 @@ value unbox_value(value ptr_value) {
 	CAMLreturn(mlbox_value(v_to_atype(v), v));
 }
 
-void mark(struct value_t *v) {
+void *gc_malloc(size_t nbytes) {
+	static struct value_t *gcroot = NULL;
+
+	if (nbytes != sizeof(struct value_t))
+		return malloc(nbytes);
+	struct value_t *v = malloc(nbytes);
+	v->gc_marked = 0;
+	v->gc_next = gcroot;
+	gcroot = v->gc_next;
+	return v;
+}
+
+void gc_mark(struct value_t *v) {
 	v->gc_marked = 1;
 	if (v->type_tag == 4)
 		for (int i = 0; i < v->array_len; i++)

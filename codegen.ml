@@ -71,7 +71,7 @@ let create_entry_block_alloca the_function var_name =
   build_alloca value_t var_name builder
 
 let build_malloc llsize llt id builder =
-  let callee = lookupf_or_die "malloc" in
+  let callee = lookupf_or_die "gc_malloc" in
   let raw_ptr = build_call callee [| llsize |] id builder in
   build_bitcast raw_ptr (pointer_type llt) "malloc_value" builder
 

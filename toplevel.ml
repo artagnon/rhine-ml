@@ -147,6 +147,7 @@ let main_loop sl =
                                         [| i32_type; pointer_type pvalue_t |]);
                         i8_type;
                         i1_type;                  (* gc_marked *)
+                        pointer_type value_t;     (* gc_next *)
                        |] in
   struct_set_body value_t value_t_elts false;
 
@@ -159,7 +160,7 @@ let main_loop sl =
 
   (* Declare external functions *)
   let ft = function_type (pointer_type i8_type) [| i64_type |] in
-  ignore (declare_function "malloc" ft the_module);
+  ignore (declare_function "gc_malloc" ft the_module);
   let ft = function_type i64_type [| pointer_type i8_type |] in
   ignore (declare_function "strlen" ft the_module);
   let ft = function_type void_type
