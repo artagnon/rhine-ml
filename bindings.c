@@ -22,6 +22,8 @@ struct value_t {
 	struct value_t *gc_next;
 };
 
+static struct value_t *gcroot;
+
 void print_atom(struct value_t *v) {
 	int i;
 	if (!v) {
@@ -132,8 +134,6 @@ value unbox_value(value ptr_value) {
 }
 
 void *gc_malloc(size_t nbytes) {
-	static struct value_t *gcroot = NULL;
-
 	if (nbytes != sizeof(struct value_t))
 		return malloc(nbytes);
 	struct value_t *v = malloc(nbytes);
@@ -148,6 +148,21 @@ void gc_mark(struct value_t *v) {
 	if (v->type_tag == 4)
 		for (int i = 0; i < v->array_len; i++)
 			v->array_val[i]->gc_marked = 1;
+}
+
+void gc_sweep() {
+	struct value_t *this = gcroot;
+
+	while (this) {
+		if (!(this->gc_marked)) {
+			struct value_t *unreachable = this;
+			this = unreachable->gc_next;
+			free(unreachable);
+		} else {
+			this->gc_marked = 0;
+			this = this->gc_next;
+		}
+	}
 }
 
 extern struct value_t *print(int nargs, struct value_t **env, ...) {
