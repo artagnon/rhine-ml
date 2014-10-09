@@ -146,6 +146,7 @@ let main_loop sl =
                                         pvalue_t
                                         [| i32_type; pointer_type pvalue_t |]);
                         i8_type;
+                        i1_type;                  (* gc_marked *)
                        |] in
   struct_set_body value_t value_t_elts false;
 
