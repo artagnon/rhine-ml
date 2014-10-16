@@ -1,13 +1,13 @@
-rhine.native
+rhine
 lexer.ml
 parser.ml
 parser.mli
-bindings.o
 tests/output.*
 _build/
 setup.data
 setup.log
 *~
+*.o
 *.cmi
 *.cmo
 *.cmx
