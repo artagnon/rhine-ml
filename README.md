@@ -14,19 +14,6 @@ Must first run...
 
 ...before invoking `make`.
 
-## Regenerating or modifying the build files
-
-Oasis-generated files are designed to exist in the project structure,
-and provide a number of niceties, such as C stub files and clean
-library organization.
-
-If you change the `_oasis` file, run `oasis setup` before
-`make`. Don't forget to also add the newly updated files to git before
-committing.
-
-The build files can also be modified to add custom build rules and
-ocamlbuild tags, just add your code after the `OASIS_STOP` comment.
-
 ## How it works
 
 An untyped system means that all values are boxed/unboxed from a
