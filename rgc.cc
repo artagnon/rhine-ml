@@ -1,5 +1,3 @@
-// lib/MyGC/MyGC.cpp - Example LLVM GC plugin
-
 #include "llvm/CodeGen/GCStrategy.h"
 #include "llvm/CodeGen/GCMetadata.h"
 #include "llvm/Support/Compiler.h"
@@ -12,6 +10,6 @@ namespace {
     Rgc() {}
   };
 
-  GCRegistry::Add<rgc>
+  GCRegistry::Add<Rgc>
   X("rgc", "Rhine garbage collector");
 }
