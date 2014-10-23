@@ -5,11 +5,12 @@
 using namespace llvm;
 
 namespace {
-  class LLVM_LIBRARY_VISIBILITY Rgc : public GCStrategy {
-  public:
-    Rgc() {}
-  };
-
-  GCRegistry::Add<Rgc>
-  X("rgc", "Rhine garbage collector");
+	class LLVM_LIBRARY_VISIBILITY Rgc : public GCStrategy {
+	public:
+		Rgc() {
+			UsesMetadata = true;
+		}
+	};
 }
+
+static GCRegistry::Add<Rgc> X("rhine", "Strategy");

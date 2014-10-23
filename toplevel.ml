@@ -109,7 +109,7 @@ let print_and_jit se =
     dump_value f;
 
     (* Set the gc *)
-    set_gc (Some "rgc") f;
+    set_gc (Some "rhine") f;
 
     if main_p then (
       print_string "Evaluated to ";
