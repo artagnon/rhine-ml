@@ -10,7 +10,7 @@ aims to expose how common Lisp constructs map to hardware.
 Must first run...
 
 1. `brew install llvm`
-2. `opam install llvm ocamlfind menhir oasis`
+2. `opam install llvm ocamlfind menhir oasis core textutils`
 
 ...before invoking `make`.
 
