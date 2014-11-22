@@ -13,7 +13,8 @@ parser.ml parser.mli: parser.mly
 codegen.cmo: codegen.ml
 	ocamlfind $(ocamlc) -c -package llvm -linkpkg $<
 toplevel.cmo: toplevel.ml
-	ocamlfind $(ocamlc) -c -package llvm -linkpkg $<
+	ocamlfind $(ocamlc) -c -package llvm -package llvm.executionengine \
+	-package ctypes $<
 location.cmo: location.ml
 	ocamlfind $(ocamlc) -c -package core -thread -package textutils \
 	 -package bytes $<

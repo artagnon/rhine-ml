@@ -1,5 +1,7 @@
 open Ast
 
+exception Error of string
+
 type lang_value = LangInt of int
                 | LangBool of bool
                 | LangString of string
@@ -11,6 +13,9 @@ type lang_value = LangInt of int
 external unbox_value: 'a -> lang_value = "unbox_value"
 
 let string_of_bool = function true -> "true" | false -> "false"
+let bool_of_int = function 0 -> false | 1 -> true
+			   | x -> raise (Error ("Invalid input: " ^
+						  string_of_int x))
 
 let rec print_value v =
   let arelprint a = print_value a; print_char ';' in

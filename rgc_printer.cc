@@ -45,7 +45,7 @@ void RgcPrinter::finishAssembly(AsmPrinter &AP) {
 		// } __gcmap_<FUNCTIONNAME>;
 
 		// Align to address width.
-		AP.EmitAlignment(IntPtrSize == 4 ? 2 : 3);
+		// AP.EmitAlignment(IntPtrSize == 4 ? 2 : 3);
 
 		// Emit PointCount.
 		OS.AddComment("safe point count");
