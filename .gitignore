@@ -13,3 +13,5 @@ setup.log
 *.cmx
 *.swp
 *.swo
+.DS_Store
+sample.rh

@@ -1,7 +1,8 @@
 OBJS = location.cmo ast_helper.cmo parser.cmo lexer.cmo pretty.cmo cookast.cmo codegen.cmo mlunbox.cmo toplevel.cmo main.cmo bindings.o rgc.o rgc_printer.o
 ocamlc = ocamlc -g -w @5@8@10@11@12@14@23@24@26@29@40
 
-rhine : $(OBJS)
+rhine: export OCAMLPATH = ./llvm/Debug+Asserts/lib/ocaml
+rhine: $(OBJS)
 	ocamlfind $(ocamlc) -package llvm -package llvm.executionengine \
 	-package llvm.analysis -package llvm.target -package llvm.scalar_opts \
 	-package core -thread -package textutils -package bytes \
@@ -30,7 +31,7 @@ rgc.o: rgc.cc
 	clang++ `llvm-config --cxxflags` -c -o $@ $<
 rgc_printer.o: rgc_printer.cc
 	clang++ `llvm-config --cxxflags` -c -o $@ $<
-clean :
+clean:
 	rm -f rhine parser.ml parser.mli lexer.ml *.o *.cmo *.cmi *.cmx
 
 ast_helper.cmo : location.cmo ast.cmi
