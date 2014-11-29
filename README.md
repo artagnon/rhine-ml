@@ -7,12 +7,12 @@ aims to expose how common Lisp constructs map to hardware.
 
 ## Building
 
-Must first run...
+Must first run ...
 
-1. `brew install llvm`
-2. `opam install llvm ocamlfind menhir oasis core textutils`
+1. `cd llvm; ./configure --disable-optimized; make`
+2. `opam install ocamlfind menhir oasis core textutils`
 
-...before invoking `make`.
+... before invoking `make`.
 
 ## How it works
 
