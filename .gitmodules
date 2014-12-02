@@ -1,4 +1,4 @@
 [submodule "llvm"]
 	path = llvm
-	url = gh:llvm-mirror/llvm
+	url = https://github.com/llvm-mirror/llvm
 	ignore = untracked
