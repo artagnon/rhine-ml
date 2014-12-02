@@ -9,9 +9,9 @@ rhine: $(LLVMLIB) $(OBJS)
 	-package core -thread -package textutils -package bytes \
 	-linkpkg $(OBJS) -o rhine
 lexer.ml: lexer.mll
-	ocamllex lexer.mll
+	ocamllex $<
 parser.ml parser.mli: parser.mly
-	menhir parser.mly
+	menhir $<
 codegen.cmo: codegen.ml
 	ocamlfind $(ocamlc) -c -package llvm -linkpkg $<
 toplevel.cmo: toplevel.ml
@@ -32,14 +32,14 @@ rgc.o: rgc.cc
 	clang++ `llvm-config --cxxflags` -c -o $@ $<
 rgc_printer.o: rgc_printer.cc
 	clang++ `llvm-config --cxxflags` -c -o $@ $<
-clean:
-	rm -f rhine parser.ml parser.mli lexer.ml *.o *.cmo *.cmi *.cmx
 $(LLVMLIB): llvm/config.status
 	$(MAKE) -C ./llvm -j8
 llvm/config.status: llvm/configure
 	cd llvm; ./configure --disable-optimized
 llvm/configure:
 	git submodule update --init
+clean:
+	rm -f rhine parser.ml parser.mli lexer.ml *.o *.cmo *.cmi *.cmx
 .PHONY: clean
 
 ast_helper.cmo : location.cmo ast.cmi

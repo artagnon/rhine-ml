@@ -7,7 +7,7 @@ aims to expose how common Lisp constructs map to hardware.
 
 ## Building
 
-Run `opam install ocamlfind menhir oasis core textutils` before
+Run `opam install ocamlfind menhir core textutils ctypes` before
 invoking `make`.
 
 ## How it works
