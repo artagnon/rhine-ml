@@ -14,8 +14,14 @@ let _ = initialize ()
 let the_execution_engine = create the_module
 let the_fpm = PassManager.create_function the_module
 
+let anon_gen =
+   let count = ref (-1) in
+   fun () ->
+     incr count;
+     "anon" ^ string_of_int !count
+
 let emit_anonymous_f s =
-  codegen_func (Function(Prototype("", [||], RestNil), s))
+  codegen_func (Function(Prototype(anon_gen (), [||], RestNil), s))
                ~main_p:true
 
 type cvalue_t
@@ -42,7 +48,6 @@ let run_f f =
   dump_value f;
   let mainty = Foreign.funptr (void @-> returning (ptr cvalue_t)) in
   let mainf = get_pointer_to_global f mainty the_execution_engine in
-  (* print_string (string_of_fn mainf); *)
   unbox_value (!@ (mainf ()))
 
 let macro_args:(string, sexpr) Hashtbl.t = Hashtbl.create 5
@@ -125,7 +130,7 @@ let print_and_jit se =
   match sexpr_matcher se with
     ParsedFunction(f, main_p) ->
     (* Validate the generated code, checking for consistency. *)
-    (* Llvm_analysis.assert_valid_function f;*)
+    Llvm_analysis.assert_valid_function f;
 
     (* Optimize the function. *)
     ignore (PassManager.run_function f the_fpm);
