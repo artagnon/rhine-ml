@@ -113,10 +113,10 @@ let validate_and_optimize_f f =
   (* Validate the generated code, checking for consistency. *)
   Llvm_analysis.assert_valid_function f;
   (* Optimize the function. *)
-  ignore (PassManager.run_function f the_fpm)
+  ignore (PassManager.run_function f the_fpm);
   (* dump_value f; *)
   (* Set the gc *)
-  (* set_gc (Some "rhine") f; *)
+  set_gc (Some "rhine") f
 
 let main_loop sl =
   (* Do simple "peephole" optimizations and bit-twiddling optzn. *)

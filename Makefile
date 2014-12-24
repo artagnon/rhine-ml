@@ -1,5 +1,6 @@
 OBJS = location.cmo ast_helper.cmo parser.cmo lexer.cmo pretty.cmo cookast.cmo codegen.cmo mlunbox.cmo toplevel.cmo main.cmo bindings.o rgc.o rgc_printer.o
 ocamlc = ocamlc -g -w @5@8@10@11@12@14@23@24@26@29@40
+llvm-config = llvm/Debug+Asserts/bin/llvm-config
 LLVMLIB = llvm/Debug+Asserts/lib/ocaml/libllvm.a
 
 rhine: export OCAMLPATH = ./llvm/Debug+Asserts/lib/ocaml
@@ -31,9 +32,9 @@ ast.cmi: ast.mli
 bindings.o: bindings.c
 	clang -I`ocamlc -where` -c -o $@ $<
 rgc.o: rgc.cc
-	clang++ `llvm-config --cxxflags` -c -o $@ $<
+	clang++ `$(llvm-config) --cxxflags` -c -o $@ $<
 rgc_printer.o: rgc_printer.cc
-	clang++ `llvm-config --cxxflags` -c -o $@ $<
+	clang++ `$(llvm-config) --cxxflags` -c -o $@ $<
 $(LLVMLIB): llvm/config.status
 	$(MAKE) -C ./llvm -j8
 llvm/config.status: llvm/configure
