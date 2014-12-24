@@ -123,7 +123,7 @@ let sexpr_matcher sexpr =
      let llexpr = build_load llexpr "llexpr" builder in
      let global = define_global sym (const_null value_t) the_module in
      ignore (build_store llexpr global builder);
-     ignore (build_ret (const_int i64_type 0) builder);
+     ignore (build_ret (const_null (pointer_type value_t)) builder);
      ParsedFunction(the_function, true)
   | AnonCall(body) -> let lbody = lift_macros body in
                           ParsedFunction(emit_anonymous_f lbody, true)
