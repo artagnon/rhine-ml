@@ -31,7 +31,7 @@ let run_f f =
   let cptr = mainf () in
   match cptr with
     None -> LangNil
-  | Some p -> unbox_value (!@p)
+  | Some p -> unbox_value !@p
 
 let macro_args:(string, sexpr) Hashtbl.t = Hashtbl.create 5
 

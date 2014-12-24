@@ -14,7 +14,7 @@ let lang_type = field cvalue_t "lang_type" int32_t
 let lang_int = field cvalue_t "lang_int" int64_t
 let lang_bool = field cvalue_t "lang_bool" char
 let lang_string = field cvalue_t "lang_string" (ptr char)
-let lang_array = field cvalue_t "lang_array" (ptr (ptr cvalue_t))
+let lang_array = field cvalue_t "lang_array" (ptr (ptr_opt cvalue_t))
 let arraysz = field cvalue_t "arraysz" int64_t
 let lang_double = field cvalue_t "lang_double" double
 let functionptr = field cvalue_t "functionptr" double
@@ -24,7 +24,7 @@ let () = seal cvalue_t
 type lang_value = LangInt of int
                 | LangBool of bool
                 | LangString of string
-                | LangArray of lang_value array
+                | LangArray of lang_value list
                 | LangDouble of float
                 | LangChar of char
                 | LangNil
@@ -42,15 +42,24 @@ let string_of_charp obj len =
                     (implode (List.tl charlist)) in
   implode (List.map (fun idx -> !@(obj +@ idx)) (0--(len - 1)))
 
-let unbox_value value =
+let rec unbox_value value =
   let t = Int32.to_int (getf value lang_type) in
   match t with
     1 -> LangInt (Int64.to_int (getf value lang_int))
   | 2 -> LangBool (bool_of_int (Char.code (getf value lang_bool)))
   | 3 -> LangString (string_of_charp (getf value lang_string)
 				     (Int64.to_int (getf value arraysz)))
+  | 4 -> LangArray (array_of_cvaluep (getf value lang_array)
+				     (Int64.to_int (getf value arraysz)))
   | 6 -> LangDouble (getf value lang_double)
-  | _ -> raise (Error ("Invalid type"))
+  | 8 -> LangChar (getf value lang_char)
+  | _ -> raise (Error ("Invalid type " ^ (string_of_int t)))
+
+and array_of_cvaluep obj len =
+  List.map (fun idx -> let box = !@(obj +@ idx) in
+		       match box with
+			 None -> LangNil
+		       | Some v -> unbox_value !@v) (0--(len - 1))
 
 let rec print_value v =
   let arelprint a = print_value a; print_char ';' in
@@ -58,7 +67,7 @@ let rec print_value v =
     LangInt n -> print_int n
   | LangBool n -> print_string (string_of_bool n)
   | LangString s -> print_string s
-  | LangArray a -> print_char '['; Array.iter arelprint a; print_char ']'
+  | LangArray a -> print_char '['; List.iter arelprint a; print_char ']'
   | LangDouble d -> print_float d
   | LangChar c -> print_char c
   | LangNil -> print_string "(nil)"
@@ -68,7 +77,7 @@ let rec lang_val_to_ast lv =
     LangInt n -> Ast.Atom(Ast.Int n)
   | LangBool n -> Ast.Atom(Ast.Bool n)
   | LangString s -> Ast.Atom(Ast.String s)
-  | LangArray a -> Ast.List(Array.to_list (Array.map lang_val_to_ast a))
+  | LangArray a -> Ast.List(List.map lang_val_to_ast a)
   | LangDouble d -> Ast.Atom(Ast.Double d)
   | LangChar c -> Ast.Atom(Ast.Char c)
   | LangNil -> Ast.Atom Ast.Nil
