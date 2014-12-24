@@ -112,7 +112,7 @@ let sexpr_matcher sexpr =
      ParsedMacro
   | Def(sym, expr) ->
      (* Emit initializer function *)
-     let the_function = codegen_proto (Prototype("", [||], RestNil))
+     let the_function = codegen_proto (Prototype(anon_gen (), [||], RestNil))
                                       ~main_p:true in
      let bb = append_block context "entry" the_function in
      position_at_end bb builder;
