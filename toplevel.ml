@@ -46,9 +46,12 @@ let unbox_value value =
 
 let run_f f =
   dump_value f;
-  let mainty = Foreign.funptr (void @-> returning (ptr cvalue_t)) in
+  let mainty = Foreign.funptr (void @-> returning (ptr_opt cvalue_t)) in
   let mainf = get_function_address (value_name f) mainty the_execution_engine in
-  unbox_value (!@ (mainf ()))
+  let cptr = mainf () in
+  match cptr with
+    None -> LangNil
+  | Some p -> unbox_value (!@p)
 
 let macro_args:(string, sexpr) Hashtbl.t = Hashtbl.create 5
 
