@@ -42,6 +42,9 @@ let unbox_value value =
   match t with
     1 -> LangInt (Int64.to_int (getf value lang_int))
   | 2 -> LangBool (bool_of_int (Char.code (getf value lang_bool)))
+  | 3 -> LangString (string_of_charp (getf value lang_string)
+				     (Int64.to_int (getf value arraysz)))
+  | 6 -> LangDouble (getf value lang_double)
   | _ -> raise (Error ("Invalid type"))
 
 let run_f f =

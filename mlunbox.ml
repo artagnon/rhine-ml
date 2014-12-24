@@ -1,6 +1,12 @@
 open Ast
+open Ctypes
 
 exception Error of string
+
+let (--) i j =
+    let rec aux n acc =
+      if n < i then acc else aux (n-1) (n :: acc)
+    in aux j []
 
 type lang_value = LangInt of int
                 | LangBool of bool
@@ -16,6 +22,12 @@ let string_of_bool = function true -> "true" | false -> "false"
 let bool_of_int = function 0 -> false | 1 -> true
 			   | x -> raise (Error ("Invalid input: " ^
 						  string_of_int x))
+let string_of_charp obj len =
+  let rec implode = function
+      []       -> ""
+    | charlist -> (Char.escaped (List.hd charlist)) ^
+                    (implode (List.tl charlist)) in
+  implode (List.map (fun idx -> !@(obj +@ idx)) (0--(len - 1)))
 
 let rec print_value v =
   let arelprint a = print_value a; print_char ';' in

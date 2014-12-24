@@ -20,6 +20,8 @@ toplevel.cmo: toplevel.ml
 location.cmo: location.ml
 	ocamlfind $(ocamlc) -c -package core -thread -package textutils \
 	 -package bytes $<
+mlunbox.cmo: mlunbox.ml
+	ocamlfind $(ocamlc) -c -package ctypes -linkpkg $<
 %.cmo: %.ml
 	$(ocamlc) -c $<
 ast.cmi: ast.mli
