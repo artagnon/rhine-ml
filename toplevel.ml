@@ -47,7 +47,7 @@ let unbox_value value =
 let run_f f =
   dump_value f;
   let mainty = Foreign.funptr (void @-> returning (ptr cvalue_t)) in
-  let mainf = get_pointer_to_global f mainty the_execution_engine in
+  let mainf = get_function_address (value_name f) mainty the_execution_engine in
   unbox_value (!@ (mainf ()))
 
 let macro_args:(string, sexpr) Hashtbl.t = Hashtbl.create 5
@@ -126,26 +126,14 @@ let sexpr_matcher sexpr =
                           ParsedFunction(emit_anonymous_f lbody, true)
   | _ -> raise (Error "Invalid toplevel form")
 
-let print_and_jit se =
-  match sexpr_matcher se with
-    ParsedFunction(f, main_p) ->
-    (* Validate the generated code, checking for consistency. *)
-    Llvm_analysis.assert_valid_function f;
-
-    (* Optimize the function. *)
-    ignore (PassManager.run_function f the_fpm);
-
-    (* dump_value f; *)
-
-    (* Set the gc *)
-    (* set_gc (Some "rhine") f; *)
-
-    if main_p then (
-      print_string "Evaluated to ";
-      print_value (run_f f);
-      print_newline ()
-    )
-    | ParsedMacro -> ()
+let validate_and_optimize_f f =
+  (* Validate the generated code, checking for consistency. *)
+  Llvm_analysis.assert_valid_function f;
+  (* Optimize the function. *)
+  ignore (PassManager.run_function f the_fpm)
+  (* dump_value f; *)
+  (* Set the gc *)
+  (* set_gc (Some "rhine") f; *)
 
 let main_loop sl =
   (* Do simple "peephole" optimizations and bit-twiddling optzn. *)
@@ -211,4 +199,16 @@ let main_loop sl =
   ignore (codegen_proto (Prototype("cequ", ar 2, RestNil)));
   ignore (codegen_proto (Prototype("cstrjoin", ar 1, RestNil)));
 
-  List.iter (fun se -> print_and_jit (cook_toplevel se.lsexpr_desc)) sl
+  let fnms = List.map (fun se -> sexpr_matcher (cook_toplevel se.lsexpr_desc)) sl in
+  let fns = List.filter (fun fnm -> match fnm with
+				     ParsedFunction(f, main_p) -> true
+				    | _ -> false) fnms in
+  List.iter (fun fn -> match fn with
+			 ParsedFunction(f, _) -> validate_and_optimize_f f
+			| _ -> ()) fns;
+  List.iter (fun fn -> match fn with
+			 ParsedFunction(f, true) ->
+			 print_string "Evaluated to ";
+			 print_value (run_f f);
+			 print_newline ()
+		       | _ -> ()) fns

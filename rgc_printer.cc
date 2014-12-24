@@ -5,32 +5,30 @@
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/Target/TargetLoweringObjectFile.h"
 #include "llvm/Target/TargetMachine.h"
+#include "llvm/Target/TargetSubtargetInfo.h"
 
 using namespace llvm;
 
 namespace {
 	class LLVM_LIBRARY_VISIBILITY RgcPrinter : public GCMetadataPrinter {
 	public:
-		virtual void beginAssembly(AsmPrinter &AP);
-		virtual void finishAssembly(AsmPrinter &AP);
+		virtual void finishAssembly(Module &M, GCModuleInfo &Info,
+					    AsmPrinter &AP) override;
 	};
 }
 
 static GCMetadataPrinterRegistry::Add<RgcPrinter> X("rhine", "md printer");
 
-void RgcPrinter::beginAssembly(AsmPrinter &AP) {
-	// Nothing to do.
-}
-
-void RgcPrinter::finishAssembly(AsmPrinter &AP) {
+void RgcPrinter::finishAssembly(Module &M, GCModuleInfo &Info, AsmPrinter &AP) {
 	MCStreamer &OS = AP.OutStreamer;
-	unsigned IntPtrSize = AP.TM.getDataLayout()->getPointerSize();
+	unsigned IntPtrSize = AP.TM.getSubtargetImpl()->getDataLayout()->getPointerSize();
 
 	// Put this in the data section.
 	OS.SwitchSection(AP.getObjFileLowering().getDataSection());
 
 	// For each function...
-	for (iterator FI = begin(), FE = end(); FI != FE; ++FI) {
+	for (GCModuleInfo::FuncInfoVec::iterator FI = Info.funcinfo_begin(),
+		     FE = Info.funcinfo_end(); FI != FE; ++FI) {
 		GCFunctionInfo &MD = **FI;
 
 		// A compact GC layout. Emit this data structure:
