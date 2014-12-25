@@ -10,7 +10,7 @@
 using namespace llvm;
 
 namespace {
-	class LLVM_LIBRARY_VISIBILITY RgcPrinter : public GCMetadataPrinter {
+	class RgcPrinter : public GCMetadataPrinter {
 	public:
 		virtual void finishAssembly(Module &M, GCModuleInfo &Info,
 					    AsmPrinter &AP) override;

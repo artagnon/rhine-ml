@@ -7,7 +7,7 @@ rhine: export OCAMLPATH = ./llvm/Debug+Asserts/lib/ocaml
 rhine: $(LLVMLIB) $(OBJS)
 	ocamlfind $(ocamlc) -package llvm -package llvm.executionengine \
 	-package llvm.analysis -package llvm.target -package llvm.scalar_opts \
-	-package core -thread -package textutils -package bytes \
+	-package llvm.gc -package core -thread -package textutils -package bytes \
 	-linkpkg $(OBJS) -o rhine
 lexer.ml: lexer.mll
 	ocamllex $<
@@ -17,7 +17,7 @@ codegen.cmo: codegen.ml
 	ocamlfind $(ocamlc) -c -package llvm -linkpkg $<
 toplevel.cmo: toplevel.ml
 	ocamlfind $(ocamlc) -c -package llvm -package llvm.executionengine \
-	-package ctypes $<
+	-package llvm.gc -package ctypes $<
 location.cmo: location.ml
 	ocamlfind $(ocamlc) -c -package core -thread -package textutils \
 	 -package bytes $<
