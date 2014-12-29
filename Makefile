@@ -1,9 +1,9 @@
 OBJS = location.cmo ast_helper.cmo parser.cmo lexer.cmo pretty.cmo cookast.cmo codegen.cmo mlunbox.cmo toplevel.cmo main.cmo bindings.o rgc.o rgc_printer.o
 ocamlc = ocamlc -g -w @5@8@10@11@12@14@23@24@26@29@40
-llvm-config = llvm/Debug+Asserts/bin/llvm-config
-LLVMLIB = llvm/Debug+Asserts/lib/ocaml/libllvm.a
+llvm-config = llvm/build/bin/llvm-config
+LLVMLIB = llvm/build/lib/ocaml/libllvm.a
 
-rhine: export OCAMLPATH = ./llvm/Debug+Asserts/lib/ocaml
+rhine: export OCAMLPATH = llvm/build/lib/ocaml
 rhine: $(LLVMLIB) $(OBJS)
 	ocamlfind $(ocamlc) -package llvm -package llvm.executionengine \
 	-package llvm.analysis -package llvm.target -package llvm.scalar_opts \
@@ -35,11 +35,11 @@ rgc.o: rgc.cc
 	clang++ `$(llvm-config) --cxxflags` -c -o $@ $<
 rgc_printer.o: rgc_printer.cc
 	clang++ `$(llvm-config) --cxxflags` -c -o $@ $<
-$(LLVMLIB): llvm/config.status
-	$(MAKE) -C ./llvm -j8
-llvm/config.status: llvm/configure
-	cd llvm; ./configure --disable-optimized
-llvm/configure:
+$(LLVMLIB): llvm/build/Makefile
+	$(MAKE) -C llvm/build
+llvm/build/Makefile: llvm/CMakeLists.txt
+	mkdir llvm/build; cd llvm/build; cmake ..
+llvm/CMakeLists.txt:
 	git submodule update --init
 clean:
 	rm -f rhine parser.ml parser.mli lexer.ml *.o *.cmo *.cmi *.cmx
