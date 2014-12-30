@@ -114,7 +114,6 @@ let validate_and_optimize_f f =
   Llvm_analysis.assert_valid_function f;
   (* Optimize the function. *)
   ignore (PassManager.run_function f the_fpm);
-  (* dump_value f; *)
   (* Set the gc *)
   Llvm_gc.link_gc_components ();
   set_gc (Some "shadow-stack") f

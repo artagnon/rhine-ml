@@ -4,6 +4,7 @@ llvm-config = llvm/build/bin/llvm-config
 LLVMLIB = llvm/build/lib/ocaml/libllvm.a
 
 rhine: export OCAMLPATH = llvm/build/lib/ocaml
+rhine: export OCAMLPARAM = cclib=-Lllvm/build/lib,_
 rhine: $(LLVMLIB) $(OBJS)
 	ocamlfind $(ocamlc) -package llvm -package llvm.executionengine \
 	-package llvm.analysis -package llvm.target -package llvm.scalar_opts \
