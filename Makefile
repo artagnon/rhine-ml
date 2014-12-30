@@ -36,9 +36,9 @@ rgc.o: rgc.cc
 rgc_printer.o: rgc_printer.cc
 	clang++ `$(llvm-config) --cxxflags` -c -o $@ $<
 $(LLVMLIB): llvm/build/Makefile
-	$(MAKE) -C llvm/build
+	$(MAKE) -C llvm/build -j8
 llvm/build/Makefile: llvm/CMakeLists.txt
-	mkdir llvm/build; cd llvm/build; cmake ..
+	mkdir -p llvm/build; cd llvm/build; cmake ..
 llvm/CMakeLists.txt:
 	git submodule update --init
 clean:
