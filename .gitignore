@@ -4,6 +4,7 @@ parser.ml
 parser.mli
 tests/output.*
 _build/
+llvm-build/
 setup.data
 setup.log
 *~

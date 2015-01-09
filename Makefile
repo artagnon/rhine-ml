@@ -1,10 +1,10 @@
 OBJS = location.cmo ast_helper.cmo parser.cmo lexer.cmo pretty.cmo cookast.cmo codegen.cmo mlunbox.cmo toplevel.cmo main.cmo bindings.o rgc.o rgc_printer.o
 ocamlc = ocamlc -g -w @5@8@10@11@12@14@23@24@26@29@40
-llvm-config = llvm/build/bin/llvm-config
-LLVMLIB = llvm/build/lib/ocaml/libllvm.a
+llvm-config = llvm-build/bin/llvm-config
+LLVMLIB = llvm-build/lib/ocaml/libllvm.a
 
-rhine: export OCAMLPATH = llvm/build/lib/ocaml
-rhine: export OCAMLPARAM = cclib=-Lllvm/build/lib,_
+rhine: export OCAMLPATH = llvm-build/lib/ocaml
+rhine: export OCAMLPARAM = cclib=-Lllvm-build/lib,_
 rhine: $(LLVMLIB) $(OBJS)
 	ocamlfind $(ocamlc) -package llvm -package llvm.executionengine \
 	-package llvm.analysis -package llvm.target -package llvm.scalar_opts \
@@ -36,10 +36,10 @@ rgc.o: rgc.cc
 	clang++ `$(llvm-config) --cxxflags` -c -o $@ $<
 rgc_printer.o: rgc_printer.cc
 	clang++ `$(llvm-config) --cxxflags` -c -o $@ $<
-$(LLVMLIB): llvm/build/Makefile
-	$(MAKE) -C llvm/build -j8
-llvm/build/Makefile: llvm/CMakeLists.txt
-	mkdir -p llvm/build; cd llvm/build; cmake ..
+$(LLVMLIB): llvm-build/Makefile
+	$(MAKE) -C llvm-build -j8
+llvm-build/Makefile: llvm/CMakeLists.txt
+	mkdir -p llvm-build; cd llvm-build; cmake ../llvm
 llvm/CMakeLists.txt:
 	git submodule update --init
 clean:
