@@ -39,7 +39,7 @@ rgc_printer.o: rgc_printer.cc
 $(LLVMLIB): llvm-build/Makefile
 	$(MAKE) -C llvm-build -j8
 llvm-build/Makefile: llvm/CMakeLists.txt
-	mkdir -p llvm-build; cd llvm-build; cmake ../llvm
+	mkdir -p llvm-build; cd llvm-build; cmake -DCMAKE_BUILD_TYPE=Debug ../llvm
 llvm/CMakeLists.txt:
 	git submodule update --init
 clean:
