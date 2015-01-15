@@ -115,8 +115,7 @@ let validate_and_optimize_f f =
   (* Optimize the function. *)
   ignore (PassManager.run_function f the_fpm);
   (* Set the gc *)
-  Llvm_gc.link_gc_components ();
-  set_gc (Some "shadow-stack") f
+  set_gc (Some "rgc") f
 
 let main_loop sl =
   (* Do simple "peephole" optimizations and bit-twiddling optzn. *)
