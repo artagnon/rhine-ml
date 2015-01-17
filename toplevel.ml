@@ -168,13 +168,21 @@ let main_loop sl =
   let ft = function_type void_type
                          [| pointer_type i8_type; pointer_type i8_type;
                             i64_type; i32_type; i1_type |] in
-  ignore (declare_function "llvm.memcpy.p0i8.p0i8.i64" ft the_module);
+  ignore (declare_function "llvm.memcpy.p1i8.p1i8.i64" ft the_module);
   let ft = function_type double_type [| double_type; double_type |] in
   ignore (declare_function "llvm.pow.f64" ft the_module);
-  let ft = function_type void_type [| pointer_type i8_type |] in
+  let ft = function_type void_type [| pointer0_type i8_type |] in
   ignore (declare_function "llvm.va_start" ft the_module);
-  let ft = function_type void_type [| pointer_type i8_type |] in
+  let ft = function_type void_type [| pointer0_type i8_type |] in
   ignore (declare_function "llvm.va_end" ft the_module);
+  let ft = var_arg_function_type pvalue_t [| pointer_type
+					       (var_arg_function_type
+						  pvalue_t
+						  [| i32_type;
+						     pointer_type pvalue_t |]);
+					     i32_type; i32_type |] in
+  ignore (declare_function "llvm.experimental.gc.statepoint.p1f_p1value_tf"
+			   ft the_module);
   let ar n = Array.make n "v" in
   ignore (codegen_proto (Prototype("println", ar 1, RestNil)));
   ignore (codegen_proto (Prototype("print", ar 1, RestNil)));

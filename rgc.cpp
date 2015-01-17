@@ -1,4 +1,4 @@
-#include "llvm/CodeGen/GCStrategy.h"
+#include "llvm/IR/GCStrategy.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Value.h"
 
@@ -15,9 +15,8 @@ public:
     NeededSafePoints = 0;
     UsesMetadata = false;
     CustomRoots = false;
-    CustomSafePoints = false;
   }
-  Optional<bool> isGCManagedPointer(const Value *V) const override {
+  Optional<bool> isGCManagedPointer(const Value *V) const final {
     // Method is only valid on pointer typed values.
     PointerType *PT = cast<PointerType>(V->getType());
     // For the sake of this example GC, we arbitrarily pick addrspace(1) as our

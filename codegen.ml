@@ -15,6 +15,8 @@ let i64_type = i64_type context
 let i1_type = i1_type context
 let double_type = double_type context
 let void_type = void_type context
+let pointer0_type = pointer_type
+let pointer_type v = qualified_pointer_type v 1
 
 let int_of_bool = function true -> 1 | false -> 0
 
@@ -80,7 +82,7 @@ let build_strlen llv =
   build_call callee [| llv |] "strlen" builder
 
 let build_memcpy src dst llsize =
-  let callee = lookupf_or_die "llvm.memcpy.p0i8.p0i8.i64" in
+  let callee = lookupf_or_die "llvm.memcpy.p1i8.p1i8.i64" in
   build_call callee [| dst; src; llsize;
                        const_int i32_type 0;
                        const_int i1_type 0 |] "" builder
@@ -625,7 +627,7 @@ and codegen_array qs =
   box_value ~lllen:lllen (ptr 0)
 
 let build_va_arg_x86 ap argtype =
-  let el = build_alloca argtype "el" builder in
+  let el = build_malloc (size_of argtype) argtype "el" builder in
   let idxptr = build_in_bounds_gep ap (idx 0) "idxptr" builder in
   let idx0 = build_load idxptr "idx" builder in
   let magic_lim = const_int i32_type 40 in
@@ -654,7 +656,7 @@ let codegen_unpack_args llnargs args restarg =
   let va_start = lookupf_or_die "llvm.va_start" in
   let va_end = lookupf_or_die "llvm.va_end" in
   let ap = build_alloca valist_t "ap" builder in
-  let ap2 = build_bitcast ap (pointer_type i8_type) "ap2" builder in
+  let ap2 = build_bitcast ap (pointer0_type i8_type) "ap2" builder in
   ignore (build_call va_start [| ap2 |] "" builder);
   let va_arg () = build_va_arg_x86 ap (pointer_type value_t) in
   let llargs = Array.map (fun arg -> va_arg ()) args in
