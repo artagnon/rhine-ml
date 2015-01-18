@@ -16,7 +16,7 @@ public:
     UsesMetadata = false;
     CustomRoots = false;
   }
-  Optional<bool> isGCManagedPointer(const Value *V) const final {
+  Optional<bool> isGCManagedPointer(const Value *V) const override {
     // Method is only valid on pointer typed values.
     PointerType *PT = cast<PointerType>(V->getType());
     // For the sake of this example GC, we arbitrarily pick addrspace(1) as our

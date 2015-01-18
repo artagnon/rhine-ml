@@ -140,7 +140,8 @@ let main_loop sl =
   let value_t_elts = [| i32_type;                 (* value type of struct *)
                         i64_type;                 (* integer *)
                         i1_type;                  (* bool *)
-                        pointer_type i8_type;     (* string *)
+			(* string: addrspace(0) because build_global_strptr *)
+                        pointer0_type i8_type;
                         pointer_type pvalue_t;    (* array *)
                         i64_type;                 (* array length *)
                         double_type;
@@ -163,7 +164,7 @@ let main_loop sl =
   (* Declare external functions *)
   let ft = function_type (pointer_type i8_type) [| i64_type |] in
   ignore (declare_function "gc_malloc" ft the_module);
-  let ft = function_type i64_type [| pointer_type i8_type |] in
+  let ft = function_type i64_type [| pointer0_type i8_type |] in
   ignore (declare_function "strlen" ft the_module);
   let ft = function_type void_type
                          [| pointer_type i8_type; pointer_type i8_type;
@@ -191,11 +192,11 @@ let main_loop sl =
 
   let fnms = List.map (fun se -> sexpr_matcher (cook_toplevel se.lsexpr_desc)) sl in
   let fns = List.filter (fun fnm -> match fnm with
-				     ParsedFunction(f, main_p) -> true
+				      ParsedFunction(f, main_p) -> true
 				    | _ -> false) fnms in
   List.iter (fun fn -> match fn with
 			 ParsedFunction(f, _) -> validate_and_optimize_f f
-			| _ -> ()) fns;
+		       | _ -> ()) fns;
   List.iter (fun fn -> match fn with
 			 ParsedFunction(f, true) ->
 			 print_string "Evaluated to ";
