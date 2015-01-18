@@ -145,9 +145,9 @@ let main_loop sl =
                         pointer_type pvalue_t;    (* array *)
                         i64_type;                 (* array length *)
                         double_type;
-                        pointer_type (var_arg_function_type
-                                        pvalue_t
-                                        [| i32_type; pointer_type pvalue_t |]);
+                        pointer0_type (var_arg_function_type
+                                         pvalue_t
+                                         [| i32_type; pointer_type pvalue_t |]);
                         i8_type;
                         i1_type;                  (* gc_marked *)
                         pointer_type value_t;     (* gc_next *)
@@ -176,13 +176,18 @@ let main_loop sl =
   ignore (declare_function "llvm.va_start" ft the_module);
   let ft = function_type void_type [| pointer0_type i8_type |] in
   ignore (declare_function "llvm.va_end" ft the_module);
-  let ft = var_arg_function_type pvalue_t [| pointer_type
+  let ft = var_arg_function_type i32_type [| pointer0_type
 					       (var_arg_function_type
 						  pvalue_t
 						  [| i32_type;
 						     pointer_type pvalue_t |]);
 					     i32_type; i32_type |] in
-  ignore (declare_function "llvm.experimental.gc.statepoint.p1f_p1value_tf"
+  (* What a monster name! *)
+  ignore (declare_function
+	    "llvm.experimental.gc.statepoint.p0f_p1value_ti32p1p1value_tvarargf"
+	    ft the_module);
+  let ft = function_type pvalue_t [| i32_type |] in
+  ignore (declare_function "llvm.experimental.gc.result.ptr.p1value_t"
 			   ft the_module);
   let ar n = Array.make n "v" in
   ignore (codegen_proto (Prototype("println", ar 1, RestNil)));

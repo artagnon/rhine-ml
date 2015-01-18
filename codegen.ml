@@ -114,9 +114,9 @@ let box_value ?(lllen = const_null i32_type) llval =
   let pvalue_t = pointer_type value_t in
   let value_ptr = build_malloc (size_of value_t) value_t "value" builder in
   let match_pointer ty = match ty with
-    | ty when ty = pointer_type (var_arg_function_type
-                                   pvalue_t
-                                   [| i32_type; pointer_type pvalue_t |]) ->
+    | ty when ty = pointer0_type (var_arg_function_type
+                                    pvalue_t
+                                    [| i32_type; pointer_type pvalue_t |]) ->
        let fenv_ptr = build_in_bounds_gep value_ptr (idx 4) "boxptr" builder in
        let fenv = codegen_function_env (value_name llval) in
        ignore (build_store fenv fenv_ptr builder);
@@ -534,6 +534,10 @@ and codegen_cf_op op s2 =
 
 and codegen_call_op f args =
   let nargs = const_int i32_type (List.length args) in
+  let statepointf = lookupf_or_die
+		      "llvm.experimental.gc.statepoint.p0f_p1value_ti32p1p1value_tvarargf" in
+  let resultf = lookupf_or_die "llvm.experimental.gc.result.ptr.p1value_t" in
+
   let callee, env = match lookup_function f the_module with
       Some callee ->
       let env = codegen_function_env f in
@@ -542,8 +546,12 @@ and codegen_call_op f args =
        let v = try Hashtbl.find named_values f with
                  Not_found -> raise (Error ("Unknown function: " ^ f)) in
        unbox_function v in
-  let args = Array.of_list (nargs::env::args) in
-  build_call callee args "call" builder;
+  let rnargs = const_int i32_type (2 + List.length args) in
+  let i32z = const_int i32_type 0 in
+  let sargs = Array.of_list ([callee; rnargs; i32z; nargs; env] @
+			       args @ [i32z]) in
+  let tok = build_call statepointf sargs "token" builder in
+  build_call resultf [| tok |] "result" builder
 
 and codegen_binding_op f s2 =
   let old_bindings = ref [] in
