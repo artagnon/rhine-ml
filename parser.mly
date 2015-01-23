@@ -1,5 +1,5 @@
 %{
-  open Ast
+  open Parsetree
   open Ast_helper
 
   let (--) i j =
@@ -27,13 +27,13 @@
 %token <string> STRING
 
 %start prog
-%type <Ast.prog> prog
-%type <Ast.atom> atom
-%type <Ast.sexpr> sexpr
-%type <Ast.sexpr> vsexpr
-%type <Ast.sexpr> tsexpr
-%type <Ast.sexpr list> tsexprs
-%type <Ast.lsexpr list> sexprs
+%type <Parsetree.prog> prog
+%type <Parsetree.atom> atom
+%type <Parsetree.sexpr> sexpr
+%type <Parsetree.sexpr> vsexpr
+%type <Parsetree.sexpr> tsexpr
+%type <Parsetree.sexpr list> tsexprs
+%type <Parsetree.lsexpr list> sexprs
 
 %%
 

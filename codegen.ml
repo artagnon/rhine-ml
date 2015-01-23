@@ -172,17 +172,17 @@ let resolve_name n unresolvedf =
 let codegen_atom atom =
   let value_t = lookupt_or_die "value_t" in
   let unboxed_value = match atom with
-      Ast.Int n -> const_int i64_type n
-    | Ast.Bool n -> const_int i1_type (int_of_bool n)
-    | Ast.Double n -> const_float double_type n
-    | Ast.Char c -> const_int i8_type (int_of_char c)
-    | Ast.Nil -> const_null (pointer_type value_t)
-    | Ast.String s -> build_global_stringptr s "string" builder
-    | Ast.Symbol n -> resolve_name n unresolved_err
-    | Ast.RestArgs n -> raise (Error "&rest cannot appear in-body")
+      Parsetree.Int n -> const_int i64_type n
+    | Parsetree.Bool n -> const_int i1_type (int_of_bool n)
+    | Parsetree.Double n -> const_float double_type n
+    | Parsetree.Char c -> const_int i8_type (int_of_char c)
+    | Parsetree.Nil -> const_null (pointer_type value_t)
+    | Parsetree.String s -> build_global_stringptr s "string" builder
+    | Parsetree.Symbol n -> resolve_name n unresolved_err
+    | Parsetree.RestArgs n -> raise (Error "&rest cannot appear in-body")
   in match atom with
-       Ast.Symbol n -> unboxed_value
-     | Ast.Nil -> unboxed_value
+       Parsetree.Symbol n -> unboxed_value
+     | Parsetree.Nil -> unboxed_value
      | _ -> box_value unboxed_value
 
 let rec extract_args sl = List.map codegen_sexpr sl
@@ -438,7 +438,7 @@ and codegen_if condf truef falsef =
   phi
 
 and codegen_dotimes var_name loop_lim bodyf retf =
-  let start_val = codegen_sexpr (Ast.Atom(Ast.Int(0))) in
+  let start_val = codegen_sexpr (Parsetree.Atom(Parsetree.Int(0))) in
   let start_bb = insertion_block builder in
   let the_function = block_parent start_bb in
   let loop_bb = append_block context "loop" the_function in
@@ -488,10 +488,10 @@ and codegen_cf_op op s2 =
      codegen_if condf truef falsef
   | "dotimes" ->
      let qs, body = match s2 with
-         Ast.Array(qs)::body -> qs, body
+         Parsetree.Array(qs)::body -> qs, body
        | _ -> raise (Error "Malformed dotimes expression") in
      let var_name = match List.hd qs with
-         Ast.Atom(Ast.Symbol(s)) -> s
+         Parsetree.Atom(Parsetree.Symbol(s)) -> s
        | _ -> raise (Error "Expected symbol in dotimes") in
      let loop_lim = codegen_sexpr (List.nth qs 1) in
      let bodyf i = ignore (codegen_sexpr_list body) in
@@ -528,14 +528,14 @@ and codegen_binding_op f s2 =
   match f with
     "let" ->
     let bindlist, body = match s2 with
-        Ast.Array(qs)::next -> qs, next
+        Parsetree.Array(qs)::next -> qs, next
       | _ -> raise (Error "Malformed let") in
     let len = List.length bindlist in
     if len mod 2 != 0 then
       raise (Error "Malformed binding form in let");
     let bind n a =
       let s = match n with
-          Ast.Atom(Ast.Symbol(s)) -> s
+          Parsetree.Atom(Parsetree.Symbol(s)) -> s
         | _ -> raise (Error "Malformed binding form in let") in
       let llaptr = codegen_sexpr a in
       let lla = build_load llaptr "load" builder in
@@ -580,11 +580,11 @@ and match_action s s2 =
       codegen_call_op s args
 
 and codegen_sexpr s = match s with
-    Ast.Atom n -> codegen_atom n
-  | Ast.Array(qs) -> codegen_array qs
-  | Ast.List(Ast.Atom(Ast.Symbol s)::s2) ->
+    Parsetree.Atom n -> codegen_atom n
+  | Parsetree.Array(qs) -> codegen_array qs
+  | Parsetree.List(Parsetree.Atom(Parsetree.Symbol s)::s2) ->
      match_action s s2
-  | _ -> codegen_atom (Ast.String(Pretty.ppsexpr s))
+  | _ -> codegen_atom (Parsetree.String(Pretty.ppsexpr s))
 
 and codegen_sexpr_list sl =
   let r = List.map codegen_sexpr sl in
@@ -639,8 +639,8 @@ let codegen_unpack_args llnargs args restarg =
   let va_arg () = build_va_arg_x86 ap (pointer_type value_t) in
   let llargs = Array.map (fun arg -> va_arg ()) args in
   let _ = match restarg with
-      Ast.RestNil -> ignore (build_call va_end [| ap2 |] "" builder)
-    | Ast.RestVar(n) ->
+      Parsetree.RestNil -> ignore (build_call va_end [| ap2 |] "" builder)
+    | Parsetree.RestVar(n) ->
        let value_t = lookupt_or_die "value_t" in
        let rharel_type = pointer_type value_t in
        let len = const_int i64_type (Array.length args) in
@@ -667,7 +667,7 @@ let codegen_proto ?(main_p = false) p =
     | None -> raise (Error "Could not look up value_t")
   in
   match p with
-    Ast.Prototype (name, args, restarg) ->
+    Parsetree.Prototype (name, args, restarg) ->
     let pvalue_t = pointer_type value_t in
     let env_t = pointer_type pvalue_t in
     let ft = if main_p then
@@ -711,7 +711,7 @@ let extract_unbound_names n =
 
 let extracta_env_vars a =
   match a with
-    Ast.Symbol n -> extract_unbound_names n
+    Parsetree.Symbol n -> extract_unbound_names n
   | _ -> []
 
 let rec append_env_vars a b =
@@ -719,9 +719,9 @@ let rec append_env_vars a b =
 
 and extract_env_vars se =
   match se with
-    Ast.Atom n -> extracta_env_vars n
-  | Ast.Array(qs) -> List.fold_left append_env_vars [] qs
-  | Ast.List(Ast.Atom(Ast.Symbol s)::s2) ->
+    Parsetree.Atom n -> extracta_env_vars n
+  | Parsetree.Array(qs) -> List.fold_left append_env_vars [] qs
+  | Parsetree.List(Parsetree.Atom(Parsetree.Symbol s)::s2) ->
      List.fold_left append_env_vars [] s2
   | _ -> raise (Error ("Expected atom, vector, or function call (env_vars): " ^
                          Pretty.ppsexpr se))
@@ -730,11 +730,11 @@ let extractf_env_vars f s2 =
   match f with
     "let" ->
     let bindlist, body = match s2 with
-        Ast.Array(qs)::next -> qs, next
+        Parsetree.Array(qs)::next -> qs, next
       | _ -> raise (Error "Malformed let") in
     let bind n =
       let s = match n with
-          Ast.Atom(Ast.Symbol(s)) -> s
+          Parsetree.Atom(Parsetree.Symbol(s)) -> s
         | _ -> raise (Error "Malformed binding form in let") in
       Hashtbl.add bound_names s true in
     List.iteri (fun i n -> if i mod 2 == 0 then bind n) bindlist;
@@ -750,25 +750,25 @@ let extractf_env_vars f s2 =
 let extractl_env_vars body =
   let r = List.map (fun se ->
                     match se with
-                      Ast.List(l2) ->
+                      Parsetree.List(l2) ->
                       begin match l2 with
-                              Ast.Atom(Ast.Symbol s)::s2 ->
+                              Parsetree.Atom(Parsetree.Symbol s)::s2 ->
                               extractf_env_vars s s2
                             | _ -> raise (Error "Expected symbol")
                       end
-                    | Ast.Atom n -> extracta_env_vars n
-                    | Ast.Array(qs) -> List.fold_left append_env_vars [] qs
+                    | Parsetree.Atom n -> extracta_env_vars n
+                    | Parsetree.Array(qs) -> List.fold_left append_env_vars [] qs
                     | _ -> raise (Error ("Can't extractl_env_vars: " ^
                                            (Pretty.ppsexpr se)))) body in
   List.flatten r
 
 let codegen_splice_env llenv proto body =
-  let fname, args, rest = match proto with Ast.Prototype(n, a, r) -> n, a, r in
+  let fname, args, rest = match proto with Parsetree.Prototype(n, a, r) -> n, a, r in
   Hashtbl.clear bound_names;
   Array.iter (fun n -> Hashtbl.add bound_names n true) args;
   let _ = match rest with
-      Ast.RestVar(v) -> Hashtbl.add bound_names v true
-    | Ast.RestNil -> () in
+      Parsetree.RestVar(v) -> Hashtbl.add bound_names v true
+    | Parsetree.RestNil -> () in
   let env_vars = extractl_env_vars body in
   List.iteri (fun i n ->
               let elptr = build_in_bounds_gep
@@ -779,7 +779,7 @@ let codegen_splice_env llenv proto body =
   Hashtbl.add function_envs fname env_vars
 
 let codegen_func ?(main_p = false) f = match f with
-    Ast.Function (proto, body) ->
+    Parsetree.Function (proto, body) ->
     Hashtbl.clear named_values;
 
     let the_function = codegen_proto ~main_p:main_p proto in
@@ -792,7 +792,7 @@ let codegen_func ?(main_p = false) f = match f with
         if main_p then
           codegen_sexpr_list body
         else
-          (let a, r = match proto with Ast.Prototype(_, a, r) -> a, r in
+          (let a, r = match proto with Parsetree.Prototype(_, a, r) -> a, r in
            codegen_unpack_args (param the_function 0) a r;
            codegen_splice_env (param the_function 1) proto body;
            codegen_sexpr_list body) in

@@ -1,4 +1,4 @@
-open Ast
+open Parsetree
 type action = Pprint | Normal
 
 let main () =

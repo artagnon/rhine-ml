@@ -1,5 +1,5 @@
 open Format
-open Ast
+open Parsetree
 
 exception Error of string
 

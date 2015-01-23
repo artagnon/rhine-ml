@@ -1,4 +1,4 @@
-open Ast
+open Parsetree
 
 let default_loc = ref Location.none;;
 

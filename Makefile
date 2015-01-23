@@ -1,4 +1,5 @@
-OBJS = location.cmo ast_helper.cmo parser.cmo lexer.cmo pretty.cmo cookast.cmo primops.cmo codegen.cmo mlunbox.cmo toplevel.cmo main.cmo bindings.o rgc.o
+OBJS = location.cmo ast_helper.cmo parser.cmo lexer.cmo pretty.cmo cookast.cmo \
+	primops.cmo codegen.cmo mlunbox.cmo toplevel.cmo main.cmo bindings.o rgc.o
 ocamlc = ocamlc -g -w @5@8@10@11@12@14@23@24@26@29@40
 llvm-config = llvm-build/bin/llvm-config
 LLVMLIB = llvm-build/lib/ocaml/libllvm.a
@@ -26,7 +27,7 @@ mlunbox.cmo: mlunbox.ml
 	ocamlfind $(ocamlc) -c -package ctypes -linkpkg $<
 %.cmo: %.ml
 	$(ocamlc) -c $<
-ast.cmi: ast.mli
+parsetree.cmi: parsetree.mli
 	ocamlfind $(ocamlc) -c -package llvm -linkpkg $<
 %.cmi: %.mli
 	$(ocamlc) -c $<
@@ -46,27 +47,27 @@ clean:
 	rm -f rhine parser.ml parser.mli lexer.ml *.o *.cmo *.cmi *.cmx
 .PHONY: test clean
 
-ast_helper.cmo : location.cmo ast.cmi
-ast_helper.cmx : location.cmx ast.cmi
-codegen.cmo : pretty.cmo primops.cmo ast.cmi
-codegen.cmx : pretty.cmx primops.cmx ast.cmi
-cookast.cmo : pretty.cmo ast.cmi
-cookast.cmx : pretty.cmx ast.cmi
+ast_helper.cmo : location.cmo parsetree.cmi
+ast_helper.cmx : location.cmx parsetree.cmi
+codegen.cmo : pretty.cmo primops.cmo parsetree.cmi
+codegen.cmx : pretty.cmx primops.cmx parsetree.cmi
+cookast.cmo : pretty.cmo parsetree.cmi
+cookast.cmx : pretty.cmx parsetree.cmi
 lexer.cmo : parser.cmi
 lexer.cmx : parser.cmx
 location.cmo :
 location.cmx :
-main.cmo : toplevel.cmo pretty.cmo parser.cmi lexer.cmo ast.cmi
-main.cmx : toplevel.cmx pretty.cmx parser.cmx lexer.cmx ast.cmi
-mlunbox.cmo : ast.cmi
-mlunbox.cmx : ast.cmi
+main.cmo : toplevel.cmo pretty.cmo parser.cmi lexer.cmo parsetree.cmi
+main.cmx : toplevel.cmx pretty.cmx parser.cmx lexer.cmx parsetree.cmi
+mlunbox.cmo : parsetree.cmi
+mlunbox.cmx : parsetree.cmi
 primops.cmo :
 primops.cmx :
-parser.cmo : location.cmo ast_helper.cmo ast.cmi parser.cmi
-parser.cmx : location.cmx ast_helper.cmx ast.cmi parser.cmi
-pretty.cmo : ast.cmi
-pretty.cmx : ast.cmi
-toplevel.cmo : pretty.cmo mlunbox.cmo cookast.cmo codegen.cmo ast.cmi
-toplevel.cmx : pretty.cmx mlunbox.cmx cookast.cmx codegen.cmx ast.cmi
-ast.cmi : location.cmo
-parser.cmi : ast.cmi
+parser.cmo : location.cmo ast_helper.cmo parsetree.cmi parser.cmi
+parser.cmx : location.cmx ast_helper.cmx parsetree.cmi parser.cmi
+pretty.cmo : parsetree.cmi
+pretty.cmx : parsetree.cmi
+toplevel.cmo : pretty.cmo mlunbox.cmo cookast.cmo codegen.cmo parsetree.cmi
+toplevel.cmx : pretty.cmx mlunbox.cmx cookast.cmx codegen.cmx parsetree.cmi
+parsetree.cmi : location.cmo
+parser.cmi : parsetree.cmi

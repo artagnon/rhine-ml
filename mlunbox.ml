@@ -1,4 +1,4 @@
-open Ast
+open Parsetree
 open Ctypes
 
 exception Error of string
@@ -74,10 +74,10 @@ let rec print_value v =
 
 let rec lang_val_to_ast lv =
   match lv with
-    LangInt n -> Ast.Atom(Ast.Int n)
-  | LangBool n -> Ast.Atom(Ast.Bool n)
-  | LangString s -> Ast.Atom(Ast.String s)
-  | LangArray a -> Ast.List(List.map lang_val_to_ast a)
-  | LangDouble d -> Ast.Atom(Ast.Double d)
-  | LangChar c -> Ast.Atom(Ast.Char c)
-  | LangNil -> Ast.Atom Ast.Nil
+    LangInt n -> Parsetree.Atom(Parsetree.Int n)
+  | LangBool n -> Parsetree.Atom(Parsetree.Bool n)
+  | LangString s -> Parsetree.Atom(Parsetree.String s)
+  | LangArray a -> Parsetree.List(List.map lang_val_to_ast a)
+  | LangDouble d -> Parsetree.Atom(Parsetree.Double d)
+  | LangChar c -> Parsetree.Atom(Parsetree.Char c)
+  | LangNil -> Parsetree.Atom Parsetree.Nil
