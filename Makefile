@@ -47,27 +47,30 @@ clean:
 	rm -f rhine parser.ml parser.mli lexer.ml *.o *.cmo *.cmi *.cmx
 .PHONY: test clean
 
-ast_helper.cmo : location.cmo parsetree.cmi
-ast_helper.cmx : location.cmx parsetree.cmi
-codegen.cmo : pretty.cmo primops.cmo parsetree.cmi
-codegen.cmx : pretty.cmx primops.cmx parsetree.cmi
-cookast.cmo : pretty.cmo parsetree.cmi
-cookast.cmx : pretty.cmx parsetree.cmi
+ast_helper.cmo : parsetree.cmi location.cmo
+ast_helper.cmx : parsetree.cmi location.cmx
+codegen.cmo : primops.cmo pretty.cmo parsetree.cmi
+codegen.cmx : primops.cmx pretty.cmx parsetree.cmi
+cookast.cmo : pretty.cmo parsetree.cmi ast.cmi
+cookast.cmx : pretty.cmx parsetree.cmi ast.cmi
+infer.cmo : ast.cmi
+infer.cmx : ast.cmi
 lexer.cmo : parser.cmi
 lexer.cmx : parser.cmx
 location.cmo :
 location.cmx :
-main.cmo : toplevel.cmo pretty.cmo parser.cmi lexer.cmo parsetree.cmi
-main.cmx : toplevel.cmx pretty.cmx parser.cmx lexer.cmx parsetree.cmi
+main.cmo : toplevel.cmo pretty.cmo parsetree.cmi parser.cmi lexer.cmo
+main.cmx : toplevel.cmx pretty.cmx parsetree.cmi parser.cmx lexer.cmx
 mlunbox.cmo : parsetree.cmi
 mlunbox.cmx : parsetree.cmi
-primops.cmo :
-primops.cmx :
-parser.cmo : location.cmo ast_helper.cmo parsetree.cmi parser.cmi
-parser.cmx : location.cmx ast_helper.cmx parsetree.cmi parser.cmi
+parser.cmo : parsetree.cmi location.cmo ast_helper.cmo parser.cmi
+parser.cmx : parsetree.cmi location.cmx ast_helper.cmx parser.cmi
 pretty.cmo : parsetree.cmi
 pretty.cmx : parsetree.cmi
-toplevel.cmo : pretty.cmo mlunbox.cmo cookast.cmo codegen.cmo parsetree.cmi
-toplevel.cmx : pretty.cmx mlunbox.cmx cookast.cmx codegen.cmx parsetree.cmi
-parsetree.cmi : location.cmo
+primops.cmo :
+primops.cmx :
+toplevel.cmo : pretty.cmo parsetree.cmi mlunbox.cmo cookast.cmo codegen.cmo
+toplevel.cmx : pretty.cmx parsetree.cmi mlunbox.cmx cookast.cmx codegen.cmx
+ast.cmi : parsetree.cmi
 parser.cmi : parsetree.cmi
+parsetree.cmi : location.cmo

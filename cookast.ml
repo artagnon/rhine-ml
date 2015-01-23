@@ -1,4 +1,5 @@
 open Pretty
+open Ast
 
 exception Error of string
 

@@ -79,7 +79,7 @@ let rec lift_macros body =
     | se -> se in
   List.map lift_macros_se body
 
-let sexpr_matcher sexpr =
+let tlform_matcher sexpr =
   let value_t = match type_by_name the_module "value_t" with
       Some t -> t
     | None -> raise (Error "Could not look up value_t") in
@@ -119,7 +119,6 @@ let validate_and_optimize_f f =
 
 let main_loop sl =
   (* Do simple "peephole" optimizations and bit-twiddling optzn. *)
-
   add_instruction_combination the_fpm;
 
   (* reassociate expressions. *)
@@ -195,7 +194,7 @@ let main_loop sl =
   ignore (codegen_proto (Prototype("cequ", ar 2, RestNil)));
   ignore (codegen_proto (Prototype("cstrjoin", ar 1, RestNil)));
 
-  let fnms = List.map (fun se -> sexpr_matcher (cook_toplevel se.lsexpr_desc)) sl in
+  let fnms = List.map (fun se -> tlform_matcher (cook_toplevel se.lsexpr_desc)) sl in
   let fns = List.filter (fun fnm -> match fnm with
 				      ParsedFunction(f, main_p) -> true
 				    | _ -> false) fnms in
