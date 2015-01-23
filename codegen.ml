@@ -1,6 +1,5 @@
 open Llvm
-
-module StringSet = Set.Make(String)
+open Primops
 
 exception Error of string
 
@@ -34,38 +33,6 @@ let (--) i j =
     let rec aux n acc =
       if n < i then acc else aux (n-1) (n :: acc)
     in aux j []
-
-let atom_ops = List.fold_left (fun s k -> StringSet.add k s)
-                               StringSet.empty
-                               [ "bool?"; "int?"; "dbl?"; "ar?" ]
-
-let arith_ops = List.fold_left (fun s k -> StringSet.add k s)
-                               StringSet.empty
-                               [ "+"; "-"; "*"; "/"; "%"; "^" ]
-
-let logical_ops = List.fold_left (fun s k -> StringSet.add k s)
-                                 StringSet.empty
-                                 [ "and"; "or"; "not" ]
-
-let cmp_ops = List.fold_left (fun s k -> StringSet.add k s)
-                             StringSet.empty
-                             [ "<"; ">"; "<="; ">="; "=" ]
-
-let array_ops = List.fold_left (fun s k -> StringSet.add k s)
-                               StringSet.empty
-                               [ "first"; "rest"; "cons"; "length" ]
-
-let string_ops = List.fold_left (fun s k -> StringSet.add k s)
-                                StringSet.empty
-                                [ "str-split"; "str-join"; "str-length" ]
-
-let cf_ops = List.fold_left (fun s k -> StringSet.add k s)
-                            StringSet.empty
-                            [ "if"; "when"; "dotimes" ]
-
-let binding_ops = List.fold_left (fun s k -> StringSet.add k s)
-                                 StringSet.empty
-                                 [ "let"; "def" ]
 
 let create_entry_block_alloca the_function var_name =
   let value_t = lookupt_or_die "value_t" in
@@ -521,7 +488,7 @@ and codegen_cf_op op s2 =
      codegen_if condf truef falsef
   | "dotimes" ->
      let qs, body = match s2 with
-         Ast.Vector(qs)::body -> qs, body
+         Ast.Array(qs)::body -> qs, body
        | _ -> raise (Error "Malformed dotimes expression") in
      let var_name = match List.hd qs with
          Ast.Atom(Ast.Symbol(s)) -> s
@@ -534,10 +501,6 @@ and codegen_cf_op op s2 =
 
 and codegen_call_op f args =
   let nargs = const_int i32_type (List.length args) in
-  let statepointf = lookupf_or_die
-		      "llvm.experimental.gc.statepoint.p0f_p1value_ti32p1p1value_tvarargf" in
-  let resultf = lookupf_or_die "llvm.experimental.gc.result.ptr.p1value_t" in
-
   let callee, env = match lookup_function f the_module with
       Some callee ->
       let env = codegen_function_env f in
@@ -546,19 +509,26 @@ and codegen_call_op f args =
        let v = try Hashtbl.find named_values f with
                  Not_found -> raise (Error ("Unknown function: " ^ f)) in
        unbox_function v in
-  let rnargs = const_int i32_type (2 + List.length args) in
-  let i32z = const_int i32_type 0 in
-  let sargs = Array.of_list ([callee; rnargs; i32z; nargs; env] @
-			       args @ [i32z]) in
-  let tok = build_call statepointf sargs "token" builder in
-  build_call resultf [| tok |] "result" builder
+  let rargs = [nargs; env] @ args in
+
+  (* uncomment when varargs statepoint works *)
+  (* let statepointf = lookupf_or_die *)
+  (* 		      "llvm.experimental.gc.statepoint.p0f_p1value_ti32p1p1value_tvarargf" in *)
+  (* let resultf = lookupf_or_die "llvm.experimental.gc.result.ptr.p1value_t" in *)
+  (* let i32z = const_int i32_type 0 in *)
+  (* let rnargs = const_int i32_type (2 + List.length args) in *)
+  (* let sargs = Array.of_list ([callee; rnargs; i32z] @ rargs @ [i32z]) in *)
+  (* let tok = build_call statepointf sargs "token" builder in *)
+  (* build_call resultf [| tok |] "result" builder *)
+
+  build_call callee (Array.of_list rargs) "call" builder
 
 and codegen_binding_op f s2 =
   let old_bindings = ref [] in
   match f with
     "let" ->
     let bindlist, body = match s2 with
-        Ast.Vector(qs)::next -> qs, next
+        Ast.Array(qs)::next -> qs, next
       | _ -> raise (Error "Malformed let") in
     let len = List.length bindlist in
     if len mod 2 != 0 then
@@ -611,7 +581,7 @@ and match_action s s2 =
 
 and codegen_sexpr s = match s with
     Ast.Atom n -> codegen_atom n
-  | Ast.Vector(qs) -> codegen_array qs
+  | Ast.Array(qs) -> codegen_array qs
   | Ast.List(Ast.Atom(Ast.Symbol s)::s2) ->
      match_action s s2
   | _ -> codegen_atom (Ast.String(Pretty.ppsexpr s))
@@ -750,7 +720,7 @@ let rec append_env_vars a b =
 and extract_env_vars se =
   match se with
     Ast.Atom n -> extracta_env_vars n
-  | Ast.Vector(qs) -> List.fold_left append_env_vars [] qs
+  | Ast.Array(qs) -> List.fold_left append_env_vars [] qs
   | Ast.List(Ast.Atom(Ast.Symbol s)::s2) ->
      List.fold_left append_env_vars [] s2
   | _ -> raise (Error ("Expected atom, vector, or function call (env_vars): " ^
@@ -760,7 +730,7 @@ let extractf_env_vars f s2 =
   match f with
     "let" ->
     let bindlist, body = match s2 with
-        Ast.Vector(qs)::next -> qs, next
+        Ast.Array(qs)::next -> qs, next
       | _ -> raise (Error "Malformed let") in
     let bind n =
       let s = match n with
@@ -787,7 +757,7 @@ let extractl_env_vars body =
                             | _ -> raise (Error "Expected symbol")
                       end
                     | Ast.Atom n -> extracta_env_vars n
-                    | Ast.Vector(qs) -> List.fold_left append_env_vars [] qs
+                    | Ast.Array(qs) -> List.fold_left append_env_vars [] qs
                     | _ -> raise (Error ("Can't extractl_env_vars: " ^
                                            (Pretty.ppsexpr se)))) body in
   List.flatten r

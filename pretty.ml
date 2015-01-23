@@ -28,7 +28,7 @@ let rec ppsexpr p =
   | SQuote(se) -> sprintf "`%s" (ppsexpr se)
   | Unquote(se) -> sprintf "~%s" (ppsexpr se)
   | List(sel) -> sprintf "(%s)" (List.fold_left lfolder "" sel)
-  | Vector(qs) -> sprintf "[%s]" (List.fold_left vfolder "" qs)
+  | Array(qs) -> sprintf "[%s]" (List.fold_left vfolder "" qs)
   | _ -> raise (Error "Don't know how to print cooked AST")
 
 let rec ppsexprl p =

@@ -19,9 +19,9 @@ let extract_strings args =
   args, restarg
 
 let parse_defn_form = function
-    Ast.Atom(Ast.Symbol(sym))::Ast.Vector(v)::
+    Ast.Atom(Ast.Symbol(sym))::Ast.Array(v)::
       Ast.Atom(Ast.String(_))::body |
-    Ast.Atom(Ast.Symbol(sym))::Ast.Vector(v)::body ->
+    Ast.Atom(Ast.Symbol(sym))::Ast.Array(v)::body ->
      if body == [] then
        raise (Error "Empty function definition");
      let args, restarg = extract_strings v in
@@ -29,9 +29,9 @@ let parse_defn_form = function
     | se -> raise (Error ("Malformed defn form:" ^ ppsexprl se))
 
 let parse_defmacro_form = function
-    Ast.Atom(Ast.Symbol(sym))::Ast.Vector(v)::
+    Ast.Atom(Ast.Symbol(sym))::Ast.Array(v)::
       Ast.Atom(Ast.String(_))::body |
-    Ast.Atom(Ast.Symbol(sym))::Ast.Vector(v)::body ->
+    Ast.Atom(Ast.Symbol(sym))::Ast.Array(v)::body ->
      if body == [] then
        raise (Error "Empty macro definition");
      let args, restarg = extract_strings v in

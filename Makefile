@@ -1,4 +1,4 @@
-OBJS = location.cmo ast_helper.cmo parser.cmo lexer.cmo pretty.cmo cookast.cmo codegen.cmo mlunbox.cmo toplevel.cmo main.cmo bindings.o rgc.o
+OBJS = location.cmo ast_helper.cmo parser.cmo lexer.cmo pretty.cmo cookast.cmo primops.cmo codegen.cmo mlunbox.cmo toplevel.cmo main.cmo bindings.o rgc.o
 ocamlc = ocamlc -g -w @5@8@10@11@12@14@23@24@26@29@40
 llvm-config = llvm-build/bin/llvm-config
 LLVMLIB = llvm-build/lib/ocaml/libllvm.a
@@ -48,16 +48,20 @@ clean:
 
 ast_helper.cmo : location.cmo ast.cmi
 ast_helper.cmx : location.cmx ast.cmi
-codegen.cmo : pretty.cmo ast.cmi
-codegen.cmx : pretty.cmx ast.cmi
+codegen.cmo : pretty.cmo primops.cmo ast.cmi
+codegen.cmx : pretty.cmx primops.cmx ast.cmi
 cookast.cmo : pretty.cmo ast.cmi
 cookast.cmx : pretty.cmx ast.cmi
+lexer.cmo : parser.cmi
+lexer.cmx : parser.cmx
 location.cmo :
 location.cmx :
-main.cmo : toplevel.cmo pretty.cmo parser.cmi ast.cmi
-main.cmx : toplevel.cmx pretty.cmx parser.cmx ast.cmi
+main.cmo : toplevel.cmo pretty.cmo parser.cmi lexer.cmo ast.cmi
+main.cmx : toplevel.cmx pretty.cmx parser.cmx lexer.cmx ast.cmi
 mlunbox.cmo : ast.cmi
 mlunbox.cmx : ast.cmi
+primops.cmo :
+primops.cmx :
 parser.cmo : location.cmo ast_helper.cmo ast.cmi parser.cmi
 parser.cmx : location.cmx ast_helper.cmx ast.cmi parser.cmi
 pretty.cmo : ast.cmi

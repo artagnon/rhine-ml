@@ -56,8 +56,8 @@ sexpr:
  | LPAREN sexprs RPAREN { List (unlsexpr $2) }
 
 vsexpr:
-   LSQBR sexprs RSQBR { Vector (unlsexpr $2) }
- | LSQBR RSQBR { Vector [] }
+   LSQBR sexprs RSQBR { Array (unlsexpr $2) }
+ | LSQBR RSQBR { Array [] }
 
 tsexpr:
    sexpr { $1 }

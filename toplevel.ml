@@ -57,7 +57,7 @@ let rec macroexpand_se ?(unquote_p = false) se quote_nr =
                                       macroexpand_se se quote_nr) sl) in
        if unquote_p then run_se_splice leval
        else leval
-    | Vector(sl) -> Vector(List.map (fun se ->
+    | Array(sl) -> Array(List.map (fun se ->
                                              macroexpand_se se quote_nr) sl)
     | se -> if unquote_p then run_se_splice se
             else se

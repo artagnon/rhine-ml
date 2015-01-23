@@ -1,5 +1,5 @@
 type atom =
-    Symbol of string
+  | Symbol of string
   | Int of int
   | Bool of bool
   | Double of float
@@ -9,15 +9,15 @@ type atom =
   | Nil
 
 type restplaceholder =
-    RestVar of string
+  | RestVar of string
   | RestNil
 
 type sexpr =
-    Atom of atom
+  | Atom of atom
   | SQuote of sexpr
   | Unquote of sexpr
   | List of sexpr list
-  | Vector of sexpr list
+  | Array of sexpr list
   | Defn of string * string list * restplaceholder * sexpr list
   | Defmacro of string * string list * restplaceholder * sexpr list
   | Def of string * sexpr
