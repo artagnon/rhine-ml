@@ -23,9 +23,15 @@ There are a number of reasons for the build failing:
    instructions presented above, open an issue. An upstream update
    probably screwed something up.
 
-3. Running into build issues usually means that llvm upstream has
-   changed in a trivial way; you can attempt to fix this yourself, or
-   open an issue.
+3. Silly build issues usually arise from the build not being perfectly
+   parallel: due to races, the `-j8` picks the dependee too
+   earlier. Either go into `llvm-build/` and keep hitting `make -j8`
+   until it succeeds, or drop the `-j8` together, waiting for a longer
+   time for a predictable result.
+
+4. Running into more serious build issues usually means that llvm
+   upstream has changed in a trivial way; you can attempt to fix this
+   yourself, or open an issue.
 
 ## How it works
 
