@@ -7,8 +7,25 @@ aims to expose how common Lisp constructs map to hardware.
 
 ## Building
 
-Run `opam install ocamlfind menhir core textutils ctypes` before
-invoking `make`.
+First, `opam switch 4.02.1` to make sure that you're running a
+custom-built ocaml (for camlp4). Then, run `opam install ocamlfind
+menhir core textutils ctypes`, open a new shell to refresh env, and
+invoke `make`.
+
+## Troubleshooting the build
+
+There are a number of reasons for the build failing:
+
+1. Silly things like `git submdoule --init` failing can be fixed
+   easily; just anchor the submodule to a valid commit and send a PR.
+
+2. opam problems. If you run into one of these after following the
+   instructions presented above, open an issue. An upstream update
+   probably screwed something up.
+
+3. Running into build issues usually means that llvm upstream has
+   changed in a trivial way; you can attempt to fix this yourself, or
+   open an issue.
 
 ## How it works
 
