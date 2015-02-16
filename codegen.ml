@@ -73,7 +73,7 @@ let codegen_function_env f =
   let size = build_mul (size_of rharel_type) len "size" builder in
   let envar = build_malloc size rharel_type "envar" builder in
   let ptr n = build_in_bounds_gep envar (idx_ n) "arptr" builder in
-  List.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llenv;
+  (*List.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llenv;*)
   ptr 0
 
 let box_value ?(lllen = const_null i32_type) llval =

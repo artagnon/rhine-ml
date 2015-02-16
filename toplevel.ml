@@ -25,7 +25,6 @@ let emit_anonymous_f s =
                ~main_p:true
 
 let run_f f =
-  dump_value f;
   let mainty = Foreign.funptr (void @-> returning (ptr_opt cvalue_t)) in
   let mainf = get_function_address (value_name f) mainty the_execution_engine in
   let cptr = mainf () in
@@ -201,6 +200,7 @@ let main_loop sl =
   List.iter (fun fn -> match fn with
 			 ParsedFunction(f, _) -> validate_and_optimize_f f
 		       | _ -> ()) fns;
+  dump_module the_module;
   List.iter (fun fn -> match fn with
 			 ParsedFunction(f, true) ->
 			 print_string "Evaluated to ";
