@@ -73,7 +73,9 @@ let codegen_function_env f =
   let size = build_mul (size_of rharel_type) len "size" builder in
   let envar = build_malloc size rharel_type "envar" builder in
   let ptr n = build_in_bounds_gep envar (idx_ n) "arptr" builder in
-  (*List.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llenv;*)
+  if List.length llenv > 0 then dump_type (type_of (List.nth llenv 0));
+  if List.length llenv > 0 then dump_type (type_of (ptr 0));
+  List.iteri (fun i m -> ignore (build_store m (ptr i) builder)) llenv;
   ptr 0
 
 let box_value ?(lllen = const_null i32_type) llval =
@@ -539,14 +541,13 @@ and codegen_binding_op f s2 =
         | _ -> raise (Error "Malformed binding form in let") in
       let llaptr = codegen_sexpr a in
       let lla = build_load llaptr "load" builder in
-      let the_function = block_parent (insertion_block builder) in
-      let alloca = create_entry_block_alloca the_function s in
-      ignore (build_store lla alloca builder);
+      let local_var = build_malloc (size_of (type_of lla)) (pointer_type (type_of lla)) "newlocalvar" builder in
+      ignore (build_store lla local_var builder);
       begin try let old_value = Hashtbl.find named_values s in
                 old_bindings := (s, old_value) :: !old_bindings;
             with Not_found -> ()
       end;
-      Hashtbl.add named_values s alloca in
+      Hashtbl.add named_values s local_var in
     List.iteri (fun i m ->
                  if (i mod 2 == 0) then
                    bind m (List.nth bindlist (i+1))) bindlist;
