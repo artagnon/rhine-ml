@@ -8,7 +8,7 @@ namespace rhine {
 
 class Type {
 public:
-  Type() {};
+  Type() {}
 };
 
 class IntegerType : public Type {
@@ -47,7 +47,7 @@ class ConstantInt : public Constant {
 public:
   int Val;
   ConstantInt(int Val) : Constant(IntegerType()), Val(Val) {}
-  int ConstantInt::getVal() {
+  int getVal() {
     return Val;
   }
 };
@@ -56,7 +56,7 @@ class ConstantFloat : public Constant {
 public:
   float Val;
   ConstantFloat(float Val) : Constant(FloatType()), Val(Val) {}
-  float ConstantFloat::getVal() {
+  float getVal() {
     return Val;
   }
 };
@@ -76,7 +76,7 @@ public:
   void setBody(Value *Body) {
     Val = Body;
   }
-  Value *Function::getVal() {
+  Value *getVal() {
     return Val;
   }
 };
