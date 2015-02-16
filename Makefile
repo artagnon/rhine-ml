@@ -1,6 +1,6 @@
 OBJS = location.cmo ast_helper.cmo parser.cmo lexer.cmo pretty.cmo cookast.cmo \
 	primops.cmo codegen.cmo mlunbox.cmo toplevel.cmo main.cmo bindings.o rgc.o
-ocamlc = ocamlc -g -w @5@8@10@11@12@14@23@24@26@29@40
+ocamlc = ocamlc -g 
 llvm-config = llvm-build/bin/llvm-config
 LLVMLIB = llvm-build/lib/ocaml/libllvm.a
 
