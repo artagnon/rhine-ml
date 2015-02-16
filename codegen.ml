@@ -8,10 +8,20 @@ let the_module = create_module context "Rhine JIT"
 let builder = builder context
 let named_values:(string, llvalue) Hashtbl.t = Hashtbl.create 10
 let function_envs:(string, string list) Hashtbl.t = Hashtbl.create 50
+
+(* i1   - Built-in bool type in Rhine
+   i8   - Built-in char type, also used in strings as i8*
+   i32  - Used for various indices like getelementptr
+   i64  - Built-in language interior type
+   i128 - Unreserved as of now
+   i256 - Unreserved as of now *)
+
+let i1_type = i1_type context
 let i8_type = i8_type context
 let i32_type = i32_type context
 let i64_type = i64_type context
-let i1_type = i1_type context
+let i128_type = integer_type context 128
+let i256_type = integer_type context 256
 let double_type = double_type context
 let void_type = void_type context
 let pointer0_type = pointer_type
