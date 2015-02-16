@@ -8,9 +8,9 @@ aims to expose how common Lisp constructs map to hardware.
 ## Building
 
 First, `opam switch 4.02.1` to make sure that you're running a
-custom-built ocaml (for camlp4). Then, run `opam install ocamlfind
-menhir core textutils ctypes`, open a new shell to refresh env, and
-invoke `make`.
+custom-built ocaml (for camlp4). First, run `brew install libffi`.
+Then, run `opam install ocamlfind menhir core textutils ctypes`, 
+open a new shell to refresh env, and invoke `make`.
 
 ## Troubleshooting the build
 
