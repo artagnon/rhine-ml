@@ -1,4 +1,7 @@
 rhine
+GPATH
+GRTAGS
+GTAGS
 lexer.ml
 parser.ml
 parser.mli

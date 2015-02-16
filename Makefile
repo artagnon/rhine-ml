@@ -1,4 +1,4 @@
-OBJS = CodeGen.o IRBuilder.o
+OBJS = CodeGen.o IRBuilder.o TypeLowering.o
 LLVM_CONFIG = llvm-build/bin/llvm-config --cxxflags
 LLVM_CONFIG_LD = llvm-build/bin/llvm-config --cxxflags --system-libs --ldflags --libs
 LLVMLIB = llvm-build/lib/libLLVMCore.a
@@ -6,7 +6,7 @@ LLVMLIB = llvm-build/lib/libLLVMCore.a
 rhine: $(LLVMLIB) $(OBJS)
 	clang++ -g -O1 `$(LLVM_CONFIG_LD) native mcjit` $(OBJS) -o $@
 %.o: %.cpp
-	clang++ -c -g -O1 `$(LLVM_CONFIG)` $<
+	clang++ -c -g -O1 -I./include `$(LLVM_CONFIG)` $<
 $(LLVMLIB): llvm-build/Makefile
 	$(MAKE) -C llvm-build -j8
 llvm-build/Makefile: llvm/CMakeLists.txt

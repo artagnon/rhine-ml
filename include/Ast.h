@@ -13,9 +13,7 @@ class Type {
 public:
   Type() {}
   Type *get() = delete;
-  virtual bool containsTys() {
-    return false;
-  }
+  virtual bool containsTys();
 };
 
 class IntegerType : public Type {
@@ -31,7 +29,7 @@ public:
 
 class FloatType : public Type {
 public:
-  FloatType() :Type() {}
+  FloatType() {}
   static Type *get() {
     return new FloatType();
   }
@@ -41,29 +39,19 @@ public:
 };
 
 class FunctionType : public Type {
-  Type *ReturnType;
-  std::vector<Type *> ArgumentTypes;
+  Type ReturnType;
+  std::vector<Type> ArgumentTypes;
 public:
   template <typename R, typename... As>
-  FunctionType(R RTy, As... ATys) {
+    FunctionType(R RTy, As... ATys) {
     ReturnType = RTy;
     ArgumentTypes = { ATys... };
-  }
-  template <typename R, typename... As>
-  static Type *get(R RTy, As... ATys) {
-    return new FunctionType(RTy, ATys...);
-  }
-  bool containsTys() {
-    return true;
   }
 };
 
 template <typename T> class ArrayType : public Type {
-  T *elTy;
 public:
-  bool containsTys() {
-    return true;
-  }
+  T *elTy;
 };
 
 class Value {

@@ -1,7 +1,6 @@
 #include "llvm/IR/Verifier.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/TypeBuilder.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
@@ -22,13 +21,16 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetSubtargetInfo.h"
 
+#include "Support.h"
 #include "Ast.h"
 
 #include <iostream>
 
 using namespace llvm;
 
-void buildRhIR2(LLVMContext &Context, std::unique_ptr<Module> &Owner, rhine::Value *V) {
+LLVMContext &Context = getGlobalContext();
+
+void buildRhIR2(std::unique_ptr<Module> &Owner, rhine::Value *V) {
   IRBuilder<> Builder(Context);
   Module *M = Owner.get();
 
@@ -46,11 +48,12 @@ void buildRhIR2(LLVMContext &Context, std::unique_ptr<Module> &Owner, rhine::Val
   M->dump();
 }
 
-void buildRhIR(LLVMContext &Context, std::unique_ptr<Module> &Owner, rhine::Value *V) {
+void buildRhIR(std::unique_ptr<Module> &Owner, rhine::Value *V) {
   IRBuilder<> Builder(Context);
   Module *M = Owner.get();
 
-  Function *F = Function::Create(TypeBuilder<int32_t(void), false>::get(Context),
+  Type *RType = RhTypeToLLType(rhine::IntegerType::get());
+  Function *F = Function::Create(FunctionType::get(RType, false),
                                  GlobalValue::ExternalLinkage, "scramble", M);
   BasicBlock *BB = BasicBlock::Create(Context, "entry", F);
   Builder.SetInsertPoint(BB);
@@ -69,9 +72,8 @@ int main() {
   LLVMInitializeNativeAsmPrinter();
   LLVMInitializeNativeAsmParser();
 
-  LLVMContext &Context = getGlobalContext();
   std::unique_ptr<Module> Owner = make_unique<Module>("simple_module", Context);
-  buildRhIR(Context, Owner, nullptr);
+  buildRhIR(Owner, nullptr);
   ExecutionEngine *EE = EngineBuilder(std::move(Owner)).create();
   assert(EE && "error creating MCJIT with EngineBuilder");
   union {
