@@ -12,16 +12,14 @@ namespace rhine {
 class Type {
 public:
   Type() {}
+  virtual ~Type() {}
   Type *get() = delete;
-  virtual bool containsTys() {
-    return false;
-  }
+  virtual bool containsTys() = 0;
 };
 
 class IntegerType : public Type {
 public:
-  IntegerType() {}
-  static Type *get() {
+  static IntegerType *get() {
     return new IntegerType();
   }
   bool containsTys() {
@@ -31,8 +29,7 @@ public:
 
 class FloatType : public Type {
 public:
-  FloatType() :Type() {}
-  static Type *get() {
+  static FloatType *get() {
     return new FloatType();
   }
   bool containsTys() {
@@ -49,8 +46,12 @@ public:
     ReturnType = RTy;
     ArgumentTypes = { ATys... };
   }
+  ~FunctionType() {
+    delete ReturnType;
+    ArgumentTypes.clear();
+  }
   template <typename R, typename... As>
-  static Type *get(R RTy, As... ATys) {
+  static FunctionType *get(R RTy, As... ATys) {
     return new FunctionType(RTy, ATys...);
   }
   bool containsTys() {
@@ -59,80 +60,129 @@ public:
 };
 
 template <typename T> class ArrayType : public Type {
-  T *elTy;
 public:
-  bool containsTys() {
-    return true;
-  }
+  T *elTy;
 };
 
 class Value {
+  Type *VTy;
 public:
-  Type VTy;
-  Value(Type VTy) : VTy(VTy) {}
+  Value(Type *VTy) : VTy(VTy) {}
+  virtual ~Value() {
+    delete VTy;
+  }
+  Value *get() = delete;
+  Type *getType() {
+    return VTy;
+  }
+  virtual bool containsVs() = 0;
 };
 
 class Constant : public Value {
 public:
-  Constant(Type Ty) : Value(Ty) {}
+  Constant(Type *Ty) : Value(Ty) {}
+  bool containsVs() {
+    return false;
+  }
 };
 
 class ConstantInt : public Constant {
 public:
   int Val;
-  ConstantInt(int Val) : Constant(IntegerType()), Val(Val) {}
+  ConstantInt(int Val) : Constant(IntegerType::get()), Val(Val) {}
+  static ConstantInt *get(int Val) {
+    return new ConstantInt(Val);
+  }
   int getVal() {
     return Val;
+  }
+  bool containsVs() {
+    return false;
   }
 };
 
 class ConstantFloat : public Constant {
 public:
   float Val;
-  ConstantFloat(float Val) : Constant(FloatType()), Val(Val) {}
+  ConstantFloat(float Val) : Constant(FloatType::get()), Val(Val) {}
   float getVal() {
     return Val;
   }
 };
 
 class Function : public Constant {
+  std::string Name;
   Value *Val;
 public:
   template <typename R, typename... As>
-    Function(R RTy, As... ATys) : Constant(FunctionType(RTy, ATys...)) {}
+  Function(R RTy, As... ATys) : Constant(FunctionType::get(RTy, ATys...)) {}
+  ~Function() {
+    delete Val;
+  }
+  void setName(std::string N) {
+    Name = N;
+  }
   void setBody(Value *Body) {
     Val = Body;
   }
+  template <typename R, typename... As>
+  static Function *get(R RTy, As... ATys) {
+    return new Function(RTy, ATys...);
+  }
+  std::string getName() {
+    return Name;
+  }
   Value *getVal() {
     return Val;
+  }
+  bool containsVs() {
+    return true;
   }
 };
 
 template <typename T> class ConstantArray : public Constant {
 public:
   std::vector<T> Val;
+  bool containsVs() {
+    return true;
+  }
 };
 
 class Variable : public Value {
-public:
   std::string Name;
   llvm::Optional<Constant> Binding;
+public:
+  bool containsVs() {
+    return true;
+  }
 };
 
 class Instruction : public Value {
-public:
   unsigned NumOperands;
   std::vector<Value *> OperandList;
-  Instruction(Type Ty) : Value(Ty) {}
+public:
+  Instruction(Type *Ty) : Value(Ty) {}
   void addOperand(Value *V) {
     OperandList.push_back(V);
     NumOperands++;
   }
+  Value *getOperand(unsigned i) {
+    return OperandList[i];
+  }
+  bool containsVs() {
+    return true;
+  }
 };
 
-template <typename T> class AddInst : public Instruction {
+class AddInst : public Instruction {
 public:
-  AddInst() : Instruction(T()) {}
+  AddInst(Type *Ty) : Instruction(Ty) {}
+  static AddInst *get(Type *Ty) {
+    return new AddInst(Ty);
+  }
+  bool containsVs() {
+    return true;
+  }
 };
 }
 

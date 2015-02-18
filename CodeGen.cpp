@@ -21,8 +21,8 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetSubtargetInfo.h"
 
-#include "Support.h"
-#include "Ast.h"
+#include "rhine/Support.h"
+#include "rhine/Ast.h"
 
 #include <iostream>
 
@@ -30,7 +30,7 @@ using namespace llvm;
 
 LLVMContext &Context = getGlobalContext();
 
-void buildRhIR2(std::unique_ptr<Module> &Owner, rhine::Value *V) {
+void buildRhIR2(std::unique_ptr<Module> &Owner) {
   IRBuilder<> Builder(Context);
   Module *M = Owner.get();
 
@@ -48,22 +48,23 @@ void buildRhIR2(std::unique_ptr<Module> &Owner, rhine::Value *V) {
   M->dump();
 }
 
-void buildRhIR(std::unique_ptr<Module> &Owner, rhine::Value *V) {
+void buildRhIR(std::unique_ptr<Module> &Owner) {
   IRBuilder<> Builder(Context);
   Module *M = Owner.get();
 
-  Type *RType = RhTypeToLLType(rhine::IntegerType::get());
+  rhine::Function *RhF = rhine::emitAdd2Const();
+  rhine::Value *RhV = RhF->getVal();
+  auto RhI = dynamic_cast<rhine::AddInst *>(RhV);
+  auto RhC = dynamic_cast<rhine::ConstantInt *>(RhI->getOperand(0));
+  Constant *Op0 = rhine::RhConstantToLL(RhC);
+  Type *RType = rhine::RhTypeToLL(RhI->getType());
+  // Op1 = RhConstantToLL(RhI->getOperand(1));
   Function *F = Function::Create(FunctionType::get(RType, false),
-                                 GlobalValue::ExternalLinkage, "scramble", M);
+                                 GlobalValue::ExternalLinkage,
+                                 RhF->getName(), M);
   BasicBlock *BB = BasicBlock::Create(Context, "entry", F);
   Builder.SetInsertPoint(BB);
-  Builder.CreateRet(ConstantInt::get(Context, APInt(32, 24)));
-
-  F = Function::Create(TypeBuilder<int32_t(void), false>::get(Context),
-                       GlobalValue::ExternalLinkage, "ooo1", M);
-  BB = BasicBlock::Create(Context, "entry", F);
-  Builder.SetInsertPoint(BB);
-  Builder.CreateRet(ConstantInt::get(Context, APInt(32, 42)));
+  Builder.CreateRet(Op0);
   M->dump();
 }
 
@@ -73,14 +74,14 @@ int main() {
   LLVMInitializeNativeAsmParser();
 
   std::unique_ptr<Module> Owner = make_unique<Module>("simple_module", Context);
-  buildRhIR(Owner, nullptr);
+  buildRhIR(Owner);
   ExecutionEngine *EE = EngineBuilder(std::move(Owner)).create();
   assert(EE && "error creating MCJIT with EngineBuilder");
   union {
     uint64_t raw;
     int (*usable)();
   } functionPointer;
-  functionPointer.raw = EE->getFunctionAddress("ooo1");
+  functionPointer.raw = EE->getFunctionAddress("foom");
   std::cout << functionPointer.usable() << std::endl;
 
   return 0;
