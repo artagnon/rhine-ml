@@ -1,5 +1,5 @@
 OBJS = CodeGen.o IRBuilder.o TypeLowering.o
-HEADERS = include/rhine/Type.h include/rhine/Ast.h include/rhine/Support.h
+HEADERS = include/rhine/Ast.h include/rhine/Support.h
 LLVM_CONFIG = llvm-build/bin/llvm-config --cxxflags
 LLVM_CONFIG_LD = llvm-build/bin/llvm-config --cxxflags --system-libs --ldflags --libs
 LLVMLIB = llvm-build/lib/libLLVMCore.a

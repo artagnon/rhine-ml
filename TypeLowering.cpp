@@ -1,7 +1,3 @@
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/TypeBuilder.h"
-#include "llvm/IR/Constants.h"
-
 #include "rhine/Ast.h"
 #include "rhine/Support.h"
 
@@ -25,6 +21,27 @@ llvm::Constant *RhConstantToLL(rhine::Constant *V)
     return llvm::ConstantInt::get(TyContext, APInt(32, I->getVal()));
   else if (auto F = dynamic_cast<rhine::ConstantFloat *>(V))
     return llvm::ConstantFP::get(TyContext, APFloat(F->getVal()));
+  return nullptr;
+}
+
+llvm::Type *IntegerType::toLL()
+{
+  return LLVisitor::visit(this);
+}
+
+llvm::Type *FloatType::toLL()
+{
+  return LLVisitor::visit(this);
+}
+
+llvm::Type *FunctionType::toLL()
+{
+  return nullptr;
+}
+
+template <typename T>
+llvm::Type *ArrayType<T>::toLL()
+{
   return nullptr;
 }
 }

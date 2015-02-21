@@ -1,9 +1,7 @@
 #ifndef SUPPORT_H
 #define SUPPORT_H
 
-#include "llvm/IR/LLVMContext.h"
-
-#include "Ast.h"
+#include "rhine/Ast.h"
 
 namespace rhine {
 llvm::Type *RhTypeToLL(rhine::Type *Ty);

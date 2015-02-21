@@ -1,8 +1,9 @@
+#include "rhine/Support.h"
+#include "rhine/Ast.h"
+
 #include "llvm/IR/Verifier.h"
-#include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Module.h"
-#include "llvm/IR/TypeBuilder.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/Bitcode/BitstreamWriter.h"
 #include "llvm/Target/TargetMachine.h"
@@ -20,9 +21,6 @@
 #include "llvm/Target/TargetLoweringObjectFile.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetSubtargetInfo.h"
-
-#include "rhine/Support.h"
-#include "rhine/Ast.h"
 
 #include <iostream>
 
@@ -57,7 +55,7 @@ void buildRhIR(std::unique_ptr<Module> &Owner) {
   auto RhI = dynamic_cast<rhine::AddInst *>(RhV);
   auto RhC = dynamic_cast<rhine::ConstantInt *>(RhI->getOperand(0));
   Constant *Op0 = rhine::RhConstantToLL(RhC);
-  Type *RType = rhine::RhTypeToLL(RhI->getType());
+  Type *RType = RhI->getType()->toLL();
   // Op1 = RhConstantToLL(RhI->getOperand(1));
   Function *F = Function::Create(FunctionType::get(RType, false),
                                  GlobalValue::ExternalLinkage,

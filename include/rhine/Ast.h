@@ -1,6 +1,9 @@
 #ifndef AST_H
 #define AST_H
 
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/TypeBuilder.h"
+#include "llvm/IR/Constants.h"
 #include "llvm/ADT/Optional.h"
 #include <string>
 #include <vector>
@@ -15,6 +18,7 @@ public:
   virtual ~Type() {}
   Type *get() = delete;
   virtual bool containsTys() = 0;
+  virtual llvm::Type *toLL() = 0;
 };
 
 class IntegerType : public Type {
@@ -25,6 +29,7 @@ public:
   bool containsTys() {
     return false;
   }
+  llvm::Type *toLL();
 };
 
 class FloatType : public Type {
@@ -35,6 +40,7 @@ public:
   bool containsTys() {
     return false;
   }
+  llvm::Type *toLL();
 };
 
 class FunctionType : public Type {
@@ -57,11 +63,13 @@ public:
   bool containsTys() {
     return true;
   }
+  llvm::Type *toLL();
 };
 
 template <typename T> class ArrayType : public Type {
 public:
   T *elTy;
+  llvm::Type *toLL();
 };
 
 class Value {
@@ -182,6 +190,21 @@ public:
   }
   bool containsVs() {
     return true;
+  }
+};
+
+using namespace llvm;
+
+class LLVisitor
+{
+public:
+  static llvm::Type *visit(rhine::IntegerType *v) {
+    LLVMContext &TyContext = getGlobalContext();
+    return TypeBuilder<types::i<32>, true>::get(TyContext);
+  }
+  static llvm::Type *visit(rhine::FloatType *v) {
+    LLVMContext &TyContext = getGlobalContext();
+    return llvm::Type::getFloatTy(TyContext);
   }
 };
 }
