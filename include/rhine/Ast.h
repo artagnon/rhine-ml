@@ -203,10 +203,10 @@ class LLVisitor
 {
 public:
   static llvm::Type *visit(rhine::IntegerType *V) {
-    return TypeBuilder<types::i<32>, true>::get(RhContext);
+    return RhBuilder.getInt32Ty();
   }
   static llvm::Type *visit(rhine::FloatType *V) {
-    return llvm::Type::getFloatTy(RhContext);
+    return RhBuilder.getFloatTy();
   }
   static llvm::Constant *visit(rhine::ConstantInt *I) {
     return llvm::ConstantInt::get(RhContext, APInt(32, I->getVal()));
