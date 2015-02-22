@@ -4,44 +4,20 @@
 namespace rhine {
 using namespace llvm;
 
-LLVMContext &TyContext = getGlobalContext();
+llvm::Type *IntegerType::toLL() { return LLVisitor::visit(this); }
 
-llvm::Type *RhTypeToLL(rhine::Type *Ty)
-{
-  if (dynamic_cast<rhine::IntegerType *>(Ty))
-    return TypeBuilder<types::i<32>, true>::get(TyContext);
-  else if (dynamic_cast<rhine::FloatType *>(Ty))
-    return llvm::Type::getFloatTy(TyContext);
-  return nullptr;
-}
+llvm::Type *FloatType::toLL() { return LLVisitor::visit(this); }
 
-llvm::Constant *RhConstantToLL(rhine::Constant *V)
-{
-  if (auto I = dynamic_cast<rhine::ConstantInt *>(V))
-    return llvm::ConstantInt::get(TyContext, APInt(32, I->getVal()));
-  else if (auto F = dynamic_cast<rhine::ConstantFloat *>(V))
-    return llvm::ConstantFP::get(TyContext, APFloat(F->getVal()));
-  return nullptr;
-}
-
-llvm::Type *IntegerType::toLL()
-{
-  return LLVisitor::visit(this);
-}
-
-llvm::Type *FloatType::toLL()
-{
-  return LLVisitor::visit(this);
-}
-
-llvm::Type *FunctionType::toLL()
-{
-  return nullptr;
-}
+llvm::Type *FunctionType::toLL() { return nullptr; }
 
 template <typename T>
-llvm::Type *ArrayType<T>::toLL()
-{
-  return nullptr;
-}
+llvm::Type *ArrayType<T>::toLL() { return nullptr; }
+
+llvm::Constant *Constant::toLL() { return nullptr; }
+
+llvm::Constant *rhine::ConstantInt::toLL() { return LLVisitor::visit(this); }
+
+llvm::Constant *ConstantFloat::toLL() { return LLVisitor::visit(this); }
+
+llvm::Constant *Function::toLL() { return nullptr; }
 }

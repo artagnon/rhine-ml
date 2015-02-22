@@ -11,6 +11,9 @@
 using namespace std;
 
 namespace rhine {
+using namespace llvm;
+
+static LLVMContext &RhContext = getGlobalContext();
 
 class Type {
 public:
@@ -92,6 +95,7 @@ public:
   bool containsVs() {
     return false;
   }
+  llvm::Constant *toLL();
 };
 
 class ConstantInt : public Constant {
@@ -107,6 +111,7 @@ public:
   bool containsVs() {
     return false;
   }
+  llvm::Constant *toLL();
 };
 
 class ConstantFloat : public Constant {
@@ -116,6 +121,7 @@ public:
   float getVal() {
     return Val;
   }
+  llvm::Constant *toLL();
 };
 
 class Function : public Constant {
@@ -146,14 +152,7 @@ public:
   bool containsVs() {
     return true;
   }
-};
-
-template <typename T> class ConstantArray : public Constant {
-public:
-  std::vector<T> Val;
-  bool containsVs() {
-    return true;
-  }
+  llvm::Constant *toLL();
 };
 
 class Variable : public Value {
@@ -193,18 +192,20 @@ public:
   }
 };
 
-using namespace llvm;
-
 class LLVisitor
 {
 public:
-  static llvm::Type *visit(rhine::IntegerType *v) {
-    LLVMContext &TyContext = getGlobalContext();
-    return TypeBuilder<types::i<32>, true>::get(TyContext);
+  static llvm::Type *visit(rhine::IntegerType *V) {
+    return TypeBuilder<types::i<32>, true>::get(RhContext);
   }
-  static llvm::Type *visit(rhine::FloatType *v) {
-    LLVMContext &TyContext = getGlobalContext();
-    return llvm::Type::getFloatTy(TyContext);
+  static llvm::Type *visit(rhine::FloatType *V) {
+    return llvm::Type::getFloatTy(RhContext);
+  }
+  static llvm::Constant *visit(rhine::ConstantInt *I) {
+    return llvm::ConstantInt::get(RhContext, APInt(32, I->getVal()));
+  }
+  static llvm::Constant *visit(rhine::ConstantFloat *F) {
+    return llvm::ConstantFP::get(RhContext, APFloat(F->getVal()));
   }
 };
 }

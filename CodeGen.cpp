@@ -26,41 +26,39 @@
 
 using namespace llvm;
 
-LLVMContext &Context = getGlobalContext();
-
 void buildRhIR2(std::unique_ptr<Module> &Owner) {
-  IRBuilder<> Builder(Context);
+  IRBuilder<> Builder(rhine::RhContext);
   Module *M = Owner.get();
 
-  Function *F = Function::Create(TypeBuilder<int32_t(void), false>::get(Context),
+  Function *F = Function::Create(TypeBuilder<int32_t(void), false>::get(rhine::RhContext),
                                  GlobalValue::ExternalLinkage, "scramble", M);
-  BasicBlock *BB = BasicBlock::Create(Context, "entry", F);
+  BasicBlock *BB = BasicBlock::Create(rhine::RhContext, "entry", F);
   Builder.SetInsertPoint(BB);
-  Builder.CreateRet(ConstantInt::get(Context, APInt(32, 24)));
+  Builder.CreateRet(ConstantInt::get(rhine::RhContext, APInt(32, 24)));
 
-  F = Function::Create(TypeBuilder<int32_t(void), false>::get(Context),
+  F = Function::Create(TypeBuilder<int32_t(void), false>::get(rhine::RhContext),
                        GlobalValue::ExternalLinkage, "ooo1", M);
-  BB = BasicBlock::Create(Context, "entry", F);
+  BB = BasicBlock::Create(rhine::RhContext, "entry", F);
   Builder.SetInsertPoint(BB);
-  Builder.CreateRet(ConstantInt::get(Context, APInt(32, 42)));
+  Builder.CreateRet(ConstantInt::get(rhine::RhContext, APInt(32, 42)));
   M->dump();
 }
 
 void buildRhIR(std::unique_ptr<Module> &Owner) {
-  IRBuilder<> Builder(Context);
+  IRBuilder<> Builder(rhine::RhContext);
   Module *M = Owner.get();
 
   rhine::Function *RhF = rhine::emitAdd2Const();
   rhine::Value *RhV = RhF->getVal();
   auto RhI = dynamic_cast<rhine::AddInst *>(RhV);
   auto RhC = dynamic_cast<rhine::ConstantInt *>(RhI->getOperand(0));
-  Constant *Op0 = rhine::RhConstantToLL(RhC);
+  Constant *Op0 = RhC->toLL();
   Type *RType = RhI->getType()->toLL();
   // Op1 = RhConstantToLL(RhI->getOperand(1));
   Function *F = Function::Create(FunctionType::get(RType, false),
                                  GlobalValue::ExternalLinkage,
                                  RhF->getName(), M);
-  BasicBlock *BB = BasicBlock::Create(Context, "entry", F);
+  BasicBlock *BB = BasicBlock::Create(rhine::RhContext, "entry", F);
   Builder.SetInsertPoint(BB);
   Builder.CreateRet(Op0);
   M->dump();
@@ -71,7 +69,7 @@ int main() {
   LLVMInitializeNativeAsmPrinter();
   LLVMInitializeNativeAsmParser();
 
-  std::unique_ptr<Module> Owner = make_unique<Module>("simple_module", Context);
+  std::unique_ptr<Module> Owner = make_unique<Module>("simple_module", rhine::RhContext);
   buildRhIR(Owner);
   ExecutionEngine *EE = EngineBuilder(std::move(Owner)).create();
   assert(EE && "error creating MCJIT with EngineBuilder");
