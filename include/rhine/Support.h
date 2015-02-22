@@ -4,9 +4,7 @@
 #include "rhine/Ast.h"
 
 namespace rhine {
-llvm::Type *RhTypeToLL(rhine::Type *Ty);
-llvm::Constant *RhConstantToLL(rhine::Constant *V);
-Function *emitAdd2Const();
+Function *emitAdd2Const(llvm::Module *M);
 }
 
 #endif

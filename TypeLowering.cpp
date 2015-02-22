@@ -17,7 +17,7 @@ llvm::Constant *rhine::ConstantInt::toLL() { return LLVisitor::visit(this); }
 
 llvm::Constant *ConstantFloat::toLL() { return LLVisitor::visit(this); }
 
-llvm::Constant *Function::toLL() { return nullptr; }
+llvm::Constant *Function::toLL() { return LLVisitor::visit(this); }
 
 llvm::Value *AddInst::toLL() { return LLVisitor::visit(this); }
 }

@@ -3,8 +3,8 @@
 using namespace rhine;
 
 namespace rhine {
-Function *emitAdd2Const() {
-  auto F = Function::get(IntegerType::get());
+Function *emitAdd2Const(llvm::Module *M) {
+  auto F = Function::get(M, IntegerType::get());
   auto Op = AddInst::get(IntegerType::get());
   auto I1 = ConstantInt::get(3);
   auto I2 = ConstantInt::get(4);

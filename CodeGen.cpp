@@ -2,7 +2,6 @@
 #include "rhine/Ast.h"
 
 #include "llvm/IR/Verifier.h"
-#include "llvm/IR/Module.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/Bitcode/BitstreamWriter.h"
 #include "llvm/Target/TargetMachine.h"
@@ -25,38 +24,11 @@
 
 using namespace llvm;
 
-void buildRhIR2(std::unique_ptr<Module> &Owner) {
-  Module *M = Owner.get();
-
-  Function *F = Function::Create(TypeBuilder<int32_t(void), false>::get(rhine::RhContext),
-                                 GlobalValue::ExternalLinkage, "scramble", M);
-  BasicBlock *BB = BasicBlock::Create(rhine::RhContext, "entry", F);
-  rhine::RhBuilder.SetInsertPoint(BB);
-  rhine::RhBuilder.CreateRet(ConstantInt::get(rhine::RhContext, APInt(32, 24)));
-
-  F = Function::Create(TypeBuilder<int32_t(void), false>::get(rhine::RhContext),
-                       GlobalValue::ExternalLinkage, "ooo1", M);
-  BB = BasicBlock::Create(rhine::RhContext, "entry", F);
-  rhine::RhBuilder.SetInsertPoint(BB);
-  rhine::RhBuilder.CreateRet(ConstantInt::get(rhine::RhContext, APInt(32, 42)));
-  M->dump();
-}
-
 void buildRhIR(std::unique_ptr<Module> &Owner) {
   Module *M = Owner.get();
 
-  rhine::Function *RhF = rhine::emitAdd2Const();
-  rhine::Value *RhV = RhF->getVal();
-  auto RhI = dynamic_cast<rhine::AddInst *>(RhV);
-  Value *Op0 = RhI->toLL();
-  Type *RType = Op0->getType();
-  // Op1 = RhConstantToLL(RhI->getOperand(1));
-  Function *F = Function::Create(FunctionType::get(RType, false),
-                                 GlobalValue::ExternalLinkage,
-                                 RhF->getName(), M);
-  BasicBlock *BB = BasicBlock::Create(rhine::RhContext, "entry", F);
-  rhine::RhBuilder.SetInsertPoint(BB);
-  rhine::RhBuilder.CreateRet(Op0);
+  rhine::Function *RhF = rhine::emitAdd2Const(M);
+  RhF->toLL();
   M->dump();
 }
 

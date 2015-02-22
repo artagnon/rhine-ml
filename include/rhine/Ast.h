@@ -1,6 +1,7 @@
 #ifndef AST_H
 #define AST_H
 
+#include "llvm/IR/Module.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/TypeBuilder.h"
 #include "llvm/IR/IRBuilder.h"
@@ -130,10 +131,12 @@ public:
 
 class Function : public Constant {
   std::string Name;
+  Module *Mod;
   Value *Val;
 public:
   template <typename R, typename... As>
-  Function(R RTy, As... ATys) : Constant(FunctionType::get(RTy, ATys...)) {}
+  Function(Module *M, R RTy, As... ATys) :
+      Constant(FunctionType::get(RTy, ATys...)), Mod(M) {}
   ~Function() {
     delete Val;
   }
@@ -149,6 +152,9 @@ public:
   }
   std::string getName() {
     return Name;
+  }
+  Module *getModule() {
+    return Mod;
   }
   Value *getVal() {
     return Val;
@@ -213,6 +219,16 @@ public:
   }
   static llvm::Constant *visit(rhine::ConstantFloat *F) {
     return llvm::ConstantFP::get(RhContext, APFloat(F->getVal()));
+  }
+  static llvm::Constant *visit(rhine::Function *RhF) {
+    llvm::Value *RhV = RhF->getVal()->toLL();
+    auto F = llvm::Function::Create(llvm::FunctionType::get(RhV->getType(), false),
+                                    GlobalValue::ExternalLinkage,
+                                    RhF->getName(), RhF->getModule());
+    BasicBlock *BB = BasicBlock::Create(rhine::RhContext, "entry", F);
+    rhine::RhBuilder.SetInsertPoint(BB);
+    rhine::RhBuilder.CreateRet(RhV);
+    return F;
   }
   static llvm::Value *visit(rhine::AddInst *A) {
     auto Op0 = A->getOperand(0)->toLL();
