@@ -89,6 +89,7 @@ public:
     return VTy;
   }
   virtual bool containsVs() = 0;
+  virtual llvm::Value *toLL() = 0;
 };
 
 class Constant : public Value {
@@ -97,7 +98,8 @@ public:
   bool containsVs() {
     return false;
   }
-  llvm::Constant *toLL();
+private:
+  llvm::Constant *toLL() { return nullptr; }
 };
 
 class ConstantInt : public Constant {
@@ -181,7 +183,8 @@ public:
   bool containsVs() {
     return true;
   }
-  llvm::Value *toLL();
+private:
+  llvm::Value *toLL() { return nullptr; }
 };
 
 class AddInst : public Instruction {
@@ -212,8 +215,8 @@ public:
     return llvm::ConstantFP::get(RhContext, APFloat(F->getVal()));
   }
   static llvm::Value *visit(rhine::AddInst *A) {
-    auto Op0 = dynamic_cast<rhine::ConstantInt *>(A->getOperand(0))->toLL();
-    auto Op1 = dynamic_cast<rhine::ConstantInt *>(A->getOperand(1))->toLL();
+    auto Op0 = A->getOperand(0)->toLL();
+    auto Op1 = A->getOperand(1)->toLL();
     return RhBuilder.CreateAdd(Op0, Op1);
   }
 };
