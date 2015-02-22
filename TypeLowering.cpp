@@ -20,4 +20,8 @@ llvm::Constant *rhine::ConstantInt::toLL() { return LLVisitor::visit(this); }
 llvm::Constant *ConstantFloat::toLL() { return LLVisitor::visit(this); }
 
 llvm::Constant *Function::toLL() { return nullptr; }
+
+llvm::Value *Instruction::toLL() { return nullptr; }
+
+llvm::Value *AddInst::toLL() { return LLVisitor::visit(this); }
 }

@@ -3,6 +3,7 @@
 
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/TypeBuilder.h"
+#include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/ADT/Optional.h"
 #include <string>
@@ -14,6 +15,7 @@ namespace rhine {
 using namespace llvm;
 
 static LLVMContext &RhContext = getGlobalContext();
+static IRBuilder<> RhBuilder(RhContext);
 
 class Type {
 public:
@@ -179,6 +181,7 @@ public:
   bool containsVs() {
     return true;
   }
+  llvm::Value *toLL();
 };
 
 class AddInst : public Instruction {
@@ -190,6 +193,7 @@ public:
   bool containsVs() {
     return true;
   }
+  llvm::Value *toLL();
 };
 
 class LLVisitor
@@ -206,6 +210,11 @@ public:
   }
   static llvm::Constant *visit(rhine::ConstantFloat *F) {
     return llvm::ConstantFP::get(RhContext, APFloat(F->getVal()));
+  }
+  static llvm::Value *visit(rhine::AddInst *A) {
+    auto Op0 = dynamic_cast<rhine::ConstantInt *>(A->getOperand(0))->toLL();
+    auto Op1 = dynamic_cast<rhine::ConstantInt *>(A->getOperand(1))->toLL();
+    return RhBuilder.CreateAdd(Op0, Op1);
   }
 };
 }
