@@ -20,20 +20,19 @@ static IRBuilder<> RhBuilder(RhContext);
 
 class Type {
 public:
-  Type() {}
   virtual ~Type() {}
-  Type *get() = delete;
-  virtual bool containsTys() = 0;
-  virtual llvm::Type *toLL() = 0;
+  static Type *get() {
+    return new Type();
+  }
+  virtual llvm::Type *toLL() {
+    assert(false && "Cannot toLL() without inferring type");
+  }
 };
 
 class IntegerType : public Type {
 public:
   static IntegerType *get() {
     return new IntegerType();
-  }
-  bool containsTys() {
-    return false;
   }
   llvm::Type *toLL();
 };
@@ -42,9 +41,6 @@ class FloatType : public Type {
 public:
   static FloatType *get() {
     return new FloatType();
-  }
-  bool containsTys() {
-    return false;
   }
   llvm::Type *toLL();
 };
@@ -66,8 +62,8 @@ public:
   static FunctionType *get(R RTy, As... ATys) {
     return new FunctionType(RTy, ATys...);
   }
-  bool containsTys() {
-    return true;
+  Type *getATy(unsigned i) {
+    return ArgumentTypes[i];
   }
   llvm::Type *toLL();
 };
@@ -130,25 +126,23 @@ public:
 };
 
 class Function : public Constant {
+  std::vector<Value *> ArgumentList;
   std::string Name;
   Module *Mod;
   Value *Val;
 public:
-  template <typename R, typename... As>
-  Function(Module *M, R RTy, As... ATys) :
-      Constant(FunctionType::get(RTy, ATys...)), Mod(M) {}
+  Function(Module *M, FunctionType *FTy) : Constant(FTy), Mod(M) {}
   ~Function() {
     delete Val;
+  }
+  static Function *get(Module *M, FunctionType *FTy) {
+    return new Function(M, FTy);
   }
   void setName(std::string N) {
     Name = N;
   }
   void setBody(Value *Body) {
     Val = Body;
-  }
-  template <typename R, typename... As>
-  static Function *get(R RTy, As... ATys) {
-    return new Function(RTy, ATys...);
   }
   std::string getName() {
     return Name;
@@ -167,11 +161,20 @@ public:
 
 class Variable : public Value {
   std::string Name;
-  llvm::Optional<Constant> Binding;
+  Value *Binding;
 public:
+  Variable(std::string N, Value *B = nullptr) :
+      Value(Type::get()), Name(N), Binding(B) {}
+  static Variable *get(std::string N, Value *B = nullptr) {
+    return new Variable(N, B);
+  }
+  Value *getVal() {
+    return Binding;
+  }
   bool containsVs() {
     return true;
   }
+  llvm::Value *toLL();
 };
 
 class Instruction : public Value {
@@ -229,6 +232,10 @@ public:
     rhine::RhBuilder.SetInsertPoint(BB);
     rhine::RhBuilder.CreateRet(RhV);
     return F;
+  }
+  static llvm::Value *visit(rhine::Variable *V) {
+    assert (V && "Cannot lower unbound variable");
+    return V->toLL();
   }
   static llvm::Value *visit(rhine::AddInst *A) {
     auto Op0 = A->getOperand(0)->toLL();
