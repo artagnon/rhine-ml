@@ -1,3 +1,5 @@
+//-*- C++ -*-
+
 #ifndef PARSETREE_H
 #define PARSETREE_H
 
