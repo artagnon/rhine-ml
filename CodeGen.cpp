@@ -1,3 +1,4 @@
+#include "rhine/Parser.h"
 #include "rhine/Support.h"
 #include "rhine/Ast.h"
 
@@ -33,6 +34,8 @@ void buildRhIR(std::unique_ptr<Module> &Owner) {
 }
 
 int main() {
+  // yy::parser::parse();
+
   LLVMInitializeNativeTarget();
   LLVMInitializeNativeAsmPrinter();
   LLVMInitializeNativeAsmParser();
