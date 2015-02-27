@@ -7,7 +7,7 @@
 #define yylex rhFlexLexer().lex
 %}
 
-%output  "Parser/Parser.cpp"
+%output  "Parse/Parser.cpp"
 %defines "include/rhine/Parser.h"
 %name-prefix "rhine"
 %parse-param { class Sexpr *root }

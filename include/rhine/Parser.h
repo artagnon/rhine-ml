@@ -123,7 +123,7 @@ namespace rhine {
     /// Symbol semantic values.
     union semantic_type
     {
-    #line 19 "Parser/Parser.yy" // lalr1.cc:387
+    #line 19 "Parse/Parser.yy" // lalr1.cc:387
 
     int intValue;
     double doubleValue;
