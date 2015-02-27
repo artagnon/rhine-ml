@@ -1,45 +1,53 @@
 // -*- Bison -*-
 %{
 #include "rhine/Lexer.h"
+#include "rhine/ParseTree.h"
+
+#undef yylex
+#define yylex rhFlexLexer().lex
 %}
 
 %output  "Parser/Parser.cpp"
 %defines "include/rhine/Parser.h"
+%name-prefix "rhine"
+%parse-param { class Sexpr *root }
 
 %skeleton "lalr1.cc"
 %locations
 %token-table
-%lex-param   { void *scanner }
-%parse-param { void *scanner }
-%parse-param { double **expression }
 
 %union {
-    int value;
-    double *expression;
+    int intValue;
+    double doubleValue;
 }
 
-%left '+' TOKEN_PLUS
-%left '*' TOKEN_MULTIPLY
+%left '+' PLUS
+%left '*' MULTIPLY
 
-%token TOKEN_LPAREN
-%token TOKEN_RPAREN
-%token TOKEN_PLUS
-%token TOKEN_MULTIPLY
-%token <value> TOKEN_NUMBER
+%token LPAREN
+%token RPAREN
+%token PLUS
+%token MULTIPLY
+%token END
+%token <intValue> NUMBER
 
-%type <expression> expr
+%type <doubleValue> expr
 
 %%
 
 input
-    : expr { *expression = $1; }
+    : expr { root->dExpressions.push_back($1); }
     ;
 
 expr
-    : expr[L] TOKEN_PLUS expr[R] { $$ = createOperation( ePLUS, $L, $R ); }
-    | expr[L] TOKEN_MULTIPLY expr[R] { $$ = createOperation( eMULTIPLY, $L, $R ); }
-    | TOKEN_LPAREN expr[E] TOKEN_RPAREN { $$ = $E; }
-    | TOKEN_NUMBER { $$ = createNumber($1); }
+    : expr[L] PLUS expr[R] { $$ = ( token::PLUS, $L, $R ); }
+    | expr[L] MULTIPLY expr[R] { $$ = ( token::MULTIPLY, $L, $R ); }
+    | LPAREN expr[E] RPAREN { $$ = $E; }
+    | NUMBER { $$ = $1; }
     ;
 
 %%
+
+void rhine::parser::error(const rhine::location& l,
+			  const std::string& m)
+{}

@@ -1,12 +1,11 @@
 /* -*- Bison -*- */
 %{
-#include "rhine/Parser.h"
-typedef yy::parser::token T;
+#include "rhine/Lexer.h"
 %}
 
 %option c++ noyywrap nodefault warn yylineno stack
 
-%option outfile="Parser/Lexer.cpp" header-file="include/rhine/Lexer.h"
+%option outfile="Parser/Lexer.cpp"
 %option warn nodefault
 
 LPAREN      "("
@@ -20,12 +19,18 @@ WS          [ \r\n\t]*
 %%
 
 {WS}            { /* Skip blanks. */ }
-{NUMBER}        { return T::TOKEN_NUMBER; }
+{NUMBER}        { return T::NUMBER; }
 
-{MULTIPLY}      { return T::TOKEN_MULTIPLY; }
-{PLUS}          { return T::TOKEN_PLUS; }
-{LPAREN}        { return T::TOKEN_LPAREN; }
-{RPAREN}        { return T::TOKEN_RPAREN; }
+{MULTIPLY}      { return T::MULTIPLY; }
+{PLUS}          { return T::PLUS; }
+{LPAREN}        { return T::LPAREN; }
+{RPAREN}        { return T::RPAREN; }
 .               {  }
 
 %%
+
+// Required to fill vtable
+int yyFlexLexer::yylex()
+{
+    return 0;
+}

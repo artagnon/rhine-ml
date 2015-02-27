@@ -32,13 +32,13 @@
 
 /**
  ** \file include/rhine/Parser.h
- ** Define the yy::parser class.
+ ** Define the rhine::parser class.
  */
 
 // C++ LALR(1) parser skeleton written by Akim Demaille.
 
-#ifndef YY_YY_INCLUDE_RHINE_PARSER_H_INCLUDED
-# define YY_YY_INCLUDE_RHINE_PARSER_H_INCLUDED
+#ifndef YY_RHINE_INCLUDE_RHINE_PARSER_H_INCLUDED
+# define YY_RHINE_INCLUDE_RHINE_PARSER_H_INCLUDED
 
 
 # include <vector>
@@ -108,7 +108,7 @@
 #endif
 
 
-namespace yy {
+namespace rhine {
 #line 113 "include/rhine/Parser.h" // lalr1.cc:387
 
 
@@ -123,10 +123,10 @@ namespace yy {
     /// Symbol semantic values.
     union semantic_type
     {
-    #line 16 "Parser/Parser.yy" // lalr1.cc:387
+    #line 19 "Parser/Parser.yy" // lalr1.cc:387
 
-    int value;
-    double *expression;
+    int intValue;
+    double doubleValue;
 
 #line 132 "include/rhine/Parser.h" // lalr1.cc:387
     };
@@ -148,11 +148,12 @@ namespace yy {
     {
       enum yytokentype
       {
-        TOKEN_PLUS = 258,
-        TOKEN_MULTIPLY = 259,
-        TOKEN_LPAREN = 260,
-        TOKEN_RPAREN = 261,
-        TOKEN_NUMBER = 262
+        PLUS = 258,
+        MULTIPLY = 259,
+        LPAREN = 260,
+        RPAREN = 261,
+        END = 262,
+        NUMBER = 263
       };
     };
 
@@ -245,7 +246,7 @@ namespace yy {
 
 
     /// Build a parser object.
-    parser (void *scanner_yyarg, double **expression_yyarg);
+    parser (class Sexpr *root_yyarg);
     virtual ~parser ();
 
     /// Parse.
@@ -446,21 +447,20 @@ namespace yy {
       yyfinal_ = 6, ///< Termination state number.
       yyterror_ = 1,
       yyerrcode_ = 256,
-      yyntokens_ = 10  ///< Number of tokens.
+      yyntokens_ = 11  ///< Number of tokens.
     };
 
 
     // User arguments.
-    void *scanner;
-    double **expression;
+    class Sexpr *root;
   };
 
 
 
-} // yy
+} // rhine
 #line 462 "include/rhine/Parser.h" // lalr1.cc:387
 
 
 
 
-#endif // !YY_YY_INCLUDE_RHINE_PARSER_H_INCLUDED
+#endif // !YY_RHINE_INCLUDE_RHINE_PARSER_H_INCLUDED

@@ -1,4 +1,6 @@
+#include "rhine/Lexer.h"
 #include "rhine/Parser.h"
+#include "rhine/ParseTree.h"
 #include "rhine/Support.h"
 #include "rhine/Ast.h"
 
@@ -22,6 +24,7 @@
 #include "llvm/Target/TargetSubtargetInfo.h"
 
 #include <iostream>
+#include <sstream>
 
 using namespace llvm;
 
@@ -34,22 +37,27 @@ void buildRhIR(std::unique_ptr<Module> &Owner) {
 }
 
 int main() {
-  // yy::parser::parse();
+  std::string prg = "()";
+  std::istringstream in(prg);
+  auto lexer = rhine::rhFlexLexer();
+  auto root = new rhine::Sexpr();
+  auto parseh = new rhine::parser(root);
+  parseh->parse();
 
-  LLVMInitializeNativeTarget();
-  LLVMInitializeNativeAsmPrinter();
-  LLVMInitializeNativeAsmParser();
+  // LLVMInitializeNativeTarget();
+  // LLVMInitializeNativeAsmPrinter();
+  // LLVMInitializeNativeAsmParser();
 
-  std::unique_ptr<Module> Owner = make_unique<Module>("simple_module", rhine::RhContext);
-  buildRhIR(Owner);
-  ExecutionEngine *EE = EngineBuilder(std::move(Owner)).create();
-  assert(EE && "error creating MCJIT with EngineBuilder");
-  union {
-    uint64_t raw;
-    int (*usable)();
-  } functionPointer;
-  functionPointer.raw = EE->getFunctionAddress("foom");
-  std::cout << functionPointer.usable() << std::endl;
+  // std::unique_ptr<Module> Owner = make_unique<Module>("simple_module", rhine::RhContext);
+  // buildRhIR(Owner);
+  // ExecutionEngine *EE = EngineBuilder(std::move(Owner)).create();
+  // assert(EE && "error creating MCJIT with EngineBuilder");
+  // union {
+  //   uint64_t raw;
+  //   int (*usable)();
+  // } functionPointer;
+  // functionPointer.raw = EE->getFunctionAddress("foom");
+  // std::cout << functionPointer.usable() << std::endl;
 
   return 0;
 }

@@ -3,12 +3,13 @@
 #ifndef PARSETREE_H
 #define PARSETREE_H
 
-namespace rhine {
-class Sexpr {};
+#include <vector>
 
-class ConsCell : virtual Sexpr {
-  Sexpr *First;
-  Sexpr *Rest;
+namespace rhine {
+class Sexpr {
+public:
+  std::vector<double> dExpressions;
 };
+}
 
 #endif

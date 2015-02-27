@@ -1,21 +1,22 @@
-OBJS = Parser/Lexer.o CodeGen.o IRBuilder.o TypeLowering.o
+OBJS = Parser/Lexer.o Parser/Parser.o CodeGen.o IRBuilder.o TypeLowering.o
 HEADERS = include/rhine/Ast.h include/rhine/Support.h include/rhine/Lexer.h include/rhine/Parser.h
 LLVM_CONFIG = llvm-build/bin/llvm-config --cxxflags
 LLVM_CONFIG_LD = llvm-build/bin/llvm-config --cxxflags --system-libs --ldflags --libs
 LLVMLIB = llvm-build/lib/libLLVMCore.a
 
 rhine: $(LLVMLIB) $(OBJS)
-	clang++ -g -O0 -ll `$(LLVM_CONFIG_LD) native mcjit` $(OBJS) -o $@
+	clang++ -g -O0 -L/usr/local/opt/flex/lib \
+	-L/usr/local/opt/bison/lib `$(LLVM_CONFIG_LD) native mcjit` $(OBJS) -o $@
 %.o: %.cpp $(HEADERS)
 	clang++ -c -g -O0 -Iinclude `$(LLVM_CONFIG)` $<
 CodeGen.o: CodeGen.cpp $(HEADERS)
 	clang++ -c -g -O0 -Iinclude -IParser `$(LLVM_CONFIG)` $<
 Parser/Parser.o: Parser/Parser.cpp Parser/Lexer.h Parser/Parser.h
-	clang -c -g -O0 -Iinclude -o $@ $<
+	clang++ -c -g -O0 -Iinclude -Iinclude/rhine -IParser -I/usr/local/opt/flex/include -o $@ $<
 Parser/Parser.cpp Parser/Parser.h: Parser/Parser.yy
 	bison $<
 Parser/Lexer.o: Parser/Lexer.cpp Parser/Lexer.h Parser/Parser.h
-	clang -c -g -O0 -Iinclude -IParser -o $@ $<
+	clang++ -c -g -O0 -Iinclude -IParser -I/usr/local/opt/flex/include -o $@ $<
 Parser/Lexer.cpp Parser/Lexer.h: Parser/Lexer.ll
 	flex $<
 $(LLVMLIB): llvm-build/Makefile
