@@ -1,14 +1,14 @@
 // -*- Bison -*-
 %{
 #include "rhine/Lexer.h"
-#include "rhine/ParseTree.h"
+#include "rhine/ParseDriver.h"
 
 #undef yylex
-#define yylex rhFlexLexer().lex
+#define yylex Driver->Lexer->lex
 %}
 
 %name-prefix "rhine"
-%parse-param { SExpr *root }
+%parse-param { ParseDriver *Driver }
 
 %skeleton "lalr1.cc"
 %locations

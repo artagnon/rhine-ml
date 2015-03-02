@@ -12,4 +12,5 @@ include_directories("${PROJECT_BINARY_DIR}/Parse")
 add_flex_bison_dependency(Lexx Parseyy)
 add_library(Parse
   ${FLEX_Lexx_OUTPUTS}
-  ${BISON_Parseyy_OUTPUTS})
+  ${BISON_Parseyy_OUTPUTS}
+  "${PROJECT_SOURCE_DIR}/Parse/ParseDriver.cpp")
