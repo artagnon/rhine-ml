@@ -5,7 +5,6 @@
 
 %option c++ noyywrap nodefault warn yylineno stack
 
-%option outfile="Parse/Lexer.cpp"
 %option warn nodefault
 
 LPAREN      "("

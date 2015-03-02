@@ -40,7 +40,7 @@ int main() {
   std::string prg = "()";
   std::istringstream in(prg);
   auto lexer = rhine::rhFlexLexer();
-  auto root = new rhine::Sexpr();
+  auto root = new rhine::SExpr();
   auto parseh = new rhine::parser(root);
   parseh->parse();
 

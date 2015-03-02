@@ -6,7 +6,7 @@
 #include <vector>
 
 namespace rhine {
-class Sexpr {
+class SExpr {
 public:
   std::vector<double> dExpressions;
 };
