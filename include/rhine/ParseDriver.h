@@ -5,16 +5,18 @@
 
 #include <string>
 #include <vector>
-#include "rhine/Ast.h"
 #include "rhine/ParseTree.h"
 
 namespace rhine {
 
+using namespace rhine;
+
 class ParseDriver
 {
 public:
+
   /// construct a new parser driver context
-  Driver(class SExpr& Root);
+  ParseDriver(class SExpr& Root);
 
   /// enable debug output in the flex scanner
   bool TraceScanning;
@@ -62,11 +64,11 @@ public:
 
   /** Pointer to the current lexer instance, this is used to connect the
    * parser to the scanner. It is used in the yylex macro. */
-  class Lexer *Lexer;
+  class rhFlexLexer *Lexx;
 
   /** Reference to the calculator context filled during parsing of the
    * expressions. */
-  SExpr &Root;
+  class SExpr &Root;
 };
 }
 

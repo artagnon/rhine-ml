@@ -1,18 +1,16 @@
 // -*- Bison -*-
 %{
-#include "rhine/Lexer.h"
-#include "rhine/ParseDriver.h"
-
-#undef yylex
-#define yylex Driver->Lexer->lex
 %}
 
+%debug
 %name-prefix "rhine"
-%parse-param { ParseDriver *Driver }
-
 %skeleton "lalr1.cc"
 %locations
 %token-table
+%define parser_class_name { Parser }
+%defines
+
+%parse-param { class ParseDriver *Driver }
 
 %union {
     int intValue;
@@ -31,10 +29,18 @@
 
 %type <doubleValue> expr
 
+%{
+#include "rhine/ParseDriver.h"
+#include "rhine/Lexer.h"
+
+#undef yylex
+#define yylex Driver->Lexx->lex
+%}
+
 %%
 
 input
-    : expr { root->dExpressions.push_back($1); }
+    : expr { Driver->Root.dExpressions.push_back($1); }
     ;
 
 expr
@@ -46,6 +52,6 @@ expr
 
 %%
 
-void rhine::parser::error(const rhine::location& l,
+void rhine::Parser::error(const rhine::location& l,
 			  const std::string& m)
 {}
