@@ -16,7 +16,10 @@ class ParseDriver
 public:
 
   /// construct a new parser driver context
-  ParseDriver(class SExpr& Root);
+  ParseDriver(class SExpr& Expr) : TraceScanning(false),
+                                   TraceParsing(false),
+                                   Root(Expr)
+  {}
 
   /// enable debug output in the flex scanner
   bool TraceScanning;

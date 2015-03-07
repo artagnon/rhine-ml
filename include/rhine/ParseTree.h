@@ -8,7 +8,7 @@
 namespace rhine {
 class SExpr {
 public:
-  std::vector<double> dExpressions;
+  std::vector<int> Integers;
 };
 }
 

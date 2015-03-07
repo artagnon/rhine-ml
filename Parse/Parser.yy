@@ -13,21 +13,17 @@
 %parse-param { class ParseDriver *Driver }
 
 %union {
-    int intValue;
-    double doubleValue;
+    int Integer;
+    double Double;
 }
-
-%left '+' PLUS
-%left '*' MULTIPLY
 
 %token LPAREN
 %token RPAREN
-%token PLUS
-%token MULTIPLY
+%left PLUS
+%left MULTIPLY
 %token END
-%token <intValue> NUMBER
-
-%type <doubleValue> expr
+%token <Integer> INTEGER
+%type <Integer> expr
 
 %{
 #include "rhine/ParseDriver.h"
@@ -39,15 +35,15 @@
 
 %%
 
-input
-    : expr { Driver->Root.dExpressions.push_back($1); }
+input:
+    | expr { Driver->Root.Integers.push_back($1); }
     ;
 
-expr
-    : expr[L] PLUS expr[R] { $$ = ( token::PLUS, $L, $R ); }
-    | expr[L] MULTIPLY expr[R] { $$ = ( token::MULTIPLY, $L, $R ); }
+expr:
+      INTEGER { $$ = $1; }
+    | expr[L] PLUS expr[R] { $$ = $L + $R; }
+    | expr[L] MULTIPLY expr[R] { $$ = $L * $R; }
     | LPAREN expr[E] RPAREN { $$ = $E; }
-    | NUMBER { $$ = $1; }
     ;
 
 %%

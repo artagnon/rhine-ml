@@ -12,14 +12,13 @@ RPAREN      ")"
 PLUS        "+"
 MULTIPLY    "*"
 
-NUMBER      [0-9]+
+INTEGER     [0-9]+
 WS          [ \r\n\t]*
 
 %%
 
 {WS}            { /* Skip blanks. */ }
-{NUMBER}        { return T::NUMBER; }
-
+{INTEGER}       { yylval->Integer = atoi(yytext); return T::INTEGER; }
 {MULTIPLY}      { return T::MULTIPLY; }
 {PLUS}          { return T::PLUS; }
 {LPAREN}        { return T::LPAREN; }

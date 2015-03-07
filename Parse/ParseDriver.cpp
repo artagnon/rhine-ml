@@ -9,12 +9,6 @@
 #include "Parser.hpp"
 
 namespace rhine {
-ParseDriver::ParseDriver(class SExpr& Expr) : TraceScanning(false),
-                                              TraceParsing(false),
-                                              Root(Expr)
-{
-}
-
 bool ParseDriver::parseStream(std::istream& in, const std::string& sname) {
   streamname = sname;
 

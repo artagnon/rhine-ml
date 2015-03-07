@@ -33,7 +33,7 @@ void parseFacade(std::unique_ptr<Module> &Owner) {
   auto Driver = rhine::ParseDriver(Root);
   Driver.parseString(Prg);
   std::cout << "Parsed:" << std::endl;
-  for (auto ve : Root.dExpressions) {
+  for (auto ve : Root.Integers) {
     cout << ve << std::endl;
   }
 }
