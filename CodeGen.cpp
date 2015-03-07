@@ -28,12 +28,12 @@ using namespace llvm;
 typedef int (*MainFTy)();
 
 void parseFacade(std::unique_ptr<Module> &Owner) {
-  std::string Prg = "491";
+  std::string Prg = "+ 491 382";
   auto Root = rhine::SExpr();
   auto Driver = rhine::ParseDriver(Root);
   Driver.parseString(Prg);
   std::cout << "Parsed:" << std::endl;
-  for (auto ve : Root.Integers) {
+  for (auto ve : Root.Statements) {
     cout << ve << std::endl;
   }
 }

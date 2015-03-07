@@ -3,12 +3,13 @@
 #ifndef PARSETREE_H
 #define PARSETREE_H
 
+#include "rhine/Ast.h"
 #include <vector>
 
 namespace rhine {
 class SExpr {
 public:
-  std::vector<int> Integers;
+  std::vector<AddInst *> Statements;
 };
 }
 

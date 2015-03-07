@@ -7,7 +7,6 @@
 // the C++ parser expects it to be declared. We can factor both as follows.
 
 #include "Parser.hpp"
-#include "rhine/Lexer.h"
 
 typedef rhine::Parser P;
 typedef P::token T;

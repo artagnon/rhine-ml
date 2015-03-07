@@ -1,4 +1,4 @@
-// -*- Bison -*-
+// -*- mode: bison -*-
 %{
 %}
 
@@ -13,8 +13,10 @@
 %parse-param { class ParseDriver *Driver }
 
 %union {
-    int Integer;
-    double Double;
+  int RawInteger;
+  class ConstantInt *Integer;
+  class ConstantFloat *Float;
+  class AddInst *AddOp;
 }
 
 %token LPAREN
@@ -22,8 +24,9 @@
 %left PLUS
 %left MULTIPLY
 %token END
-%token <Integer> INTEGER
-%type <Integer> expr
+%token <RawInteger> INTEGER
+%type <Integer> constant
+%type <AddOp> statement
 
 %{
 #include "rhine/ParseDriver.h"
@@ -36,16 +39,30 @@
 %%
 
 input:
-    | expr { Driver->Root.Integers.push_back($1); }
-    ;
+                statement
+                 {
+                   Driver->Root.Statements.push_back($1);
+                 }
 
-expr:
-      INTEGER { $$ = $1; }
-    | expr[L] PLUS expr[R] { $$ = $L + $R; }
-    | expr[L] MULTIPLY expr[R] { $$ = $L * $R; }
-    | LPAREN expr[E] RPAREN { $$ = $E; }
-    ;
+                ;
 
+statement:
+                PLUS constant[L] constant[R]
+                {
+                  auto Op = AddInst::get(IntegerType::get());
+                  Op->addOperand($L);
+                  Op->addOperand($R);
+                  $$ = Op;
+                }
+
+                ;
+constant:
+                INTEGER
+                {
+                  $$ = ConstantInt::get($1);
+                }
+
+                ;
 %%
 
 void rhine::Parser::error(const rhine::location& l,
