@@ -25,7 +25,20 @@
 
 using namespace llvm;
 
-void buildRhIR(std::unique_ptr<Module> &Owner) {
+typedef int (*MainFTy)();
+
+void parseFacade(std::unique_ptr<Module> &Owner) {
+  std::string Prg = "491";
+  auto Root = rhine::SExpr();
+  auto Driver = rhine::ParseDriver(Root);
+  Driver.parseString(Prg);
+  std::cout << "Parsed:" << std::endl;
+  for (auto ve : Root.dExpressions) {
+    cout << ve << std::endl;
+  }
+}
+
+void parseFacade2(std::unique_ptr<Module> &Owner) {
   Module *M = Owner.get();
 
   rhine::Function *RhF = rhine::emitAdd2Const(M);
@@ -33,28 +46,24 @@ void buildRhIR(std::unique_ptr<Module> &Owner) {
   M->dump();
 }
 
-int main() {
-  // std::string prg = "()";
-  // std::istringstream in(prg);
-  // auto lexer = rhine::rhFlexLexer();
-  // auto root = new rhine::SExpr();
-  // auto parseh = new rhine::parser(root);
-  // parseh->parse();
-
-  LLVMInitializeNativeTarget();
-  LLVMInitializeNativeAsmPrinter();
-  LLVMInitializeNativeAsmParser();
-
-  std::unique_ptr<Module> Owner = make_unique<Module>("simple_module", rhine::RhContext);
-  buildRhIR(Owner);
+MainFTy codegenFacade(std::unique_ptr<Module> &Owner) {
   ExecutionEngine *EE = EngineBuilder(std::move(Owner)).create();
   assert(EE && "error creating MCJIT with EngineBuilder");
   union {
     uint64_t raw;
-    int (*usable)();
+    MainFTy usable;
   } functionPointer;
-  functionPointer.raw = EE->getFunctionAddress("foom");
-  std::cout << functionPointer.usable() << std::endl;
+  functionPointer.raw = EE->getFunctionAddress("main");
+  return functionPointer.usable;
+}
 
+int main() {
+  LLVMInitializeNativeTarget();
+  LLVMInitializeNativeAsmPrinter();
+  LLVMInitializeNativeAsmParser();
+  std::unique_ptr<Module> Owner = make_unique<Module>("simple_module", rhine::RhContext);
+  parseFacade(Owner);
+  if (auto Fptr = codegenFacade(Owner))
+    std::cout << Fptr() << std::endl;
   return 0;
 }

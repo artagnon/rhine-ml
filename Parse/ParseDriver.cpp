@@ -15,11 +15,10 @@ ParseDriver::ParseDriver(class SExpr& Expr) : TraceScanning(false),
 {
 }
 
-bool ParseDriver::parseStream(std::istream& in, const std::string& sname)
-{
+bool ParseDriver::parseStream(std::istream& in, const std::string& sname) {
   streamname = sname;
 
-  rhine::rhFlexLexer Lexx(&in);
+  rhine::Lexer Lexx(&in);
   Lexx.set_debug(TraceScanning);
   this->Lexx = &Lexx;
 
@@ -28,27 +27,24 @@ bool ParseDriver::parseStream(std::istream& in, const std::string& sname)
   return !Parseyy.parse();
 }
 
-bool ParseDriver::parseFile(const std::string &filename)
-{
+bool ParseDriver::parseFile(const std::string &filename) {
   std::ifstream in(filename, std::ifstream::in);
   if (!in.good()) return false;
   return parseStream(in, filename);
 }
 
-bool ParseDriver::parseString(const std::string &input, const std::string& sname)
-{
+bool ParseDriver::parseString(const std::string &input,
+                              const std::string& sname) {
   std::istringstream iss(input);
   return parseStream(iss, sname);
 }
 
 void ParseDriver::error(const class location& l,
-		   const std::string& m)
-{
+                        const std::string& m) {
   std::cerr << l << ": " << m << std::endl;
 }
 
-void ParseDriver::error(const std::string& m)
-{
+void ParseDriver::error(const std::string& m) {
   std::cerr << m << std::endl;
 }
 }

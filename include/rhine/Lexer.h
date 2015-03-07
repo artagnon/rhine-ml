@@ -16,7 +16,7 @@ typedef P::token T;
 
 #define	YY_DECL		       			\
     P::token_type				\
-    rhine::rhFlexLexer::lex(                    \
+    rhine::Lexer::lex(                          \
 	P::semantic_type* yylval,		\
 	P::location_type* yylloc		\
     )
@@ -31,10 +31,11 @@ typedef P::token T;
  * yylex() function to be contained within the Scanner class. This is required
  * because the yylex() defined in ExampleFlexLexer has no parameters. */
 namespace rhine {
-class rhFlexLexer : public yyFlexLexer {
+class Lexer : public yyFlexLexer {
 public:
-  rhFlexLexer(std::istream* arg_yyin = 0, std::ostream* arg_yyout = 0) {}
-  virtual ~rhFlexLexer() {}
+  Lexer(std::istream* arg_yyin = 0, std::ostream* arg_yyout = 0) :
+      yyFlexLexer(arg_yyin, arg_yyout) {}
+  virtual ~Lexer() {}
   virtual P::token_type lex(P::semantic_type* yylval,
                             P::location_type* yylloc);
 };
