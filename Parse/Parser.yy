@@ -1,5 +1,6 @@
 // -*- mode: bison -*-
 %{
+#include <iostream>
 %}
 
 %debug
@@ -14,19 +15,20 @@
 
 %union {
   int RawInteger;
+  std::string *RawSymbol;
   class ConstantInt *Integer;
   class ConstantFloat *Float;
   class AddInst *AddOp;
+  class Function *Fcn;
 }
 
-%token LPAREN
-%token RPAREN
-%left PLUS
-%left MULTIPLY
+%token DEFUN
 %token END
 %token <RawInteger> INTEGER
+%token <RawSymbol> SYMBOL
 %type <Integer> constant
 %type <AddOp> statement
+%type <Fcn> defun
 
 %{
 #include "rhine/ParseDriver.h"
@@ -43,11 +45,28 @@ input:
                  {
                    Driver->Root.Statements.push_back($1);
                  }
+        |       defun
+                 {
+                   Driver->Root.Defuns.push_back($1);
+                 }
 
+                ;
+defun:
+                DEFUN SYMBOL[N] '[' symbols[A] ']' statement[B]
+                {
+                  auto FTy = FunctionType::get(IntegerType::get());
+                  auto Fn = Function::get(FTy);
+                  Fn->setName(*$N);
+                  Fn->setBody($B);
+                  $$ = Fn;
+                }
+                ;
+symbols:
+        |       symbols SYMBOL
                 ;
 
 statement:
-                PLUS constant[L] constant[R]
+                '+' constant[L] constant[R]
                 {
                   auto Op = AddInst::get(IntegerType::get());
                   Op->addOperand($L);
@@ -67,4 +86,6 @@ constant:
 
 void rhine::Parser::error(const rhine::location& l,
 			  const std::string& m)
-{}
+{
+  std::cerr << l << ": " << m << std::endl;
+}

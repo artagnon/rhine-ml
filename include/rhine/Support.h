@@ -6,7 +6,7 @@
 #include "rhine/Ast.h"
 
 namespace rhine {
-Function *emitAdd2Const(llvm::Module *M);
+Function *emitAdd2Const();
 }
 
 #endif

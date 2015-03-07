@@ -7,28 +7,38 @@
 
 %option warn nodefault
 
-LPAREN      "("
-RPAREN      ")"
-PLUS        "+"
-MULTIPLY    "*"
-
-INTEGER     [0-9]+
-WS          [ \r\n\t]*
+SYMBOLC [a-z A-Z ? - * / < > = . % ^]
+SYMBOL  [[:alpha:]][[:alnum:]]+
+EXP     [Ee][- +]?[[:digit:]]+
+INTEGER [- +]?[[:digit:]]+
+WS      [ \r\n\t]*
 
 %%
 
-{WS}            { /* Skip blanks. */ }
-{INTEGER}       { yylval->RawInteger = atoi(yytext); return T::INTEGER; }
-{MULTIPLY}      { return T::MULTIPLY; }
-{PLUS}          { return T::PLUS; }
-{LPAREN}        { return T::LPAREN; }
-{RPAREN}        { return T::RPAREN; }
-.               {  }
+{WS} ;
+
+{INTEGER} {
+  yylval->RawInteger = atoi(yytext);
+  return T::INTEGER;
+}
+
+"defun" { return T::DEFUN; }
+
+{SYMBOL} {
+  yylval->RawSymbol = new std::string(yytext, yyleng);
+  return T::SYMBOL;
+}
+
+[\[ \] \( \) + *] {
+  return static_cast<P::token_type>(*yytext);
+}
+
+. ;
 
 %%
 
 // Required to fill vtable
 int yyFlexLexer::yylex()
 {
-    return 0;
+  return 0;
 }

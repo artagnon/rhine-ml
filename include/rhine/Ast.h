@@ -26,7 +26,7 @@ public:
   static Type *get() {
     return new Type();
   }
-  virtual llvm::Type *toLL() {
+  virtual llvm::Type *toLL(llvm::Module *M = nullptr) {
     assert(false && "Cannot toLL() without inferring type");
   }
 };
@@ -36,7 +36,7 @@ public:
   static IntegerType *get() {
     return new IntegerType();
   }
-  llvm::Type *toLL();
+  llvm::Type *toLL(llvm::Module *M = nullptr);
 };
 
 class FloatType : public Type {
@@ -44,7 +44,7 @@ public:
   static FloatType *get() {
     return new FloatType();
   }
-  llvm::Type *toLL();
+  llvm::Type *toLL(llvm::Module *M = nullptr);
 };
 
 class FunctionType : public Type {
@@ -67,13 +67,13 @@ public:
   Type *getATy(unsigned i) {
     return ArgumentTypes[i];
   }
-  llvm::Type *toLL();
+  llvm::Type *toLL(llvm::Module *M = nullptr);
 };
 
 template <typename T> class ArrayType : public Type {
 public:
   T *elTy;
-  llvm::Type *toLL();
+  llvm::Type *toLL(llvm::Module *M = nullptr);
 };
 
 class Value {
@@ -88,7 +88,7 @@ public:
     return VTy;
   }
   virtual bool containsVs() = 0;
-  virtual llvm::Value *toLL() = 0;
+  virtual llvm::Value *toLL(llvm::Module *M = nullptr) = 0;
 };
 
 class Constant : public Value {
@@ -98,7 +98,7 @@ public:
     return false;
   }
 private:
-  llvm::Constant *toLL() { return nullptr; }
+  llvm::Constant *toLL(llvm::Module *M = nullptr) { return nullptr; }
 };
 
 class ConstantInt : public Constant {
@@ -114,7 +114,7 @@ public:
   bool containsVs() {
     return false;
   }
-  llvm::Constant *toLL();
+  llvm::Constant *toLL(llvm::Module *M = nullptr);
 };
 
 class ConstantFloat : public Constant {
@@ -124,21 +124,20 @@ public:
   float getVal() {
     return Val;
   }
-  llvm::Constant *toLL();
+  llvm::Constant *toLL(llvm::Module *M = nullptr);
 };
 
 class Function : public Constant {
   std::vector<Value *> ArgumentList;
   std::string Name;
-  Module *Mod;
   Value *Val;
 public:
-  Function(Module *M, FunctionType *FTy) : Constant(FTy), Mod(M) {}
+  Function(FunctionType *FTy) : Constant(FTy) {}
   ~Function() {
     delete Val;
   }
-  static Function *get(Module *M, FunctionType *FTy) {
-    return new Function(M, FTy);
+  static Function *get(FunctionType *FTy) {
+    return new Function(FTy);
   }
   void setName(std::string N) {
     Name = N;
@@ -149,16 +148,13 @@ public:
   std::string getName() {
     return Name;
   }
-  Module *getModule() {
-    return Mod;
-  }
   Value *getVal() {
     return Val;
   }
   bool containsVs() {
     return true;
   }
-  llvm::Constant *toLL();
+  llvm::Constant *toLL(llvm::Module *M = nullptr);
 };
 
 class Variable : public Value {
@@ -176,7 +172,7 @@ public:
   bool containsVs() {
     return true;
   }
-  llvm::Value *toLL();
+  llvm::Value *toLL(llvm::Module *M = nullptr);
 };
 
 class Instruction : public Value {
@@ -195,7 +191,7 @@ public:
     return true;
   }
 private:
-  llvm::Value *toLL() { return nullptr; }
+  llvm::Value *toLL(llvm::Module *M = nullptr) { return nullptr; }
 };
 
 class AddInst : public Instruction {
@@ -207,7 +203,7 @@ public:
   bool containsVs() {
     return true;
   }
-  llvm::Value *toLL();
+  llvm::Value *toLL(llvm::Module *M = nullptr);
 };
 
 class LLVisitor
@@ -225,11 +221,11 @@ public:
   static llvm::Constant *visit(rhine::ConstantFloat *F) {
     return llvm::ConstantFP::get(RhContext, APFloat(F->getVal()));
   }
-  static llvm::Constant *visit(rhine::Function *RhF) {
+  static llvm::Constant *visit(rhine::Function *RhF, llvm::Module *M) {
     llvm::Value *RhV = RhF->getVal()->toLL();
     auto F = llvm::Function::Create(llvm::FunctionType::get(RhV->getType(), false),
                                     GlobalValue::ExternalLinkage,
-                                    RhF->getName(), RhF->getModule());
+                                    RhF->getName(), M);
     BasicBlock *BB = BasicBlock::Create(rhine::RhContext, "entry", F);
     rhine::RhBuilder.SetInsertPoint(BB);
     rhine::RhBuilder.CreateRet(RhV);

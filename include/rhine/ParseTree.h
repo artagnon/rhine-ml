@@ -10,6 +10,7 @@ namespace rhine {
 class SExpr {
 public:
   std::vector<AddInst *> Statements;
+  std::vector<Function *> Defuns;
 };
 }
 

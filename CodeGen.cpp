@@ -28,12 +28,16 @@ using namespace llvm;
 typedef int (*MainFTy)();
 
 void parseFacade(std::unique_ptr<Module> &Owner) {
-  std::string Prg = "+ 491 382";
+  std::string Prg = "defun foo [bar baz] + 2 3";
   auto Root = rhine::SExpr();
   auto Driver = rhine::ParseDriver(Root);
   Driver.parseString(Prg);
-  std::cout << "Parsed:" << std::endl;
+  std::cout << "Statements:" << std::endl;
   for (auto ve : Root.Statements) {
+    cout << ve << std::endl;
+  }
+  std::cout << "Defuns:" << std::endl;
+  for (auto ve : Root.Defuns) {
     cout << ve << std::endl;
   }
 }
@@ -41,8 +45,8 @@ void parseFacade(std::unique_ptr<Module> &Owner) {
 void parseFacade2(std::unique_ptr<Module> &Owner) {
   Module *M = Owner.get();
 
-  rhine::Function *RhF = rhine::emitAdd2Const(M);
-  RhF->toLL();
+  rhine::Function *RhF = rhine::emitAdd2Const();
+  RhF->toLL(M);
   M->dump();
 }
 
