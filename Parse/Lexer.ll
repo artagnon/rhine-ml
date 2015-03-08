@@ -1,6 +1,8 @@
 /* -*- Bison -*- */
 %{
 #include "rhine/Lexer.h"
+
+#define YY_USER_ACTION yylloc->columns(yyleng);
 %}
 
 %option c++ noyywrap nodefault warn yylineno stack
@@ -11,11 +13,18 @@ SYMBOLC [a-z A-Z ? - * / < > = . % ^]
 SYMBOL  [[:alpha:]][[:alnum:]]+
 EXP     [Ee][- +]?[[:digit:]]+
 INTEGER [- +]?[[:digit:]]+
-WS      [ \r\n\t]*
+RET     [\r\n]+
+SPTAB   [ \t]+
 
 %%
 
-{WS} ;
+%{
+  yylloc->step();
+%}
+
+{SPTAB} { yylloc->step(); }
+
+{RET} { yylloc->lines(yyleng); yylloc->step(); }
 
 {INTEGER} {
   yylval->RawInteger = atoi(yytext);
