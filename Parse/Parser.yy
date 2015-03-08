@@ -51,18 +51,18 @@
 
 start:
         |       statement END
-                 {
-                   Driver->Root.Statements.push_back($1);
-                 }
+                {
+                  Driver->Root.Statements.push_back($1);
+                }
 
         |       defun END
-                 {
-                   Driver->Root.Defuns.push_back($1);
-                 }
+                {
+                  Driver->Root.Defuns.push_back($1);
+                }
 
                 ;
 defun:
-                DEFUN SYMBOL[N] '[' symbols[A] ']' statement[B]
+                DEFUN SYMBOL[N] '[' symbol_list[A] ']' statement[B]
                 {
                   auto FTy = FunctionType::get(IntegerType::get());
                   auto Fn = Function::get(FTy);
@@ -71,8 +71,9 @@ defun:
                   $$ = Fn;
                 }
                 ;
-symbols:
-        |       symbols SYMBOL
+symbol_list:
+		  SYMBOL
+		| symbol_list SYMBOL
                 ;
 
 statement:
