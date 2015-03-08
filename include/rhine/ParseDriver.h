@@ -16,9 +16,9 @@ class ParseDriver
 public:
 
   /// construct a new parser driver context
-  ParseDriver(class SExpr& Expr) : TraceScanning(false),
-                                   TraceParsing(false),
-                                   Root(Expr)
+  ParseDriver(class SExpr& Expr, bool Debug = false) : TraceScanning(Debug),
+                                                       TraceParsing(Debug),
+                                                       Root(Expr)
   {}
 
   bool parseStream(std::istream& in,

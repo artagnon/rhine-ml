@@ -1,4 +1,5 @@
 #include "rhine/ParseDriver.h"
+#include "rhine/CodeGen.h"
 #include "rhine/Support.h"
 
 #include "llvm/IR/Verifier.h"
@@ -27,10 +28,10 @@ using namespace llvm;
 
 typedef int (*MainFTy)();
 
-void parseFacade(std::unique_ptr<Module> &Owner) {
+void parseFacade(std::unique_ptr<Module> &Owner, bool Debug) {
   std::string Prg = "defun foo [bar baz] + 2 3";
   auto Root = rhine::SExpr();
-  auto Driver = rhine::ParseDriver(Root);
+  auto Driver = rhine::ParseDriver(Root, Debug);
   Driver.parseString(Prg);
   std::cout << "Statements:" << std::endl;
   for (auto ve : Root.Statements) {
@@ -61,13 +62,13 @@ MainFTy codegenFacade(std::unique_ptr<Module> &Owner) {
   return functionPointer.usable;
 }
 
-int main() {
+void toplevelJit(std::string Filename, bool Debug) {
   LLVMInitializeNativeTarget();
   LLVMInitializeNativeAsmPrinter();
   LLVMInitializeNativeAsmParser();
+
   std::unique_ptr<Module> Owner = make_unique<Module>("simple_module", rhine::RhContext);
-  parseFacade(Owner);
+  parseFacade(Owner, Debug);
   if (auto Fptr = codegenFacade(Owner))
     std::cout << Fptr() << std::endl;
-  return 0;
 }
