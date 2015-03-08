@@ -7,11 +7,18 @@
 %name-prefix "rhine"
 %skeleton "lalr1.cc"
 %locations
+
+%initial-action
+{
+    @$.begin.filename = @$.end.filename = &Driver->StreamName;
+};
+
 %token-table
 %define parser_class_name { Parser }
 %defines
 
 %parse-param { class ParseDriver *Driver }
+%error-verbose
 
 %union {
   int RawInteger;
@@ -22,14 +29,15 @@
   class Function *Fcn;
 }
 
+%start start
+
 %token                  DEFUN
-%token                  END
+%token                  END       0
 %token  <RawInteger>    INTEGER
 %token  <RawSymbol>     SYMBOL
 %type   <Integer>       constant
 %type   <AddOp>         statement
 %type   <Fcn>           defun
-%type   <Value>         input
 
 %{
 #include "rhine/ParseDriver.h"
@@ -41,8 +49,8 @@
 
 %%
 
-input:
-                statement END
+start:
+        |       statement END
                  {
                    Driver->Root.Statements.push_back($1);
                  }

@@ -31,7 +31,7 @@ public:
 
   bool TraceScanning;
   bool TraceParsing;
-  std::string streamname;
+  std::string StreamName;
   class Lexer *Lexx;
   class SExpr &Root;
 };

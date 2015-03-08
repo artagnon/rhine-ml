@@ -10,7 +10,7 @@
 
 namespace rhine {
 bool ParseDriver::parseStream(std::istream& in, const std::string& sname) {
-  streamname = sname;
+  StreamName = sname;
 
   rhine::Lexer Lexx(&in);
   Lexx.set_debug(TraceScanning);
