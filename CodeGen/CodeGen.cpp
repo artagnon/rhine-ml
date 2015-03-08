@@ -28,24 +28,19 @@ using namespace llvm;
 
 typedef int (*MainFTy)();
 
-void parseFacade(std::unique_ptr<Module> &Owner, bool Debug) {
-  std::string Prg = "defun foo [bar baz] + 2 3";
+void parseFacade(std::string Filename, bool Debug) {
   auto Root = rhine::SExpr();
   auto Driver = rhine::ParseDriver(Root, Debug);
-  Driver.parseString(Prg);
+  Driver.parseFile(Filename);
   std::cout << "Statements:" << std::endl;
-  for (auto ve : Root.Statements) {
-    cout << ve << std::endl;
-  }
+  for (auto ve : Root.Statements)
+    ve->toLL()->dump();
   std::cout << "Defuns:" << std::endl;
-  for (auto ve : Root.Defuns) {
-    cout << ve << std::endl;
-  }
+  for (auto ve : Root.Defuns)
+    ve->toLL()->dump();
 }
 
-void parseFacade2(std::unique_ptr<Module> &Owner) {
-  Module *M = Owner.get();
-
+void parseFacade2(Module *M) {
   rhine::Function *RhF = rhine::emitAdd2Const();
   RhF->toLL(M);
   M->dump();
@@ -67,8 +62,8 @@ void toplevelJit(std::string Filename, bool Debug) {
   LLVMInitializeNativeAsmPrinter();
   LLVMInitializeNativeAsmParser();
 
+  parseFacade(Filename, Debug);
   std::unique_ptr<Module> Owner = make_unique<Module>("simple_module", rhine::RhContext);
-  parseFacade(Owner, Debug);
   if (auto Fptr = codegenFacade(Owner))
     std::cout << Fptr() << std::endl;
 }

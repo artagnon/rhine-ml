@@ -22,13 +22,14 @@
   class Function *Fcn;
 }
 
-%token DEFUN
-%token END
-%token <RawInteger> INTEGER
-%token <RawSymbol> SYMBOL
-%type <Integer> constant
-%type <AddOp> statement
-%type <Fcn> defun
+%token                  DEFUN
+%token                  END
+%token  <RawInteger>    INTEGER
+%token  <RawSymbol>     SYMBOL
+%type   <Integer>       constant
+%type   <AddOp>         statement
+%type   <Fcn>           defun
+%type   <Value>         input
 
 %{
 #include "rhine/ParseDriver.h"
@@ -41,11 +42,12 @@
 %%
 
 input:
-                statement
+                statement END
                  {
                    Driver->Root.Statements.push_back($1);
                  }
-        |       defun
+
+        |       defun END
                  {
                    Driver->Root.Defuns.push_back($1);
                  }

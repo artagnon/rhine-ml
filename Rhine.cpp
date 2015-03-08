@@ -12,11 +12,11 @@ enum OptionIndex {
 const option::Descriptor Usage[] =
   {
     {UNKNOWN, 0, "", "", option::Arg::None,
-     "USAGE: [options]\n\nOptions:"},
+     "USAGE: Rhine [options] <filename>\n\nOptions:"},
     {DEBUG, 0, "", "debug", option::Arg::None,
-     " --debug\t\tDebug lexer and parser"},
+     " --debug  \tDebug lexer and parser"},
     {HELP, 0, "", "help", option::Arg::None,
-     " --help\t\tPrint usage and exit"},
+     " --help  \tPrint usage and exit"},
     {}
   };
 
@@ -25,10 +25,10 @@ int main(int argc, char *argv[]) {
   option::Stats  Stats(Usage, argc, argv);
   option::Option* Options = new option::Option[Stats.options_max];
   option::Option* Buffer  = new option::Option[Stats.buffer_max];
-  option::Parser parse(Usage, argc, argv, Options, Buffer);
+  option::Parser Parse(Usage, argc, argv, Options, Buffer);
 
-  if (parse.error())
-    return 1;
+  if (Parse.error())
+    return 128;
 
   if (Options[HELP]) {
     option::printUsage(std::cout, Usage);
@@ -36,11 +36,16 @@ int main(int argc, char *argv[]) {
   }
 
   for (option::Option *Opt = Options[UNKNOWN]; Opt; Opt = Opt->next())
-    std::cout << "Unknown option: " <<
+    std::cout << "Unknown options: " <<
       std::string(Opt->name, Opt->namelen) << std::endl;
   if (Options[UNKNOWN])
-    return 1;
+    return 128;
 
-  toplevelJit("", Options[DEBUG]);
+  if (Parse.nonOptionsCount() != 1) {
+    option::printUsage(std::cout, Usage);
+    return 128;
+  }
+
+  toplevelJit(Parse.nonOption(0), Options[DEBUG]);
   return 0;
 }
