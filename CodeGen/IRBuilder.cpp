@@ -12,7 +12,7 @@ Function *emitAdd2Const() {
   Op->addOperand(I1);
   Op->addOperand(I2);
   F->setName("foom");
-  F->setBody(Op);
+  F->setBody(std::vector<Value *> { Op });
   return F;
 }
 
@@ -25,7 +25,7 @@ Function *untypedAdd() {
   Op->addOperand(I1);
   Op->addOperand(I2);
   F->setName("foom");
-  F->setBody(Op);
+  F->setBody(std::vector<Value *> { Op });
   return F;
 }
 }

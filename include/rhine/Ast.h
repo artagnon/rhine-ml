@@ -101,6 +101,25 @@ private:
   llvm::Constant *toLL(llvm::Module *M = nullptr) { return nullptr; }
 };
 
+class Variable : public Value {
+  std::string Name;
+  Value *Binding;
+public:
+  Variable(std::string N, Value *B = nullptr) :
+      Value(Type::get()), Name(N), Binding(B) {}
+
+  static Variable *get(std::string N, Value *B = nullptr) {
+    return new Variable(N, B);
+  }
+  Value *getVal() {
+    return Binding;
+  }
+  bool containsVs() {
+    return true;
+  }
+  llvm::Value *toLL(llvm::Module *M = nullptr);
+};
+
 class ConstantInt : public Constant {
 public:
   int Val;
@@ -128,13 +147,13 @@ public:
 };
 
 class Function : public Constant {
-  std::vector<Value *> ArgumentList;
+  std::vector<Variable *> ArgumentList;
   std::string Name;
-  Value *Val;
+  std::vector<Value *> Val;
 public:
   Function(FunctionType *FTy) : Constant(FTy) {}
   ~Function() {
-    delete Val;
+    Val.clear();
   }
   static Function *get(FunctionType *FTy) {
     return new Function(FTy);
@@ -142,37 +161,19 @@ public:
   void setName(std::string N) {
     Name = N;
   }
-  void setBody(Value *Body) {
+  void setBody(std::vector<Value *> Body) {
     Val = Body;
   }
   std::string getName() {
     return Name;
   }
   Value *getVal() {
-    return Val;
+    return Val.back();
   }
   bool containsVs() {
     return true;
   }
   llvm::Constant *toLL(llvm::Module *M = nullptr);
-};
-
-class Variable : public Value {
-  std::string Name;
-  Value *Binding;
-public:
-  Variable(std::string N, Value *B = nullptr) :
-      Value(Type::get()), Name(N), Binding(B) {}
-  static Variable *get(std::string N, Value *B = nullptr) {
-    return new Variable(N, B);
-  }
-  Value *getVal() {
-    return Binding;
-  }
-  bool containsVs() {
-    return true;
-  }
-  llvm::Value *toLL(llvm::Module *M = nullptr);
 };
 
 class Instruction : public Value {
