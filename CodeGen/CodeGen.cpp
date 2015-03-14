@@ -28,25 +28,7 @@ using namespace llvm;
 
 typedef int (*MainFTy)();
 
-void parseFacade(std::string Filename, bool Debug) {
-  auto Root = rhine::SExpr();
-  auto Driver = rhine::ParseDriver(Root, Debug);
-  Driver.parseFile(Filename);
-  std::cout << "Statements:" << std::endl;
-  for (auto ve : Root.Body)
-    ve->toLL()->dump();
-  std::cout << "Defuns:" << std::endl;
-  for (auto ve : Root.Defuns)
-    ve->toLL()->dump();
-}
-
-void parseFacade2(Module *M) {
-  rhine::Function *RhF = rhine::emitAdd2Const();
-  RhF->toLL(M);
-  M->dump();
-}
-
-MainFTy codegenFacade(std::unique_ptr<Module> &Owner) {
+MainFTy eeFacade(std::unique_ptr<Module> &Owner) {
   ExecutionEngine *EE = EngineBuilder(std::move(Owner)).create();
   assert(EE && "error creating MCJIT with EngineBuilder");
   union {
@@ -57,13 +39,9 @@ MainFTy codegenFacade(std::unique_ptr<Module> &Owner) {
   return functionPointer.usable;
 }
 
-void toplevelJit(std::string Filename, bool Debug) {
+void codegenFacade() {
   LLVMInitializeNativeTarget();
   LLVMInitializeNativeAsmPrinter();
   LLVMInitializeNativeAsmParser();
-
-  parseFacade(Filename, Debug);
   std::unique_ptr<Module> Owner = make_unique<Module>("simple_module", rhine::RhContext);
-  if (auto Fptr = codegenFacade(Owner))
-    std::cout << Fptr() << std::endl;
 }

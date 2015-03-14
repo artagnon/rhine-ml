@@ -1,5 +1,5 @@
 #include "rhine/OptionParser.h"
-#include "rhine/CodeGen.h"
+#include "rhine/Toplevel.h"
 
 #include <iostream>
 
@@ -46,6 +46,6 @@ int main(int argc, char *argv[]) {
     return 128;
   }
 
-  toplevelJit(Parse.nonOption(0), Options[DEBUG]);
+  rhine::parseFacade(Parse.nonOption(0), Options[DEBUG]);
   return 0;
 }

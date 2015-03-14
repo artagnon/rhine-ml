@@ -1,12 +1,9 @@
-#include "llvm/Support/raw_ostream.h"
 #include "rhine/Ast.h"
+#include "rhine/Support.h"
 #include "gtest/gtest.h"
 
-TEST(ToLLTest, ConstantInt) {
+TEST(ToLL, ConstantInt) {
   auto Source = rhine::ConstantInt::get(32);
-  auto Converted = Source->toLL();
-  std::string Output;
-  llvm::raw_string_ostream OutputStream(Output);
-  Converted->print(OutputStream);
-  EXPECT_STREQ(OutputStream.str().c_str(), "i32 32");
+  auto PP = rhine::LLToPP(Source->toLL());
+  EXPECT_STREQ(PP.c_str(), "i32 32");
 }

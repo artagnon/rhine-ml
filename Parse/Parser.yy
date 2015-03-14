@@ -42,8 +42,14 @@
 %type   <Integer>       constant
 %type   <AddOp>         expression
 %type   <Body>          statement_list
-%type   <Fcn>           fn_decl
-%type   <Fcn>           defun
+%type   <Fcn>           fn_decl defun
+
+%destructor { delete $$; } SYMBOL
+%destructor { delete $$; } symbol_list
+%destructor { delete $$; } constant
+%destructor { delete $$; } expression
+%destructor { delete $$; } statement_list
+%destructor { delete $$; } fn_decl defun
 
 %{
 #include "rhine/ParseDriver.h"
@@ -57,9 +63,7 @@
 
 start:
                 tlexpr END
-
         |       start tlexpr END
-
                 ;
 
 
@@ -68,12 +72,10 @@ tlexpr:
                 {
                   Driver->Root.Body = *$L;
                 }
-
         |       defun[D]
                 {
                   Driver->Root.Defuns.push_back($D);
                 }
-
                 ;
 
 fn_decl:
@@ -82,14 +84,15 @@ fn_decl:
                   auto FTy = FunctionType::get(IntegerType::get());
                   auto Fn = Function::get(FTy);
                   Fn->setName(*$N);
+                  delete $N;
                   $$ = Fn;
                 }
-
                 ;
 defun:
                 fn_decl[F] '{' statement_list[V] '}'
                 {
                   $F->setBody(*$V);
+                  delete $V;
                   $$ = $F;
                 }
                 ;
@@ -100,27 +103,27 @@ statement_list:
                   StatementList->push_back($E);
                   $$ = StatementList;
                 }
-        |       statement_list expression[E] ';'
+        |       statement_list[L] expression[E] ';'
                 {
-                  auto StatementList = new std::vector<Value *>;
-                  StatementList->push_back($E);
-                  $$ = StatementList;
+                  $L->push_back($E);
+                  $$ = $L;
                 }
-        ;
+                ;
 symbol_list:
                 SYMBOL[S]
                 {
                   auto SymbolList = new std::vector<Variable *>;
                   auto Sym = Variable::get(*$S);
+                  delete $S;
                   SymbolList->push_back(Sym);
                   $$ = SymbolList;
                 }
-        |       symbol_list SYMBOL[S]
+        |       symbol_list[L] SYMBOL[S]
                 {
-                  auto SymbolList = new std::vector<Variable *>;
                   auto Sym = Variable::get(*$S);
-                  SymbolList->push_back(Sym);
-                  $$ = SymbolList;
+                  delete $S;
+                  $L->push_back(Sym);
+                  $$ = $L;
                 }
                 ;
 expression:
@@ -131,7 +134,6 @@ expression:
                   Op->addOperand($R);
                   $$ = Op;
                 }
-
                 ;
 constant:
                 INTEGER

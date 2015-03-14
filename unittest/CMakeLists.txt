@@ -10,4 +10,15 @@ set_target_properties(ToLLTest PROPERTIES
   COMPILE_FLAGS ${LLVM_CXXFLAGS})
 target_link_libraries(ToLLTest
   gtest_main
-  CodeGen)
+  CodeGen
+  Toplevel)
+
+add_executable(ParseTest
+  "${CMAKE_CURRENT_SOURCE_DIR}/ParseTest.cpp")
+set_target_properties(ParseTest PROPERTIES
+  LINKER_LANGUAGE CXX
+  COMPILE_FLAGS ${LLVM_CXXFLAGS})
+target_link_libraries(ParseTest
+  gtest_main
+  CodeGen
+  Toplevel)
