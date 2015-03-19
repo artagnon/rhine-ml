@@ -1,5 +1,6 @@
 /* -*- Bison -*- */
 %{
+#include "rhine/ParseDriver.h"
 #include "rhine/Lexer.h"
 
 #define YY_USER_ACTION yylloc->columns(yyleng);
@@ -27,7 +28,8 @@ SPTAB   [ \t]+
 {RET} { yylloc->lines(yyleng); yylloc->step(); }
 
 {INTEGER} {
-  yylval->RawInteger = atoi(yytext);
+  auto C = ConstantInt::get(atoi(yytext));
+  yylval->Integer = C;
   return T::INTEGER;
 }
 

@@ -9,6 +9,7 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/ADT/Optional.h"
+#include "llvm/ADT/STLExtras.h"
 #include <string>
 #include <vector>
 
@@ -22,10 +23,10 @@ static IRBuilder<> RhBuilder(RhContext);
 
 class Type {
 public:
-  virtual ~Type() {}
   static Type *get() {
     return new Type();
   }
+  virtual ~Type() { };
   virtual llvm::Type *toLL(llvm::Module *M = nullptr) {
     assert(false && "Cannot toLL() without inferring type");
   }
@@ -54,10 +55,12 @@ public:
   template <typename R, typename... As>
   FunctionType(R RTy, As... ATys) {
     ReturnType = RTy;
-    ArgumentTypes = { ATys... };
+    ArgumentTypes = {ATys...};
   }
   ~FunctionType() {
     delete ReturnType;
+    for (auto i : ArgumentTypes)
+      delete i;
     ArgumentTypes.clear();
   }
   template <typename R, typename... As>
@@ -80,9 +83,7 @@ class Value {
   Type *VTy;
 public:
   Value(Type *VTy) : VTy(VTy) {}
-  virtual ~Value() {
-    delete VTy;
-  }
+  virtual ~Value() { delete VTy; };
   Value *get() = delete;
   Type *getType() {
     return VTy;
@@ -110,6 +111,9 @@ public:
 
   static Variable *get(std::string N, Value *B = nullptr) {
     return new Variable(N, B);
+  }
+  std::string getName() {
+    return Name;
   }
   Value *getVal() {
     return Binding;
@@ -151,8 +155,14 @@ class Function : public Constant {
   std::string Name;
   std::vector<Value *> Val;
 public:
-  Function(FunctionType *FTy) : Constant(FTy) {}
+  Function(FunctionType *FTy) :
+      Constant(FTy) {}
   ~Function() {
+    for (auto i : ArgumentList)
+      delete i;
+    ArgumentList.clear();
+    for (auto i : Val)
+      delete i;
     Val.clear();
   }
   static Function *get(FunctionType *FTy) {
@@ -180,7 +190,13 @@ class Instruction : public Value {
   unsigned NumOperands;
   std::vector<Value *> OperandList;
 public:
-  Instruction(Type *Ty) : Value(Ty) {}
+  Instruction(Type *Ty) :
+      Value(Ty) {}
+  ~Instruction() {
+    for (auto i : OperandList)
+      delete i;
+    OperandList.clear();
+  }
   void addOperand(Value *V) {
     OperandList.push_back(V);
     NumOperands++;
@@ -210,19 +226,19 @@ public:
 class LLVisitor
 {
 public:
-  static llvm::Type *visit(rhine::IntegerType *V) {
+  static llvm::Type *visit(IntegerType *V) {
     return RhBuilder.getInt32Ty();
   }
-  static llvm::Type *visit(rhine::FloatType *V) {
+  static llvm::Type *visit(FloatType *V) {
     return RhBuilder.getFloatTy();
   }
-  static llvm::Constant *visit(rhine::ConstantInt *I) {
+  static llvm::Constant *visit(ConstantInt *I) {
     return llvm::ConstantInt::get(RhContext, APInt(32, I->getVal()));
   }
-  static llvm::Constant *visit(rhine::ConstantFloat *F) {
+  static llvm::Constant *visit(ConstantFloat *F) {
     return llvm::ConstantFP::get(RhContext, APFloat(F->getVal()));
   }
-  static llvm::Constant *visit(rhine::Function *RhF, llvm::Module *M) {
+  static llvm::Constant *visit(Function *RhF, llvm::Module *M) {
     llvm::Value *RhV = RhF->getVal()->toLL();
     auto F = llvm::Function::Create(llvm::FunctionType::get(RhV->getType(), false),
                                     GlobalValue::ExternalLinkage,
@@ -232,11 +248,11 @@ public:
     rhine::RhBuilder.CreateRet(RhV);
     return F;
   }
-  static llvm::Value *visit(rhine::Variable *V) {
+  static llvm::Value *visit(Variable *V) {
     assert (V && "Cannot lower unbound variable");
     return V->toLL();
   }
-  static llvm::Value *visit(rhine::AddInst *A) {
+  static llvm::Value *visit(AddInst *A) {
     auto Op0 = A->getOperand(0)->toLL();
     auto Op1 = A->getOperand(1)->toLL();
     return RhBuilder.CreateAdd(Op0, Op1);

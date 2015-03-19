@@ -6,6 +6,8 @@
 #include "rhine/Ast.h"
 #include <vector>
 
+using namespace std;
+
 namespace rhine {
 class SExpr {
 public:

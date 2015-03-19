@@ -21,7 +21,6 @@
 %error-verbose
 
 %union {
-  int RawInteger;
   std::string *RawSymbol;
   class ConstantInt *Integer;
   class ConstantFloat *Float;
@@ -36,17 +35,15 @@
 %token                  DEFUN
 %token                  IF
 %token                  END       0
-%token  <RawInteger>    INTEGER
 %token  <RawSymbol>     SYMBOL
+%token  <Integer>       INTEGER
 %type   <VarList>       symbol_list
-%type   <Integer>       constant
 %type   <AddOp>         expression
 %type   <Body>          statement_list
 %type   <Fcn>           fn_decl defun
 
-%destructor { delete $$; } SYMBOL
+%destructor { delete $$; } SYMBOL INTEGER
 %destructor { delete $$; } symbol_list
-%destructor { delete $$; } constant
 %destructor { delete $$; } expression
 %destructor { delete $$; } statement_list
 %destructor { delete $$; } fn_decl defun
@@ -81,10 +78,10 @@ tlexpr:
 fn_decl:
                 DEFUN SYMBOL[N] '[' symbol_list[A] ']'
                 {
-                  auto FTy = FunctionType::get(IntegerType::get());
+                  auto ITy = IntegerType::get();
+                  auto FTy = FunctionType::get(ITy);
                   auto Fn = Function::get(FTy);
                   Fn->setName(*$N);
-                  delete $N;
                   $$ = Fn;
                 }
                 ;
@@ -92,7 +89,6 @@ defun:
                 fn_decl[F] '{' statement_list[V] '}'
                 {
                   $F->setBody(*$V);
-                  delete $V;
                   $$ = $F;
                 }
                 ;
@@ -114,33 +110,24 @@ symbol_list:
                 {
                   auto SymbolList = new std::vector<Variable *>;
                   auto Sym = Variable::get(*$S);
-                  delete $S;
                   SymbolList->push_back(Sym);
                   $$ = SymbolList;
                 }
         |       symbol_list[L] SYMBOL[S]
                 {
                   auto Sym = Variable::get(*$S);
-                  delete $S;
                   $L->push_back(Sym);
                   $$ = $L;
                 }
                 ;
 expression:
-                constant[L] '+' constant[R]
+                INTEGER[L] '+' INTEGER[R]
                 {
                   auto Op = AddInst::get(IntegerType::get());
                   Op->addOperand($L);
                   Op->addOperand($R);
                   $$ = Op;
                 }
-                ;
-constant:
-                INTEGER
-                {
-                  $$ = ConstantInt::get($1);
-                }
-
                 ;
 %%
 
