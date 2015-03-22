@@ -32,10 +32,8 @@ void parseFacade(std::string Filename, bool Debug) {
   auto Root = rhine::SExpr();
   auto Driver = rhine::ParseDriver(Root, std::cerr, Debug);
   Driver.parseFile(Filename);
-  std::cout << "Statements:" << std::endl;
   for (auto ve : Root.Body)
     ve->toLL()->dump();
-  std::cout << "Defuns:" << std::endl;
   for (auto ve : Root.Defuns)
     ve->toLL()->dump();
 }
