@@ -34,15 +34,15 @@ SPTAB   [ \t]+
 }
 
 "defun" { return T::DEFUN; }
-
 "if" { return T::IF; }
+"then" { return T::THEN; }
 
 {SYMBOL} {
   yylval->RawSymbol = new std::string(yytext, yyleng);
   return T::SYMBOL;
 }
 
-[\[ \] \( \) + * ; { }] {
+[\[ \] \( \) + * ; { } $] {
   return static_cast<P::token_type>(*yytext);
 }
 

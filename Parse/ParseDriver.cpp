@@ -9,10 +9,10 @@
 #include "Parser.hpp"
 
 namespace rhine {
-bool ParseDriver::parseStream(std::istream& in, const std::string& sname) {
+bool ParseDriver::parseStream(std::istream &in, const std::string &sname) {
   StreamName = sname;
 
-  rhine::Lexer Lexx(&in);
+  rhine::Lexer Lexx(&in, ErrorStream);
   Lexx.set_debug(TraceScanning);
   this->Lexx = &Lexx;
 
@@ -28,17 +28,20 @@ bool ParseDriver::parseFile(const std::string &filename) {
 }
 
 bool ParseDriver::parseString(const std::string &input,
-                              const std::string& sname) {
+                              const std::string &sname)
+{
   std::istringstream iss(input);
   return parseStream(iss, sname);
 }
 
 void ParseDriver::error(const class location& l,
-                        const std::string& m) {
-  std::cerr << l << ": " << m << std::endl;
+                        const std::string& m)
+{
+  *ErrorStream << l << ": " << m << std::endl;
 }
 
-void ParseDriver::error(const std::string& m) {
-  std::cerr << m << std::endl;
+void ParseDriver::error(const std::string& m)
+{
+  *ErrorStream << m << std::endl;
 }
 }

@@ -24,28 +24,29 @@
   std::string *RawSymbol;
   class ConstantInt *Integer;
   class ConstantFloat *Float;
-  class AddInst *AddOp;
+  class Instruction *Inst;
   class Function *Fcn;
   std::vector<class Variable *> *VarList;
-  std::vector<class Value *> *Body;
+  std::vector<class Value *> *StmList;
 }
 
 %start start
 
 %token                  DEFUN
 %token                  IF
+%token                  THEN
 %token                  END       0
 %token  <RawSymbol>     SYMBOL
 %token  <Integer>       INTEGER
 %type   <VarList>       symbol_list
-%type   <AddOp>         expression
-%type   <Body>          statement_list
+%type   <Inst>          expression
+%type   <StmList>       compound_stm stm_list single_stm
 %type   <Fcn>           fn_decl defun
 
 %destructor { delete $$; } SYMBOL INTEGER
 %destructor { delete $$; } symbol_list
 %destructor { delete $$; } expression
-%destructor { delete $$; } statement_list
+%destructor { delete $$; } stm_list
 %destructor { delete $$; } fn_decl defun
 
 %{
@@ -65,7 +66,7 @@ start:
 
 
 tlexpr:
-                statement_list[L]
+                stm_list[L]
                 {
                   Driver->Root.Body = *$L;
                 }
@@ -86,25 +87,39 @@ fn_decl:
                 }
                 ;
 defun:
-                fn_decl[F] '{' statement_list[V] '}'
+                fn_decl[F] compound_stm[L]
                 {
-                  $F->setBody(*$V);
+                  $F->setBody(*$L);
                   $$ = $F;
                 }
                 ;
-statement_list:
+compound_stm:
+                '{' stm_list[L] '}'
+                {
+                  $$ = $L;
+                }
+        |       single_stm[L]
+                {
+                  $$ = $L;
+                }
+stm_list:
+                single_stm[L]
+                {
+                  $$ = $L;
+                }
+        |       stm_list[L] expression[E] ';'
+                {
+                  $L->push_back($E);
+                  $$ = $L;
+                }
+                ;
+single_stm:
                 expression[E] ';'
                 {
                   auto StatementList = new std::vector<Value *>;
                   StatementList->push_back($E);
                   $$ = StatementList;
                 }
-        |       statement_list[L] expression[E] ';'
-                {
-                  $L->push_back($E);
-                  $$ = $L;
-                }
-                ;
 symbol_list:
                 SYMBOL[S]
                 {
@@ -128,11 +143,15 @@ expression:
                   Op->addOperand($R);
                   $$ = Op;
                 }
-                ;
+        |       IF expression[C] THEN compound_stm[T] compound_stm[F]
+                {
+                  $$ = nullptr;
+                }
+
 %%
 
-void rhine::Parser::error(const rhine::location& l,
-			  const std::string& m)
+void rhine::Parser::error(const rhine::location &l,
+                          const std::string &m)
 {
-  std::cerr << l << ": " << m << std::endl;
+  Driver->error(l, m);
 }

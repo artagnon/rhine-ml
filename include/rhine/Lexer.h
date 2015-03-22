@@ -25,15 +25,18 @@ typedef P::token T;
 #endif
 
 /** Scanner is a derived class to add some extra function to the scanner
- * class. Flex itself creates a class named yyFlexLexer, which is renamed using
- * macros to ExampleFlexLexer. However we change the context of the generated
- * yylex() function to be contained within the Scanner class. This is required
- * because the yylex() defined in ExampleFlexLexer has no parameters. */
+ * class. Flex itself creates a class named yyFlexLexer. However we change the
+ * context of the generated yylex() function to be contained within the Lexer
+ * class. This is required because the yylex() defined in yyFlexLexer has no
+ * parameters. */
 namespace rhine {
 class Lexer : public yyFlexLexer {
 public:
   Lexer(std::istream* arg_yyin = 0, std::ostream* arg_yyout = 0) :
       yyFlexLexer(arg_yyin, arg_yyout) {}
+  void LexerError(const char msg[]) {
+    *yyout << msg << std::endl;
+  }
   virtual ~Lexer() {}
   virtual P::token_type lex(P::semantic_type* yylval,
                             P::location_type* yylloc);
