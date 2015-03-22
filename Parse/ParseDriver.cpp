@@ -29,11 +29,12 @@ bool ParseDriver::parseFile(const std::string &filename) {
   return parseStream(in, filename);
 }
 
-bool ParseDriver::parseString(const std::string &input,
-                              const std::string &sname)
+bool ParseDriver::parseString(const std::string &Input,
+                              const std::string &Sname)
 {
-  std::istringstream iss(input);
-  return parseStream(iss, sname);
+  StringStreamInput = Input;
+  std::istringstream Iss(Input);
+  return parseStream(Iss, Sname);
 }
 
 #define ANSI_COLOR_RED     "\x1b[31;1m"
@@ -67,36 +68,51 @@ void ParseDriver::error(const class location& l,
   assert(l.begin.filename == l.end.filename);
   assert(l.begin.line == l.end.line);
 
+  std::istream *InStream;
+  std::string ScriptPath;
+  std::istringstream Iss(StringStreamInput);
   std::ifstream InFile(*l.begin.filename);
-  std::string ScriptPath = *l.begin.filename;
-  char Buffer[PATH_MAX];
-  char *CwdP = getcwd(Buffer, PATH_MAX);
-  std::string Cwd(CwdP);
-  Cwd += "/"; // Cwd is guaranteed to be a directory
-  auto MisPair = std::mismatch(Cwd.begin(),
-                               Cwd.end(), ScriptPath.begin());
-  auto CommonAnchor = Cwd.rfind('/', MisPair.first - Cwd.begin());
-  std::string StripString = "";
-  if (MisPair.first != Cwd.end()) {
-    auto StripComponents = std::count(MisPair.first, Cwd.end(), '/');
-    for (int i = 0; i < StripComponents; i++)
-      StripString += "../";
+
+  if (!StringStreamInput.empty()) {
+    InStream = &Iss;
+    ScriptPath = *l.begin.filename;
+  } else {
+    if (!InFile)
+      *ErrorStream << ColorCode(ANSI_COLOR_RED) << "fatal: "
+                   << ColorCode(ANSI_COLOR_WHITE)
+                   << "Unable to open file" << *l.begin.filename
+                   << ColorCode(ANSI_COLOR_RESET) << std::endl;
+    InStream = &InFile;
+    ScriptPath = *l.begin.filename;
+    char Buffer[PATH_MAX];
+    char *CwdP = getcwd(Buffer, PATH_MAX);
+    std::string Cwd(CwdP);
+    Cwd += "/"; // Cwd is guaranteed to be a directory
+    auto MisPair = std::mismatch(Cwd.begin(),
+                                 Cwd.end(), ScriptPath.begin());
+    auto CommonAnchor = Cwd.rfind('/', MisPair.first - Cwd.begin());
+    std::string StripString = "";
+    if (MisPair.first != Cwd.end()) {
+      auto StripComponents = std::count(MisPair.first, Cwd.end(), '/');
+      for (int i = 0; i < StripComponents; i++)
+        StripString += "../";
+    }
+    ScriptPath.erase(ScriptPath.begin(),
+                     ScriptPath.begin() + CommonAnchor + 1);
+    // +1 for the '/'
+    ScriptPath = StripString + ScriptPath;
   }
-  ScriptPath.erase(ScriptPath.begin(),
-                   ScriptPath.begin() + CommonAnchor + 1);
-  // +1 for the '/'
-  ScriptPath = StripString + ScriptPath;
   *ErrorStream << ColorCode(ANSI_COLOR_WHITE) << ScriptPath << ":"
                << l.begin.line << ":" << l.begin.column << ": "
                << ColorCode(ANSI_COLOR_RED) << "error: "
                << ColorCode(ANSI_COLOR_WHITE) << m
                << ColorCode(ANSI_COLOR_RESET) << std::endl;
-  if (!InFile)
-    return;
-  std::string Scratch;
+
+  std::string FaultyLine;
   for (int i = 0; i < l.begin.line; i++)
-    std::getline(InFile, Scratch);
-  *ErrorStream << Scratch << std::endl << std::setfill(' ')
+    std::getline(*InStream, FaultyLine);
+
+  *ErrorStream << FaultyLine << std::endl << std::setfill(' ')
                << std::setw(l.begin.column)
                << ColorCode(ANSI_COLOR_GREEN) << '^';
   unsigned int end_col = l.end.column > 0 ? l.end.column - 1 : 0;

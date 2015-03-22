@@ -34,6 +34,7 @@ public:
 
   bool TraceScanning;
   bool TraceParsing;
+  std::string StringStreamInput;
   std::string StreamName;
   std::ostream *ErrorStream;
   class Lexer *Lexx;
