@@ -23,7 +23,8 @@ llvm::Value *parsePrgString(std::string PrgString,
   auto Root = rhine::SExpr();
   auto Driver = rhine::ParseDriver(Root, ErrStream, Debug);
   if (Driver.parseString(PrgString))
-    return Root.Body.back()->toLL();
+    return Root.Body.empty() ? Root.Defuns.back()->toLL() :
+      Root.Body.back()->toLL();
   else
     return llvm::ConstantInt::get(RhContext, APInt(32, 0));
 }
