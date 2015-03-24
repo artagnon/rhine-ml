@@ -143,6 +143,14 @@ expression:
                   Op->addOperand($R);
                   $$ = Op;
                 }
+        |       symbol_list[L]
+                {
+                  auto SymV = *$L;
+                  auto Op = CallInst::get(SymV[0]->getName());
+                  for (auto It = std::next(SymV.begin()); It != SymV.end(); ++It)
+                    Op->addOperand(*It);
+                  $$ = Op;
+                }
         |       IF expression[C] THEN compound_stm[T] compound_stm[F]
                 {
                   $$ = nullptr;

@@ -10,6 +10,7 @@
 #include "llvm/IR/Constants.h"
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/STLExtras.h"
+
 #include <string>
 #include <vector>
 
@@ -88,16 +89,12 @@ public:
   Type *getType() {
     return VTy;
   }
-  virtual bool containsVs() = 0;
   virtual llvm::Value *toLL(llvm::Module *M = nullptr) = 0;
 };
 
 class Constant : public Value {
 public:
   Constant(Type *Ty) : Value(Ty) {}
-  bool containsVs() {
-    return false;
-  }
 private:
   llvm::Constant *toLL(llvm::Module *M = nullptr) { return nullptr; }
 };
@@ -118,9 +115,6 @@ public:
   Value *getVal() {
     return Binding;
   }
-  bool containsVs() {
-    return true;
-  }
   llvm::Value *toLL(llvm::Module *M = nullptr);
 };
 
@@ -133,9 +127,6 @@ public:
   }
   int getVal() {
     return Val;
-  }
-  bool containsVs() {
-    return false;
   }
   llvm::Constant *toLL(llvm::Module *M = nullptr);
 };
@@ -180,9 +171,6 @@ public:
   Value *getVal() {
     return Val.back();
   }
-  bool containsVs() {
-    return true;
-  }
   llvm::Constant *toLL(llvm::Module *M = nullptr);
 };
 
@@ -204,9 +192,6 @@ public:
   Value *getOperand(unsigned i) {
     return OperandList[i];
   }
-  bool containsVs() {
-    return true;
-  }
 private:
   llvm::Value *toLL(llvm::Module *M = nullptr) { return nullptr; }
 };
@@ -217,46 +202,36 @@ public:
   static AddInst *get(Type *Ty) {
     return new AddInst(Ty);
   }
-  bool containsVs() {
-    return true;
+  llvm::Value *toLL(llvm::Module *M = nullptr);
+};
+
+class CallInst : public Instruction {
+public:
+  // May be untyped
+  CallInst(std::string FunctionName, Type *Ty = Type::get()) :
+      Instruction(Ty), Name(FunctionName) {}
+  static CallInst *get(std::string FunctionName, Type *Ty = Type::get()) {
+    return new CallInst(FunctionName, Ty);
+  }
+  std::string getName() {
+    return Name;
   }
   llvm::Value *toLL(llvm::Module *M = nullptr);
+private:
+  std::string Name;
 };
 
 class LLVisitor
 {
 public:
-  static llvm::Type *visit(IntegerType *V) {
-    return RhBuilder.getInt32Ty();
-  }
-  static llvm::Type *visit(FloatType *V) {
-    return RhBuilder.getFloatTy();
-  }
-  static llvm::Constant *visit(ConstantInt *I) {
-    return llvm::ConstantInt::get(RhContext, APInt(32, I->getVal()));
-  }
-  static llvm::Constant *visit(ConstantFloat *F) {
-    return llvm::ConstantFP::get(RhContext, APFloat(F->getVal()));
-  }
-  static llvm::Constant *visit(Function *RhF, llvm::Module *M) {
-    llvm::Value *RhV = RhF->getVal()->toLL();
-    auto F = llvm::Function::Create(llvm::FunctionType::get(RhV->getType(), false),
-                                    GlobalValue::ExternalLinkage,
-                                    RhF->getName(), M);
-    BasicBlock *BB = BasicBlock::Create(rhine::RhContext, "entry", F);
-    rhine::RhBuilder.SetInsertPoint(BB);
-    rhine::RhBuilder.CreateRet(RhV);
-    return F;
-  }
-  static llvm::Value *visit(Variable *V) {
-    assert (V && "Cannot lower unbound variable");
-    return V->toLL();
-  }
-  static llvm::Value *visit(AddInst *A) {
-    auto Op0 = A->getOperand(0)->toLL();
-    auto Op1 = A->getOperand(1)->toLL();
-    return RhBuilder.CreateAdd(Op0, Op1);
-  }
+  static llvm::Type *visit(IntegerType *V);
+  static llvm::Type *visit(FloatType *V);
+  static llvm::Constant *visit(ConstantInt *I);
+  static llvm::Constant *visit(ConstantFloat *F);
+  static llvm::Constant *visit(Function *RhF, llvm::Module *M);
+  static llvm::Value *visit(Variable *V);
+  static llvm::Value *visit(AddInst *A);
+  static llvm::Value *visit(CallInst *C, llvm::Module *M);
 };
 }
 

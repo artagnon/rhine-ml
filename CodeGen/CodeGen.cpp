@@ -2,10 +2,8 @@
 #include "rhine/CodeGen.h"
 #include "rhine/Support.h"
 
-#include "llvm/IR/Verifier.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/Bitcode/BitstreamWriter.h"
-#include "llvm/Target/TargetMachine.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/MCJIT.h"
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
@@ -28,7 +26,11 @@ using namespace llvm;
 
 typedef int (*MainFTy)();
 
-MainFTy eeFacade(std::unique_ptr<Module> &Owner) {
+MainFTy eeFacade() {
+  LLVMInitializeNativeTarget();
+  LLVMInitializeNativeAsmPrinter();
+
+  std::unique_ptr<Module> Owner = make_unique<Module>("simple_module", rhine::RhContext);
   ExecutionEngine *EE = EngineBuilder(std::move(Owner)).create();
   assert(EE && "error creating MCJIT with EngineBuilder");
   union {
@@ -36,12 +38,6 @@ MainFTy eeFacade(std::unique_ptr<Module> &Owner) {
     MainFTy usable;
   } functionPointer;
   functionPointer.raw = EE->getFunctionAddress("main");
+  assert(functionPointer.usable && "no main function found");
   return functionPointer.usable;
-}
-
-void codegenFacade() {
-  LLVMInitializeNativeTarget();
-  LLVMInitializeNativeAsmPrinter();
-  LLVMInitializeNativeAsmParser();
-  std::unique_ptr<Module> Owner = make_unique<Module>("simple_module", rhine::RhContext);
 }

@@ -49,3 +49,20 @@ TEST(Statement, DefunStm)
     "}\n";
   EXPECT_PARSE_PP(SourcePrg, &ExpectedErr, &ExpectedPP);
 }
+
+TEST(Statement, DefunCompoundStm)
+{
+  std::string SourcePrg =
+    "defun foo [bar]\n"
+    "{\n"
+    "  3 + 2;\n"
+    "  4 + 5;\n"
+    "}";
+  std::string ExpectedErr = "";
+  std::string ExpectedPP =
+    "define i32 @foo() {\n"
+    "entry:\n"
+    "  ret i32 9\n"
+    "}\n";
+  EXPECT_PARSE_PP(SourcePrg, &ExpectedErr, &ExpectedPP);
+}
