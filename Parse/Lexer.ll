@@ -14,6 +14,7 @@ SYMBOLC [a-z A-Z ? - * / < > = . % ^]
 SYMBOL  [[:alpha:]][[:alnum:]]+
 EXP     [Ee][- +]?[[:digit:]]+
 INTEGER [- +]?[[:digit:]]+
+STRING  \".*\"
 RET     [\r\n]+
 SPTAB   [ \t]+
 
@@ -31,6 +32,12 @@ SPTAB   [ \t]+
   auto C = ConstantInt::get(atoi(yytext));
   yylval->Integer = C;
   return T::INTEGER;
+}
+
+{STRING} {
+  auto C = ConstantString::get(yytext);
+  yylval->String = C;
+  return T::STRING;
 }
 
 "defun" { return T::DEFUN; }

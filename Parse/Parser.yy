@@ -24,6 +24,7 @@
   std::string *RawSymbol;
   class ConstantInt *Integer;
   class ConstantFloat *Float;
+  class ConstantString *String;
   class Instruction *Inst;
   class Function *Fcn;
   std::vector<class Variable *> *VarList;
@@ -38,6 +39,7 @@
 %token                  END       0
 %token  <RawSymbol>     SYMBOL
 %token  <Integer>       INTEGER
+%token  <String>        STRING
 %type   <VarList>       symbol_list
 %type   <Inst>          expression
 %type   <StmList>       compound_stm stm_list single_stm
@@ -143,12 +145,10 @@ expression:
                   Op->addOperand($R);
                   $$ = Op;
                 }
-        |       symbol_list[L]
+        |       SYMBOL[S] STRING[P]
                 {
-                  auto SymV = *$L;
-                  auto Op = CallInst::get(SymV[0]->getName());
-                  for (auto It = std::next(SymV.begin()); It != SymV.end(); ++It)
-                    Op->addOperand(*It);
+                  auto Op = CallInst::get(*$S);
+                  Op->addOperand($P);
                   $$ = Op;
                 }
         |       IF expression[C] THEN compound_stm[T] compound_stm[F]

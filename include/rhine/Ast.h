@@ -49,6 +49,14 @@ public:
   llvm::Type *toLL(llvm::Module *M = nullptr);
 };
 
+class StringType : public Type {
+public:
+  static StringType *get() {
+    return new StringType();
+  }
+  llvm::Type *toLL(llvm::Module *M = nullptr);
+};
+
 class FunctionType : public Type {
   Type *ReturnType;
   std::vector<Type *> ArgumentTypes;
@@ -135,7 +143,23 @@ class ConstantFloat : public Constant {
 public:
   float Val;
   ConstantFloat(float Val) : Constant(FloatType::get()), Val(Val) {}
+  static ConstantFloat *get(float Val) {
+    return new ConstantFloat(Val);
+  }
   float getVal() {
+    return Val;
+  }
+  llvm::Constant *toLL(llvm::Module *M = nullptr);
+};
+
+class ConstantString : public Constant {
+public:
+  std::string Val;
+  ConstantString(std::string Val) : Constant(StringType::get()), Val(Val) {}
+  static ConstantString *get(std::string Val) {
+    return new ConstantString(Val);
+  }
+  std::string getVal() {
     return Val;
   }
   llvm::Constant *toLL(llvm::Module *M = nullptr);
@@ -226,8 +250,10 @@ class LLVisitor
 public:
   static llvm::Type *visit(IntegerType *V);
   static llvm::Type *visit(FloatType *V);
+  static llvm::Type *visit(StringType *V);
   static llvm::Constant *visit(ConstantInt *I);
   static llvm::Constant *visit(ConstantFloat *F);
+  static llvm::Constant *visit(ConstantString *S);
   static llvm::Constant *visit(Function *RhF, llvm::Module *M);
   static llvm::Value *visit(Variable *V);
   static llvm::Value *visit(AddInst *A);

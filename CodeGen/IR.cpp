@@ -5,11 +5,11 @@ namespace rhine {
 //===--------------------------------------------------------------------===//
 // ToLL() stubs.
 //===--------------------------------------------------------------------===//
-llvm::Type *IntegerType::toLL(llvm::Module *M) {
-  return LLVisitor::visit(this);
-}
+llvm::Type *IntegerType::toLL(llvm::Module *M) { return LLVisitor::visit(this); }
 
 llvm::Type *FloatType::toLL(llvm::Module *M) { return LLVisitor::visit(this); }
+
+llvm::Type *StringType::toLL(llvm::Module *M) { return LLVisitor::visit(this); }
 
 llvm::Type *FunctionType::toLL(llvm::Module *M) { return nullptr; }
 
@@ -21,6 +21,10 @@ llvm::Constant *rhine::ConstantInt::toLL(llvm::Module *M) {
 }
 
 llvm::Constant *ConstantFloat::toLL(llvm::Module *M) {
+  return LLVisitor::visit(this);
+}
+
+llvm::Constant *ConstantString::toLL(llvm::Module *M) {
   return LLVisitor::visit(this);
 }
 
@@ -46,8 +50,13 @@ llvm::Value *CallInst::toLL(llvm::Module *M) {
 llvm::Type *LLVisitor::visit(IntegerType *V) {
   return RhBuilder.getInt32Ty();
 }
+
 llvm::Type *LLVisitor::visit(FloatType *V) {
   return RhBuilder.getFloatTy();
+}
+
+llvm::Type *LLVisitor::visit(StringType *V) {
+  return RhBuilder.getInt8PtrTy();
 }
 
 llvm::Constant *LLVisitor::visit(ConstantInt *I) {
@@ -56,6 +65,11 @@ llvm::Constant *LLVisitor::visit(ConstantInt *I) {
 
 llvm::Constant *LLVisitor::visit(ConstantFloat *F) {
   return llvm::ConstantFP::get(RhContext, APFloat(F->getVal()));
+}
+
+llvm::Constant *LLVisitor::visit(ConstantString *S) {
+  auto SRef = llvm::StringRef(S->getVal());
+  return llvm::ConstantDataArray::getString(RhContext, SRef);
 }
 
 llvm::Constant *LLVisitor::visit(Function *RhF, llvm::Module *M) {
@@ -70,8 +84,7 @@ llvm::Constant *LLVisitor::visit(Function *RhF, llvm::Module *M) {
 }
 
 llvm::Value *LLVisitor::visit(Variable *V) {
-  assert (V && "Cannot lower unbound variable");
-  return V->toLL();
+  assert(0 && "Cannot lower variable");
 }
 
 llvm::Value *LLVisitor::visit(AddInst *A) {
@@ -82,7 +95,9 @@ llvm::Value *LLVisitor::visit(AddInst *A) {
 
 llvm::Value *LLVisitor::visit(CallInst *C, llvm::Module *M) {
   auto Callee = Externals::printf(M);
-  auto Operand = C->getOperand(0)->toLL();
-  return RhBuilder.CreateCall(Callee, Operand, C->getName());
+  auto Operand = dyn_cast<llvm::Constant>(C->getOperand(0)->toLL());
+  auto ConstantZ = llvm::ConstantInt::get(RhBuilder.getInt32Ty(), 0);
+  auto GEP = llvm::ConstantExpr::getGetElementPtr(Operand, ConstantZ);
+  return RhBuilder.CreateCall(Callee, GEP, C->getName());
 }
 }
