@@ -9,7 +9,7 @@ void EXPECT_PARSE_PP(std::string SourcePrg, std::string *ExpectedErr = nullptr,
 {
   std::regex AnsiColorRe("\\x1b\\[[0-9;]*m");
   std::ostringstream Scratch;
-  auto Source = rhine::parsePrgString(SourcePrg, Scratch);
+  auto Source = rhine::parseCodeGenString(SourcePrg, Scratch);
   auto Actual = Scratch.str();
   auto CleanedActual = std::regex_replace(Actual, AnsiColorRe, "");
   if (ExpectedErr) {

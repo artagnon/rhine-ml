@@ -6,9 +6,10 @@
 #include <iostream>
 #include <string>
 
+typedef int (*MainFTy)();
+
 namespace rhine {
-void parseFacade(std::string Filename,
-                 bool Debug);
+MainFTy jitFacade(std::string Filename, bool Debug);
 }
 
 #endif

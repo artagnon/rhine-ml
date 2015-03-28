@@ -10,8 +10,10 @@ add_subdirectory(CodeGen)
 add_subdirectory(Toplevel)
 add_subdirectory(gtest)
 add_subdirectory(unittest)
-add_executable(Rhine
+add_executable(rhine
   "${CMAKE_CURRENT_SOURCE_DIR}/Rhine.cpp"
   "${PROJECT_SOURCE_DIR}/include/rhine/Toplevel.h")
-target_link_libraries(Rhine
+set_target_properties(rhine PROPERTIES
+  COMPILE_FLAGS "-std=c++11")
+target_link_libraries(rhine
   Toplevel)

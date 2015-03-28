@@ -1,5 +1,6 @@
+#include "rhine/Toplevel.h"
 #include "rhine/ParseDriver.h"
-#include "rhine/CodeGen.h"
+#include "rhine/Externals.h"
 #include "rhine/Support.h"
 
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
@@ -24,15 +25,16 @@
 
 using namespace llvm;
 
-typedef int (*MainFTy)();
-
-MainFTy eeFacade() {
+namespace rhine {
+MainFTy jitFacade(std::string Filename, bool Debug) {
   LLVMInitializeNativeTarget();
   LLVMInitializeNativeAsmPrinter();
 
-  std::unique_ptr<Module> Owner = make_unique<Module>("simple_module", rhine::RhContext);
+  std::unique_ptr<Module> Owner = make_unique<Module>("main", rhine::RhContext);
+  Externals::printf(Owner.get());
+  parseCodeGenFile(Filename, Owner.get(), Debug);
   ExecutionEngine *EE = EngineBuilder(std::move(Owner)).create();
-  assert(EE && "error creating MCJIT with EngineBuilder");
+  assert(EE && "Error creating MCJIT with EngineBuilder");
   union {
     uint64_t raw;
     MainFTy usable;
@@ -40,4 +42,5 @@ MainFTy eeFacade() {
   functionPointer.raw = EE->getFunctionAddress("main");
   assert(functionPointer.usable && "no main function found");
   return functionPointer.usable;
+}
 }

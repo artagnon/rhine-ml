@@ -3,7 +3,6 @@ find_package(LLVM REQUIRED native mcjit)
 include_directories("${LLVM_INCLUDE_DIRS}")
 link_directories(${LLVM_LIBRARY_DIRS})
 add_library(CodeGen
-  "${CMAKE_CURRENT_SOURCE_DIR}/CodeGen.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/IRBuilder.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/IR.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/Externals.cpp"

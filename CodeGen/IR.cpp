@@ -77,13 +77,13 @@ llvm::Constant *LLVisitor::visit(ConstantFloat *F) {
 }
 
 llvm::Constant *LLVisitor::visit(Function *RhF, llvm::Module *M) {
-  auto RType = RhF->getVal()->getType()->toLL();
+  auto RType = RhF->getVal()->getType()->toLL(M);
   auto F = llvm::Function::Create(llvm::FunctionType::get(RType, false),
                                   GlobalValue::ExternalLinkage,
                                   RhF->getName(), M);
   BasicBlock *BB = BasicBlock::Create(rhine::RhContext, "entry", F);
   RhBuilder.SetInsertPoint(BB);
-  llvm::Value *RhV = RhF->getVal()->toLL();
+  llvm::Value *RhV = RhF->getVal()->toLL(M);
   RhBuilder.CreateRet(RhV);
   return F;
 }
@@ -96,7 +96,7 @@ llvm::Value *LLVisitor::visit(AddInst *A) {
 
 llvm::Value *LLVisitor::visit(CallInst *C, llvm::Module *M) {
   auto Callee = Externals::printf(M);
-  auto StrPtr = C->getOperand(0)->toLL();
+  auto StrPtr = C->getOperand(0)->toLL(M);
   return RhBuilder.CreateCall(Callee, StrPtr, C->getName());
 }
 }

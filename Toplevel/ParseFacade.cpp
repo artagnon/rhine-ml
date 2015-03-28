@@ -16,13 +16,13 @@ std::string LLToPP (llvm::Value *Obj)
   return OutputStream.str();
 }
 
-llvm::Value *parsePrgString(std::string PrgString,
-                            std::ostream &ErrStream,
-                            bool Debug)
+llvm::Value *parseCodeGenString(std::string PrgString,
+                                llvm::Module *M,
+                                std::ostream &ErrStream,
+                                bool Debug)
 {
   auto Root = rhine::SExpr();
   auto Driver = rhine::ParseDriver(Root, ErrStream, Debug);
-  auto M = new llvm::Module("main", RhContext);
   if (Driver.parseString(PrgString))
     return Root.Body.empty() ? Root.Defuns.back()->toLL(M) :
       Root.Body.back()->toLL(M);
@@ -30,15 +30,23 @@ llvm::Value *parsePrgString(std::string PrgString,
     return llvm::ConstantInt::get(RhContext, APInt(32, 0));
 }
 
-void parseFacade(std::string Filename, bool Debug) {
+llvm::Value *parseCodeGenString(std::string PrgString,
+                                std::ostream &ErrStream,
+                                bool Debug)
+{
+  auto M = new llvm::Module("main", RhContext);
+  return parseCodeGenString(PrgString, M, ErrStream, Debug);
+}
+
+void parseCodeGenFile(std::string Filename, llvm::Module *M, bool Debug) {
   auto Root = rhine::SExpr();
   auto Driver = rhine::ParseDriver(Root, std::cerr, Debug);
-  auto M = new llvm::Module("main", RhContext);
   Driver.parseFile(Filename);
   for (auto ve : Root.Body)
     ve->toLL(M);
   for (auto ve : Root.Defuns)
     ve->toLL(M);
-  M->dump();
+  if (Debug)
+    M->dump();
 }
 }
