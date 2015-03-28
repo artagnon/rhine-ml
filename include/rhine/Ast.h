@@ -100,13 +100,6 @@ public:
   virtual llvm::Value *toLL(llvm::Module *M = nullptr) = 0;
 };
 
-class Constant : public Value {
-public:
-  Constant(Type *Ty) : Value(Ty) {}
-private:
-  llvm::Constant *toLL(llvm::Module *M = nullptr) { return nullptr; }
-};
-
 class Variable : public Value {
   std::string Name;
   Value *Binding;
@@ -124,6 +117,28 @@ public:
     return Binding;
   }
   llvm::Value *toLL(llvm::Module *M = nullptr);
+};
+
+class GlobalString : public Value {
+public:
+  std::string Val;
+  GlobalString(std::string Val) : Value(StringType::get()), Val(Val) {}
+  static GlobalString *get(std::string Val) {
+    return new GlobalString(Val);
+  }
+  std::string getVal() {
+    return Val;
+  }
+  // Returns GEP to GlobalStringPtr, which is a Value; data itself is in
+  // constant storage.
+  llvm::Value *toLL(llvm::Module *M = nullptr);
+};
+
+class Constant : public Value {
+public:
+  Constant(Type *Ty) : Value(Ty) {}
+private:
+  llvm::Constant *toLL(llvm::Module *M = nullptr) { return nullptr; }
 };
 
 class ConstantInt : public Constant {
@@ -147,19 +162,6 @@ public:
     return new ConstantFloat(Val);
   }
   float getVal() {
-    return Val;
-  }
-  llvm::Constant *toLL(llvm::Module *M = nullptr);
-};
-
-class ConstantString : public Constant {
-public:
-  std::string Val;
-  ConstantString(std::string Val) : Constant(StringType::get()), Val(Val) {}
-  static ConstantString *get(std::string Val) {
-    return new ConstantString(Val);
-  }
-  std::string getVal() {
     return Val;
   }
   llvm::Constant *toLL(llvm::Module *M = nullptr);
@@ -232,9 +234,9 @@ public:
 class CallInst : public Instruction {
 public:
   // May be untyped
-  CallInst(std::string FunctionName, Type *Ty = Type::get()) :
+  CallInst(std::string FunctionName, Type *Ty = IntegerType::get()) :
       Instruction(Ty), Name(FunctionName) {}
-  static CallInst *get(std::string FunctionName, Type *Ty = Type::get()) {
+  static CallInst *get(std::string FunctionName, Type *Ty = IntegerType::get()) {
     return new CallInst(FunctionName, Ty);
   }
   std::string getName() {
@@ -251,11 +253,11 @@ public:
   static llvm::Type *visit(IntegerType *V);
   static llvm::Type *visit(FloatType *V);
   static llvm::Type *visit(StringType *V);
+  static llvm::Value *visit(Variable *V);
+  static llvm::Value *visit(GlobalString *S);
   static llvm::Constant *visit(ConstantInt *I);
   static llvm::Constant *visit(ConstantFloat *F);
-  static llvm::Constant *visit(ConstantString *S);
   static llvm::Constant *visit(Function *RhF, llvm::Module *M);
-  static llvm::Value *visit(Variable *V);
   static llvm::Value *visit(AddInst *A);
   static llvm::Value *visit(CallInst *C, llvm::Module *M);
 };

@@ -24,7 +24,7 @@ llvm::Constant *ConstantFloat::toLL(llvm::Module *M) {
   return LLVisitor::visit(this);
 }
 
-llvm::Constant *ConstantString::toLL(llvm::Module *M) {
+llvm::Value *GlobalString::toLL(llvm::Module *M) {
   return LLVisitor::visit(this);
 }
 
@@ -59,6 +59,15 @@ llvm::Type *LLVisitor::visit(StringType *V) {
   return RhBuilder.getInt8PtrTy();
 }
 
+llvm::Value *LLVisitor::visit(Variable *V) {
+  assert(0 && "Cannot lower variable");
+}
+
+llvm::Value *LLVisitor::visit(GlobalString *S) {
+  auto SRef = llvm::StringRef(S->getVal());
+  return RhBuilder.CreateGlobalStringPtr(SRef);
+}
+
 llvm::Constant *LLVisitor::visit(ConstantInt *I) {
   return llvm::ConstantInt::get(RhContext, APInt(32, I->getVal()));
 }
@@ -67,24 +76,16 @@ llvm::Constant *LLVisitor::visit(ConstantFloat *F) {
   return llvm::ConstantFP::get(RhContext, APFloat(F->getVal()));
 }
 
-llvm::Constant *LLVisitor::visit(ConstantString *S) {
-  auto SRef = llvm::StringRef(S->getVal());
-  return llvm::ConstantDataArray::getString(RhContext, SRef);
-}
-
 llvm::Constant *LLVisitor::visit(Function *RhF, llvm::Module *M) {
-  llvm::Value *RhV = RhF->getVal()->toLL();
-  auto F = llvm::Function::Create(llvm::FunctionType::get(RhV->getType(), false),
+  auto RType = RhF->getVal()->getType()->toLL();
+  auto F = llvm::Function::Create(llvm::FunctionType::get(RType, false),
                                   GlobalValue::ExternalLinkage,
                                   RhF->getName(), M);
   BasicBlock *BB = BasicBlock::Create(rhine::RhContext, "entry", F);
-  rhine::RhBuilder.SetInsertPoint(BB);
-  rhine::RhBuilder.CreateRet(RhV);
+  RhBuilder.SetInsertPoint(BB);
+  llvm::Value *RhV = RhF->getVal()->toLL();
+  RhBuilder.CreateRet(RhV);
   return F;
-}
-
-llvm::Value *LLVisitor::visit(Variable *V) {
-  assert(0 && "Cannot lower variable");
 }
 
 llvm::Value *LLVisitor::visit(AddInst *A) {
@@ -95,9 +96,7 @@ llvm::Value *LLVisitor::visit(AddInst *A) {
 
 llvm::Value *LLVisitor::visit(CallInst *C, llvm::Module *M) {
   auto Callee = Externals::printf(M);
-  auto Operand = dyn_cast<llvm::Constant>(C->getOperand(0)->toLL());
-  auto ConstantZ = llvm::ConstantInt::get(RhBuilder.getInt32Ty(), 0);
-  auto GEP = llvm::ConstantExpr::getGetElementPtr(Operand, ConstantZ);
-  return RhBuilder.CreateCall(Callee, GEP, C->getName());
+  auto StrPtr = C->getOperand(0)->toLL();
+  return RhBuilder.CreateCall(Callee, StrPtr, C->getName());
 }
 }

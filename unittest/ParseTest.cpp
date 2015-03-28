@@ -70,6 +70,6 @@ TEST(Statement, FunctionCall)
 {
   std::string SourcePrg = "printf \"43\";";
   std::string ExpectedPP =
-    "call printf";
+    "call i32 (i8*, ...)* @printf";
   EXPECT_PARSE_PP(SourcePrg, nullptr, &ExpectedPP);
 }

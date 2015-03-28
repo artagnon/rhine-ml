@@ -35,7 +35,7 @@ SPTAB   [ \t]+
 }
 
 {STRING} {
-  auto C = ConstantString::get(yytext);
+  auto C = GlobalString::get(std::string(yytext, 1, yyleng - 2));
   yylval->String = C;
   return T::STRING;
 }

@@ -22,9 +22,10 @@ llvm::Value *parsePrgString(std::string PrgString,
 {
   auto Root = rhine::SExpr();
   auto Driver = rhine::ParseDriver(Root, ErrStream, Debug);
+  auto M = new llvm::Module("main", RhContext);
   if (Driver.parseString(PrgString))
-    return Root.Body.empty() ? Root.Defuns.back()->toLL() :
-      Root.Body.back()->toLL();
+    return Root.Body.empty() ? Root.Defuns.back()->toLL(M) :
+      Root.Body.back()->toLL(M);
   else
     return llvm::ConstantInt::get(RhContext, APInt(32, 0));
 }
@@ -32,10 +33,12 @@ llvm::Value *parsePrgString(std::string PrgString,
 void parseFacade(std::string Filename, bool Debug) {
   auto Root = rhine::SExpr();
   auto Driver = rhine::ParseDriver(Root, std::cerr, Debug);
+  auto M = new llvm::Module("main", RhContext);
   Driver.parseFile(Filename);
   for (auto ve : Root.Body)
-    ve->toLL()->dump();
+    ve->toLL(M);
   for (auto ve : Root.Defuns)
-    ve->toLL()->dump();
+    ve->toLL(M);
+  M->dump();
 }
 }

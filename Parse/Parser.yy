@@ -24,7 +24,7 @@
   std::string *RawSymbol;
   class ConstantInt *Integer;
   class ConstantFloat *Float;
-  class ConstantString *String;
+  class GlobalString *String;
   class Instruction *Inst;
   class Function *Fcn;
   std::vector<class Variable *> *VarList;
