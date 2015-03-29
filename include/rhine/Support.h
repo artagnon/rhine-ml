@@ -25,7 +25,7 @@ llvm::Value *parseCodeGenString(std::string PrgString,
 //===--------------------------------------------------------------------===//
 // Meant to be used by normal codepath: jitFacade.
 //===--------------------------------------------------------------------===//
-void parseCodeGenFile(std::string Filename, llvm::Module *M, bool Debug);
+void parseCodeGenFile(std::string Filename, llvm::Module *M, bool Debug = false);
 }
 
 #endif

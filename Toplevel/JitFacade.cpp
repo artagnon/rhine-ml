@@ -26,13 +26,15 @@
 using namespace llvm;
 
 namespace rhine {
-MainFTy jitFacade(std::string Filename, bool Debug) {
+MainFTy jitFacade(std::string InStr, bool Debug, bool IsStringStream) {
   LLVMInitializeNativeTarget();
   LLVMInitializeNativeAsmPrinter();
 
   std::unique_ptr<Module> Owner = make_unique<Module>("main", rhine::RhContext);
-  Externals::printf(Owner.get());
-  parseCodeGenFile(Filename, Owner.get(), Debug);
+  if (IsStringStream)
+    parseCodeGenString(InStr, Owner.get(), std::cerr, Debug);
+  else
+    parseCodeGenFile(InStr, Owner.get(), Debug);
   ExecutionEngine *EE = EngineBuilder(std::move(Owner)).create();
   assert(EE && "Error creating MCJIT with EngineBuilder");
   union {

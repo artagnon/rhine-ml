@@ -41,7 +41,7 @@ llvm::Value *parseCodeGenString(std::string PrgString,
 void parseCodeGenFile(std::string Filename, llvm::Module *M, bool Debug) {
   auto Root = rhine::SExpr();
   auto Driver = rhine::ParseDriver(Root, std::cerr, Debug);
-  Driver.parseFile(Filename);
+  assert(Driver.parseFile(Filename) && "Could not parse file");
   for (auto ve : Root.Body)
     ve->toLL(M);
   for (auto ve : Root.Defuns)

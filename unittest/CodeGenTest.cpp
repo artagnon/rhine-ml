@@ -25,21 +25,21 @@ void EXPECT_PARSE_PP(std::string SourcePrg, std::string *ExpectedErr = nullptr,
   }
 }
 
-TEST(Statement, ConstantInt)
+TEST(CodeGen, ConstantIntAddition)
 {
   std::string SourcePrg = "2 + 3;";
   std::string ExpectedPP = "i32 5";
   EXPECT_PARSE_PP(SourcePrg, nullptr, &ExpectedPP);
 }
 
-TEST(Statement, BareDefun)
+TEST(Parse, BareDefun)
 {
   std::string SourcePrg = "defun foo [bar]";
   std::string ExpectedErr = "string stream:1:16: error: syntax error";
   EXPECT_PARSE_PP(SourcePrg, &ExpectedErr);
 }
 
-TEST(Statement, DefunStm)
+TEST(CodeGen, DefunStm)
 {
   std::string SourcePrg = "defun foo [bar] 3 + 2;";
   std::string ExpectedPP =
@@ -50,7 +50,7 @@ TEST(Statement, DefunStm)
   EXPECT_PARSE_PP(SourcePrg, nullptr, &ExpectedPP);
 }
 
-TEST(Statement, DefunCompoundStm)
+TEST(CodeGen, DefunCompoundStm)
 {
   std::string SourcePrg =
     "defun foo [bar]\n"
@@ -66,7 +66,7 @@ TEST(Statement, DefunCompoundStm)
   EXPECT_PARSE_PP(SourcePrg, nullptr, &ExpectedPP);
 }
 
-TEST(Statement, FunctionCall)
+TEST(CodeGen, FunctionCall)
 {
   std::string SourcePrg = "printf \"43\";";
   std::string ExpectedPP =
