@@ -6,23 +6,24 @@
 #define YY_USER_ACTION yylloc->columns(yyleng);
 %}
 
-%option c++ noyywrap nodefault warn yylineno stack
+%option c++ noyywrap warn yylineno stack
 
-%option warn nodefault
-
-SYMBOLC [a-z A-Z ? - * / < > = . % ^]
 SYMBOL  [[:alpha:]][[:alnum:]]+
 EXP     [Ee][- +]?[[:digit:]]+
 INTEGER [- +]?[[:digit:]]+
-STRING  \".*\"
 RET     [\r\n]+
 SPTAB   [ \t]+
+
+%x str
 
 %%
 
 %{
   yylloc->step();
+  char string_buf[500];
+  char *string_buf_ptr;
 %}
+
 
 {SPTAB} { yylloc->step(); }
 
@@ -34,10 +35,28 @@ SPTAB   [ \t]+
   return T::INTEGER;
 }
 
-{STRING} {
-  auto C = GlobalString::get(std::string(yytext, 1, yyleng - 2));
+\"	string_buf_ptr = string_buf; BEGIN(str);
+
+<str>\" {
+  BEGIN(INITIAL);
+  *string_buf_ptr = '\0';
+  auto C = GlobalString::get(std::string(string_buf));
   yylval->String = C;
   return T::STRING;
+}
+
+<str>\\n  *string_buf_ptr++ = '\n';
+<str>\\t  *string_buf_ptr++ = '\t';
+<str>\\r  *string_buf_ptr++ = '\r';
+<str>\\b  *string_buf_ptr++ = '\b';
+<str>\\f  *string_buf_ptr++ = '\f';
+
+<str>\\(.|\n)	*string_buf_ptr++ = yytext[1];
+
+<str>[^\\\n\"]+	{
+  char *yptr = yytext;
+  while (*yptr)
+    *string_buf_ptr++ = *yptr++;
 }
 
 "defun" { return T::DEFUN; }
