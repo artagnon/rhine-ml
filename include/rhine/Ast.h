@@ -41,6 +41,14 @@ public:
   llvm::Type *toLL(llvm::Module *M = nullptr);
 };
 
+class BoolType : public Type {
+public:
+  static BoolType *get() {
+    return new BoolType();
+  }
+  llvm::Type *toLL(llvm::Module *M = nullptr);
+};
+
 class FloatType : public Type {
 public:
   static FloatType *get() {
@@ -154,6 +162,19 @@ public:
   llvm::Constant *toLL(llvm::Module *M = nullptr);
 };
 
+class ConstantBool : public Constant {
+public:
+  bool Val;
+  ConstantBool(bool Val) : Constant(BoolType::get()), Val(Val) {}
+  static ConstantBool *get(bool Val) {
+    return new ConstantBool(Val);
+  }
+  float getVal() {
+    return Val;
+  }
+  llvm::Constant *toLL(llvm::Module *M = nullptr);
+};
+
 class ConstantFloat : public Constant {
 public:
   float Val;
@@ -251,11 +272,13 @@ class LLVisitor
 {
 public:
   static llvm::Type *visit(IntegerType *V);
+  static llvm::Type *visit(BoolType *V);
   static llvm::Type *visit(FloatType *V);
   static llvm::Type *visit(StringType *V);
   static llvm::Value *visit(Variable *V);
   static llvm::Value *visit(GlobalString *S);
   static llvm::Constant *visit(ConstantInt *I);
+  static llvm::Constant *visit(ConstantBool *B);
   static llvm::Constant *visit(ConstantFloat *F);
   static llvm::Constant *visit(Function *RhF, llvm::Module *M);
   static llvm::Value *visit(AddInst *A);

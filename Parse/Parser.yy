@@ -23,6 +23,7 @@
 %union {
   std::string *RawSymbol;
   class ConstantInt *Integer;
+  class ConstantBool *Boolean;
   class ConstantFloat *Float;
   class GlobalString *String;
   class Instruction *Inst;
@@ -36,9 +37,12 @@
 %token                  DEFUN
 %token                  IF
 %token                  THEN
+%token                  AND
+%token                  OR
 %token                  END       0
 %token  <RawSymbol>     SYMBOL
 %token  <Integer>       INTEGER
+%token  <Boolean>       BOOLEAN
 %token  <String>        STRING
 %type   <VarList>       symbol_list
 %type   <Inst>          expression

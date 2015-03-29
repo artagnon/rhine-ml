@@ -62,6 +62,20 @@ SPTAB   [ \t]+
 "defun" { return T::DEFUN; }
 "if" { return T::IF; }
 "then" { return T::THEN; }
+"&&" { return T::AND; }
+"||" { return T::OR; }
+
+"true" {
+  auto B = ConstantBool::get(true);
+  yylval->Boolean = B;
+  return T::BOOLEAN;
+}
+
+"false" {
+  auto B = ConstantBool::get(false);
+  yylval->Boolean = B;
+  return T::BOOLEAN;
+}
 
 {SYMBOL} {
   yylval->RawSymbol = new std::string(yytext, yyleng);

@@ -7,6 +7,8 @@ namespace rhine {
 //===--------------------------------------------------------------------===//
 llvm::Type *IntegerType::toLL(llvm::Module *M) { return LLVisitor::visit(this); }
 
+llvm::Type *BoolType::toLL(llvm::Module *M) { return LLVisitor::visit(this); }
+
 llvm::Type *FloatType::toLL(llvm::Module *M) { return LLVisitor::visit(this); }
 
 llvm::Type *StringType::toLL(llvm::Module *M) { return LLVisitor::visit(this); }
@@ -17,6 +19,10 @@ template <typename T>
 llvm::Type *ArrayType<T>::toLL(llvm::Module *M) { return nullptr; }
 
 llvm::Constant *rhine::ConstantInt::toLL(llvm::Module *M) {
+  return LLVisitor::visit(this);
+}
+
+llvm::Constant *ConstantBool::toLL(llvm::Module *M) {
   return LLVisitor::visit(this);
 }
 
@@ -51,6 +57,10 @@ llvm::Type *LLVisitor::visit(IntegerType *V) {
   return RhBuilder.getInt32Ty();
 }
 
+llvm::Type *LLVisitor::visit(BoolType *V) {
+  return RhBuilder.getInt1Ty();
+}
+
 llvm::Type *LLVisitor::visit(FloatType *V) {
   return RhBuilder.getFloatTy();
 }
@@ -70,6 +80,10 @@ llvm::Value *LLVisitor::visit(GlobalString *S) {
 
 llvm::Constant *LLVisitor::visit(ConstantInt *I) {
   return llvm::ConstantInt::get(RhContext, APInt(32, I->getVal()));
+}
+
+llvm::Constant *LLVisitor::visit(ConstantBool *B) {
+  return llvm::ConstantInt::get(RhContext, APInt(1, B->getVal()));
 }
 
 llvm::Constant *LLVisitor::visit(ConstantFloat *F) {
