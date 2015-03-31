@@ -44,13 +44,13 @@
 %token  <Integer>       INTEGER
 %token  <Boolean>       BOOLEAN
 %token  <String>        STRING
-%type   <VarList>       symbol_list
+%type   <VarList>       argument_list
 %type   <Inst>          expression
 %type   <StmList>       compound_stm stm_list single_stm
 %type   <Fcn>           fn_decl defun
 
 %destructor { delete $$; } SYMBOL INTEGER
-%destructor { delete $$; } symbol_list
+%destructor { delete $$; } argument_list
 %destructor { delete $$; } expression
 %destructor { delete $$; } stm_list
 %destructor { delete $$; } fn_decl defun
@@ -83,7 +83,16 @@ tlexpr:
                 ;
 
 fn_decl:
-                DEFUN SYMBOL[N] '[' symbol_list[A] ']'
+                DEFUN SYMBOL[N] '[' argument_list[A] ']'
+                {
+                  auto ITy = IntegerType::get();
+                  auto FTy = FunctionType::get(ITy);
+                  auto Fn = Function::get(FTy);
+                  Fn->setName(*$N);
+                  Fn->setArgumentList(*$A);
+                  $$ = Fn;
+                }
+        |       DEFUN SYMBOL[N] '[' ']'
                 {
                   auto ITy = IntegerType::get();
                   auto FTy = FunctionType::get(ITy);
@@ -126,7 +135,7 @@ single_stm:
                   StatementList->push_back($E);
                   $$ = StatementList;
                 }
-symbol_list:
+argument_list:
                 SYMBOL[S]
                 {
                   auto SymbolList = new std::vector<Variable *>;
@@ -134,7 +143,7 @@ symbol_list:
                   SymbolList->push_back(Sym);
                   $$ = SymbolList;
                 }
-        |       symbol_list[L] SYMBOL[S]
+        |       argument_list[L] SYMBOL[S]
                 {
                   auto Sym = Variable::get(*$S);
                   $L->push_back(Sym);

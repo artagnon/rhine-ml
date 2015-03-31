@@ -209,6 +209,9 @@ public:
   void setName(std::string N) {
     Name = N;
   }
+  void setArgumentList(std::vector<Variable *> L) {
+    ArgumentList = L;
+  }
   void setBody(std::vector<Value *> Body) {
     Val = Body;
   }

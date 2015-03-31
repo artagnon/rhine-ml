@@ -17,3 +17,8 @@ set_target_properties(rhine PROPERTIES
   COMPILE_FLAGS "-std=c++11")
 target_link_libraries(rhine
   Toplevel)
+
+add_custom_target(check
+  COMMAND "${PROJECT_BINARY_DIR}/unittest/UnitTest"
+  COMMENT "Running unittests ..."
+  DEPENDS rhine)
